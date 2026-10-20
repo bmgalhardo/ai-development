@@ -1,0 +1,191 @@
+# The development cycle
+
+How a change goes from review to a new build, in every game project that
+uses this workflow. It follows the main flow of Matt Pocock's skills
+(https://github.com/mattpocock/skills), adapted in `skills/`: review,
+grill, spec, tickets, implement, retro, and back to review. They are ours
+to change over time, mostly through `/retro`.
+
+This repo holds what every project shares: this cycle, the issue tracker
+(`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`) and
+the default coding standards. Each project holds its own context and
+links the skills in (`project-setup.md`). Paths below are from the
+project's root, where every session and script runs.
+
+## Where things live
+
+| What | Where | Owner |
+|---|---|---|
+| The user's docs | `docs/` | Each issue (grilling's glossary terms: to-spec) |
+| Screenshots the docs show | `docs/img/` | The build issue |
+| A cycle: review, spec, issues | `.scratch/<YYYY-MM-DD>-<slug>/` | See below |
+| Mocks and assets in the making | `.scratch/exploration/` | Review |
+| The game | the project's code folders (its engineering doc) | Implementation |
+| Agent context | `.agents/context/` | See `project-setup.md` |
+
+So `docs/` describes what's built, the cycle's spec holds the design
+choices agreed and not built yet, and the published game is the build.
+Two things in `docs/` aren't built, by design: the glossary (terms settled
+in grilling go in at `/to-spec`) and the user's direction and ideas,
+labelled as such ("direction, not built", "liked, not built", "parked").
+An agreed design choice is never written there as "(agreed, not built)".
+Each issue writes the docs for what it builds, in the same commit, so the
+docs never run ahead of the game.
+
+## Publication
+
+Publishing updates the persistent, user-accessible version, verifies
+success, and returns its link. Generating local files is preparation.
+The project's `AGENTS.md` says which outputs it publishes (the game, a
+docs page, a review board) and routes to its publishing instructions.
+
+## 1. Review session (brainstorming or QA)
+
+The cycle starts with the user talking freely, in one of two modes. No
+skill.
+
+- **Brainstorming:** a new game, or a new direction. Research the
+  competition, interview the user in rounds of a few multiple-choice
+  questions, recommend rather than survey, and let ideas be dropped.
+- **QA:** the user plays the published build and reads the cycle's
+  `review.md`, which says what changed and lists open questions. They
+  say what they saw, what to change, and new features.
+
+Build mocks for the user to see while the feedback is fresh: when a
+point changes how something looks or behaves, make a simple UI mock of
+just that part, without the game, with the open choices as variants to
+switch between. When there is a game, show its current UI around it at
+its real places, as flat stand-ins, so the mock shows what the change
+bumps into. A mock lives in
+`.scratch/exploration/cycle/mocks/<YYYY-MM-DD>-<slug>/` (its `index.html`,
+images, the scripts that made them, a README), labelled as a mockup, and
+goes wherever the project shows its review (its `AGENTS.md`). The user
+lands the design on the mock, and the refinement starts from what they
+chose.
+
+Make the assets in the review too, with the user, so each round is
+minutes, not a cycle: textures, sprites, icons, sounds and other art.
+They live in `.scratch/exploration/cycle/assets/`, with their source
+scripts, for the user to iterate on. What the user agrees is what the
+implementation brings into the game; the spec names each asset.
+
+Never change the game or the docs in a review: points that change them go
+into the Feedback, for the refinement and the implementation.
+
+As it goes, write the user's points into the cycle's `review.md` under
+`## Feedback`: their notes in their words, the ideas, the research, and
+anything explored, agreed or dropped. In a brainstorm with no build yet,
+start the cycle's folder and its `review.md` yourself. Review records
+feedback and accepted choices only in `review.md`; it never creates or
+updates `spec.md`, even when a design is approved. Before the session
+ends, read the Feedback back to the user and confirm it's complete. The
+next grill session may start fresh or continue this conversation: the
+Feedback carries the review either way.
+
+## 2. Refinement session
+
+Keep the live conversation from grilling through `/to-spec` and
+`/to-tickets`; do not intentionally clear it between these steps. There
+is no persisted file carrying the interview into `/to-spec`.
+
+1. `/grill-me` interviews the user in rounds. Its primary input is the
+   latest `review.md`, especially Feedback, with the domain docs as
+   context. It works whether or not the review conversation is still
+   present. Keep the design tree, terms, decisions and open questions in
+   chat. **Write nothing:** no spec, review updates, glossary, decision
+   log, scratch notes or mocks. Fact-finding and delegated exploration are
+   read-only. If a decision needs a new mock or asset, identify the needed
+   review work in chat; create it in review, not during grilling.
+   If workflow, terminology or tool questions interrupt the interview,
+   answer them and return to the unresolved product-decision frontier.
+   Neither `/to-spec` nor `/to-tickets` proceeds until the frontier is empty
+   and the user confirms shared understanding.
+2. `/to-spec` reads the live conversation and publishes an
+   implementation-ready spec to `.scratch/<YYYY-MM-DD>-<slug>/spec.md`; an
+   earlier interview draft is neither expected nor required. If revising a
+   spec already published for this work, update it from the live
+   conversation. Preserve agreed choices and words and remove superseded
+   choices. Make scope, implementation boundaries, affected docs and
+   testing seams explicit (the project's engineering doc lists its tests
+   and captures). Check the testing seams with the user as the skill
+   requires. This is synthesis, not another design round: unresolved
+   choices stay explicit and are not silently approved. At publication,
+   record settled glossary terms and the refinement's decision-log entry
+   as the project's domain doc specifies.
+3. `/to-tickets` first verifies that grilling reached an empty frontier and
+   the user explicitly confirmed shared understanding. It splits the spec
+   into `issues/NN-slug.md`, in dependency order. Each issue names the docs it
+   updates for what it builds. If ticketing exposes a missing product
+   decision, return to `/grill-me`, settle it, update the spec and only then
+   resume ticketing. The user approves the breakdown. The last issue is
+   always **Build and publish**, blocked by all the others.
+
+## 3. Implementation (without the user)
+
+After `/to-tickets`, the user runs `../game-development/tools/work.sh`
+from the project's root and leaves. Nobody asks the user anything until
+the build is published: choices, open questions and declined review
+findings go into the issues' `## Comments`, and the build issue collects
+them into `review.md` for the next review.
+
+`work.sh` runs independent workers: for each ready issue
+(`next_issue.py`), one fresh worker at a time, until no issue is ready.
+The default is `codex exec` running the implementation skill;
+`WORK_AGENT=claude` selects `claude -p "/implement <issue>"`. Claude's
+per-issue budget is `WORK_BUDGET_USD` (default 15); Codex uses its CLI
+configuration. There is no orchestrator. Each worker:
+- claims its issue (`in progress`, with its `Base:`) and touches no other
+  issue;
+- builds to the issue, the spec and the mock it names (the mock is the
+  agreed design), bringing in the agreed assets the issue names from
+  `.scratch/exploration/cycle/assets/` (copied into the game, with their
+  scripts into the project's tools), not making new ones;
+- writes the issue's `Docs to write` in the same commit as the code;
+- runs `/code-review` once and fixes once (`implement`, step 10);
+- sets the issue `done`, or `blocked` with its commits reverted.
+
+The state lives in the issue files (`issue-tracker.md`), so the loop can
+be stopped and started again. An issue left `in progress` is restarted
+from its `Base:`. A usage limit waits and retries; an issue that fails
+twice stops the loop. Each worker's log is in `artifacts/work/`, which
+the project ignores in git.
+
+`/implement` also works alone, in a top-level session.
+
+## 4. Build and publish (the last issue, then automatic publication)
+
+A worker does the build issue like any other:
+1. Run the checks, including the build (the engineering doc).
+2. Render the project's captures into the scratchpad and look at the
+   screenshots. Copy the ones that show the change to `docs/img/` as JPEGs.
+3. Package the game for publishing (the engineering doc).
+4. Write the cycle's `review.md`: the game version and date, what changed
+   to try (with the screenshots), the implementer's choices, and open
+   questions.
+5. Update `.agents/context/status.md` (where things stand).
+6. Commit, and close the build issue.
+
+As soon as the worker loop finishes, the active host session runs
+`/publish` automatically. The coding CLI (`WORK_AGENT`) does not select
+the publishing destination. The cycle is complete only after every
+output's deployment is verified and its link returned. That published
+build is the next review.
+
+## 5. Retro
+
+Soon after the build (the session logs are kept about 30 days), run
+`/retro` in a new session in the project. It reads the cycle (spec,
+issues and their comments, `review.md`, commits) and a digest of the
+cycle's sessions, and suggests changes to the skills, this workflow, the
+project's context and its checks. The user picks which to make. A change
+to a skill or to this workflow is made in this repo and reaches every
+project; one that suits only this project goes in its own context.
+
+## Rules that hold in every step
+
+- The project's standing rules (its `AGENTS.md`) hold in every step.
+- Assets are made in the review and only brought in by the
+  implementation. Nothing in `.scratch/` is referenced from the game: an
+  agreed asset is copied into the game (its script into the tools).
+- Docs-only work (a refinement with no build) republishes the docs page,
+  if the project has one, not the game.
