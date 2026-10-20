@@ -10,8 +10,8 @@ This repo holds what every game shares: this cycle, the issue tracker
 (`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`) and
 the default coding standards. Every session and worker runs here. Each
 game is an independent repo beside this one (`../<game>/`) with its own
-`AGENTS.md` and context (`project-setup.md`); `AGENTS.md` here names the
-current game. Paths below in a game (`docs/`, `.scratch/`,
+`AGENTS.md` and context (`project-setup.md`); each session establishes
+which game it works on (`AGENTS.md`). Paths below in a game (`docs/`, `.scratch/`,
 `.agents/context/`) are relative to the game's root; all of a game's
 work, commits included, happens in its repo.
 

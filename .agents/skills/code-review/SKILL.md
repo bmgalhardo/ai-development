@@ -18,7 +18,7 @@ The issue tracker should have been provided to you.
 
 Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one and an issue is named, use the issue's `Base:` commit. Ask only if there's neither.
 
-Run git in the repo under review: the issue's `Repo:`, else the current game in the workflow's `AGENTS.md`. Capture the diff command once: `git -C <repo> diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git -C <repo> log <fixed-point>..HEAD --oneline`.
+Run git in the repo under review: the issue's `Repo:`, else the session's game. Capture the diff command once: `git -C <repo> diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git -C <repo> log <fixed-point>..HEAD --oneline`.
 
 Before going further, confirm the fixed point resolves (`git -C <repo> rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
 

@@ -5,8 +5,8 @@ An issue left `in progress` comes first (its worker died). Otherwise the
 first `open` issue whose `Blocked by` issues are all `done`; the last issue
 (the build) is ready once every other issue is `done` or `blocked`.
 See .agents/context/issue-tracker.md. --status prints every issue's status.
-The game is the current one in AGENTS.md unless --game names another;
---game-root prints its root. Paths print relative to this repo, where the
+The game's repo is the first argument, relative to this repo
+(`../<game>`); --game-root prints it back, checked. Paths print relative to this repo, where the
 workers run.
 """
 
@@ -17,20 +17,12 @@ import re
 import sys
 
 WORKFLOW = Path(__file__).resolve().parents[1]
-CURRENT_GAME = re.compile(r"^## Current game\s+\*\*`([^`]+)`\*\*", re.M)
 STATUS = re.compile(r"^\*\*Status:\*\*\s*(.+?)\s*$", re.M)
 BLOCKED_BY = re.compile(r"^\*\*Blocked by:\*\*\s*(.+?)\s*$", re.M)
 
 
-def current_game():
-    match = CURRENT_GAME.search((WORKFLOW / "AGENTS.md").read_text(encoding="utf-8"))
-    if not match:
-        sys.exit("AGENTS.md: no **`../<game>/`** under ## Current game")
-    return match.group(1)
-
-
 def game_root(name):
-    root = (WORKFLOW / (name or current_game())).resolve()
+    root = (WORKFLOW / name).resolve()
     if not (root / ".git").exists():
         sys.exit(f"{root} is not a git repo")
     return root
@@ -80,7 +72,7 @@ def next_issue(issues):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--status", action="store_true", help="list every issue's status")
-    parser.add_argument("--game", help="the game's repo, relative to this one (default: AGENTS.md's current game)")
+    parser.add_argument("game", help="the game's repo, relative to this one (../<game>)")
     parser.add_argument("--game-root", action="store_true", help="print the game's root and stop")
     args = parser.parse_args()
     root = game_root(args.game)

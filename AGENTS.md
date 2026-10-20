@@ -8,13 +8,13 @@ worker loop); each game is its own independent repo beside it
 `CLAUDE.md` is a symlink to this file, and `.claude/` is a symlink to
 `.agents/`.
 
-## Current game
+## The session's game
 
-**`../03-prototype/`**
-
-At the start of every session, read `../03-prototype/CLAUDE.md` and
-follow its pointers to its own context. Work on that game unless the user
-names another. Paths in a game's files are relative to that game's root.
+At the start of a session, establish which game it is about: the user
+names it, or ask them. Skip this only when the work is on the workflow
+itself (this repo). Then read `../<game>/CLAUDE.md` and follow its
+pointers to that game's own context; from then on the session works on
+that game. Paths in a game's files are relative to that game's root.
 
 ## The workflow
 
@@ -28,7 +28,7 @@ names another. Paths in a game's files are relative to that game's root.
 - `.agents/skills/`: the skills, adapted from Matt Pocock's
   (https://github.com/mattpocock/skills).
 - `tools/work.sh`: the worker loop; `tools/next_issue.py`: the next
-  ready issue. Both take the current game unless given another.
+  ready issue. Both take the game as an argument (`../<game>`).
 - `CODING_STANDARDS.md`: the default standards (Clean Code for Godot),
   for a game without its own.
 

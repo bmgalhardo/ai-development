@@ -8,7 +8,7 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 
 ## Steps
 
-1. **Gather the cycle.** Default to the current game's latest cycle unless the user names another. Read its spec, every issue (with its `## Comments`: the implementer's choices and open questions), its `review.md`, and the commits made for it in the game's repo (`git -C <repo> log` over the cycle's dates).
+1. **Gather the cycle.** Default to the session's game's latest cycle unless the user names another cycle. Read its spec, every issue (with its `## Comments`: the implementer's choices and open questions), its `review.md`, and the commits made for it in the game's repo (`git -C <repo> log` over the cycle's dates).
 
 2. **Read the sessions.** A cycle spans several sessions: the refinement, then one per issue. Run `python3 .agents/skills/retro/digest.py --since <first day of the cycle>` for a compact digest of each one: the user's messages, the skills invoked, and the denied or failed tool calls. Read the full log of a session (its path is in the digest's header) only where the digest shows something worth a closer look. Logs are deleted after about 30 days, so a retro belongs soon after the build.
 

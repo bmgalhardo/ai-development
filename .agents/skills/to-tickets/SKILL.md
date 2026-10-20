@@ -68,7 +68,7 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 
 # <NN>: <Ticket title>
 
-**Repo:** the game's repo, relative to the workflow repo (`../03-prototype`). Workers act there.
+**Repo:** the game's repo, relative to the workflow repo (`../<game>`). Workers act there.
 
 **What to build:** the end-to-end behaviour this ticket makes work, from the user's perspective, not a layer-by-layer implementation list.
 

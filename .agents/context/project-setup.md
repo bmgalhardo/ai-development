@@ -2,8 +2,8 @@
 
 What a game provides so the cycle in `workflow.md` runs on it. Each game
 is an independent git repo beside this one (`../<game>/`): no symlinks to
-this repo and no mention of it. To work on a game, name it under
-"Current game" in this repo's `AGENTS.md`.
+this repo and no mention of it. A session here works on a game once the
+user names it (`AGENTS.md`).
 
 ## Files
 

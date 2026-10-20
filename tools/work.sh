@@ -6,20 +6,20 @@
 # interactive session (headless sessions can't publish artifacts).
 #
 # Workers run in this repo, where the skills are, and act in the game's
-# repo that each issue names. The game is AGENTS.md's current one unless
-# given as an argument (relative to this repo):
+# repo that each issue names. The game is the argument (relative to
+# this repo):
 #
-#   tools/work.sh                          # Codex (default), current game
-#   tools/work.sh ../04-prototype          # another game
-#   WORK_AGENT=claude tools/work.sh        # Claude
-#   WORK_BUDGET_USD=25 WORK_AGENT=claude tools/work.sh  # Claude budget
+#   tools/work.sh ../<game>                        # Codex (default)
+#   WORK_AGENT=claude tools/work.sh ../<game>      # Claude
+#   WORK_BUDGET_USD=25 WORK_AGENT=claude tools/work.sh ../<game>
 #
 # A worker that hits the usage limit is retried at the reported reset time
 # when available, or after WORK_WAIT seconds; other failures stop after two tries.
 set -uo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.." || exit 1
-GAME="$(python3 tools/next_issue.py --game-root ${1:+--game "$1"})" || exit 1
-next_issue() { python3 tools/next_issue.py --game "$GAME" "$@"; }
+if [ $# -ne 1 ]; then echo "Usage: tools/work.sh ../<game>" >&2; exit 1; fi
+GAME="$(python3 tools/next_issue.py "$1" --game-root)" || exit 1
+next_issue() { python3 tools/next_issue.py "$GAME" "$@"; }
 
 WAIT="${WORK_WAIT:-1800}"
 WORKER="${WORK_AGENT:-codex}"

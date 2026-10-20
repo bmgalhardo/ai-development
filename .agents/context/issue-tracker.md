@@ -3,7 +3,7 @@
 Specs and issues for each game live as Markdown files in the game's own
 `.scratch/` (`../<game>/.scratch/`), one folder per cycle. Written for the
 skills in `.agents/skills/`; the cycle itself is in `workflow.md`. The
-game is the current one in `AGENTS.md` unless the user names another.
+game is the session's game (`AGENTS.md`).
 
 ## Conventions
 
@@ -18,7 +18,7 @@ game is the current one in `AGENTS.md` unless the user names another.
 - Issues are one file per issue at `<cycle>/issues/<NN>-<slug>.md`,
   numbered from `01` in dependency order, never one combined file.
 - **Every spec and issue names its repo** on a `Repo:` line near the top
-  (`**Repo:** ../03-prototype`, relative to this workflow repo). Workers
+  (`**Repo:** ../<game>`, relative to this workflow repo). Workers
   run here, where the skills are, and do all the issue's work in that
   repo: code, docs, checks and commits (`git -C <repo>`).
 - The last issue of every cycle is the build: it writes the cycle's
@@ -52,5 +52,5 @@ folder if needed, with its `Repo:` line.
 ## When a skill says "fetch the relevant ticket"
 
 Read the file at the referenced path. The user will normally pass the path
-or the issue number directly; a bare number means the current game's
-current cycle. `python3 tools/next_issue.py` finds the next ready one.
+or the issue number directly; a bare number means the session's game's
+current cycle. `python3 tools/next_issue.py ../<game>` finds the next ready one.
