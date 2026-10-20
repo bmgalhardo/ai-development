@@ -1,13 +1,15 @@
 # Issue tracker: local Markdown
 
-Specs and issues for each game live as Markdown files in the game's own
-`.scratch/` (`../<game>/.scratch/`), one folder per cycle. Written for the
+Specs and issues for each game live as Markdown files in this repo's
+`.scratch/<game>/`, one folder per cycle, named by the game's folder
+(`.scratch/02-prototype/` for `../02-prototype`). `.scratch/` is not in
+git. Written for the
 skills in `.agents/skills/`; the cycle itself is in `workflow.md`. The
 game is the session's game (`AGENTS.md`).
 
 ## Conventions
 
-- One cycle per folder: `../<game>/.scratch/<YYYY-MM-DD>-<slug>/`, dated
+- One cycle per folder: `.scratch/<game>/<YYYY-MM-DD>-<slug>/`, dated
   the day it starts, the slug naming the change. Folders sort by date, and
   the latest is the current cycle.
 - `/to-spec` publishes the spec to `<cycle>/spec.md` from the live
@@ -37,17 +39,17 @@ game is the session's game (`AGENTS.md`).
   `/to-tickets`) names the main modules and docs it changes, so issues
   that don't overlap can run at once.
 - Comments and history go at the bottom of the file under `## Comments`.
-- Link to the game's docs by path relative to the issue file
-  (`../../docs/design/<topic>.md`, `../../docs/img/<name>.jpg`), and to
-  the spec as `../spec.md`.
-- `.scratch/` is not in git: it is working material. What lasts goes to
-  the game's `docs/` (when built), its `.agents/context/decisions.md` and
-  its code.
+- Link to the game's files by path relative to the linking file: from a
+  cycle's `review.md` or `spec.md`, `../../../../<game>/docs/<file>.md`;
+  from an issue, `../../../../../<game>/docs/img/<name>.jpg`. Link to the
+  spec as `../spec.md`. The review board copies linked images.
+- `.scratch/` is working material. What lasts goes to the game's `docs/`
+  (when built), its `.agents/context/decisions.md` and its code.
 
 ## When a skill says "publish to the issue tracker"
 
-Create a new file under the game's `.scratch/<cycle>/`, creating the
-folder if needed, with its `Repo:` line.
+Create a new file under `.scratch/<game>/<cycle>/`, creating the folder
+if needed, with its `Repo:` line.
 
 ## When a skill says "fetch the relevant ticket"
 

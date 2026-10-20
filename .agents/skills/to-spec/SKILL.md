@@ -10,7 +10,7 @@ Use the live chat as the source of the interview's decisions and wording. Consul
 
 Before consolidating, verify that `/grill-me` reached an empty frontier and the user explicitly confirmed shared understanding. If that handoff is absent, stop and return to `/grill-me`; do not publish an implementation-ready spec from a partial interview. If the user changes workflow or terminology during grilling, resume the product-decision frontier afterward.
 
-The issue tracker should have been provided to you. Follow its publishing conventions; do not assume a local filename in the skill. The tracker is local Markdown in the game's `.scratch/`, as defined in `.agents/context/issue-tracker.md`. The spec starts with a `**Repo:**` line naming the game's repo. If revising an already-published spec for this work, update that tracker entry using the live conversation.
+The issue tracker should have been provided to you. Follow its publishing conventions; do not assume a local filename in the skill. The tracker is local Markdown in this repo's `.scratch/<game>/`, as defined in `.agents/context/issue-tracker.md`. The spec starts with a `**Repo:**` line naming the game's repo. If revising an already-published spec for this work, update that tracker entry using the live conversation.
 
 ## Process
 

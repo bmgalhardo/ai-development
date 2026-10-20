@@ -7,24 +7,26 @@ grill, spec, tickets, implement, retro, and back to review. They are ours
 to change over time, mostly through `/retro`.
 
 This repo holds what every game shares: this cycle, the issue tracker
-(`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`) and
-the default coding standards. Every session and worker runs here. Each
-game is an independent repo beside this one (`../<game>/`) with its own
-`AGENTS.md` and context (`project-setup.md`); each session establishes
-which game it works on (`AGENTS.md`). Paths below in a game (`docs/`, `.scratch/`,
-`.agents/context/`) are relative to the game's root; all of a game's
-work, commits included, happens in its repo.
+(`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`), the
+review board (`tools/render_review.py`), the machine's tools
+(`machine.md`), how to publish on each host (`publishing/`) and the
+default coding standards. It also holds each game's cycles and
+explorations, in `.scratch/<game>/` (not in git). Every session and
+worker runs here. Each game is an independent repo beside this one
+(`../<game>/`) with its own `AGENTS.md` and context (`project-setup.md`);
+each session establishes which game it works on (`AGENTS.md`). All of a
+game's work on the game itself, commits included, happens in its repo.
 
-## Where things live (in the game's repo)
+## Where things live
 
 | What | Where | Owner |
 |---|---|---|
-| The user's docs | `docs/` | Each issue (grilling's glossary terms: to-spec) |
-| Screenshots the docs show | `docs/img/` | The build issue |
-| A cycle: review, spec, issues | `.scratch/<YYYY-MM-DD>-<slug>/` | See below |
-| Mocks and assets in the making | `.scratch/exploration/` | Review |
-| The game | the project's code folders (its engineering doc) | Implementation |
-| The game's agent context | `.agents/context/` | See `project-setup.md` |
+| The user's docs | the game's `docs/` | Each issue (grilling's glossary terms: to-spec) |
+| Screenshots the docs show | the game's `docs/img/` | The build issue |
+| A cycle: review, spec, issues | `.scratch/<game>/<YYYY-MM-DD>-<slug>/` here | See below |
+| Mocks and assets in the making | `.scratch/<game>/exploration/` here | Review |
+| The game | the game's code folders (its engineering doc) | Implementation |
+| The game's agent context | the game's `.agents/context/` | See `project-setup.md` |
 
 So `docs/` describes what's built, the cycle's spec holds the design
 choices agreed and not built yet, and the published game is the build.
@@ -39,8 +41,12 @@ docs never run ahead of the game.
 
 Publishing updates the persistent, user-accessible version, verifies
 success, and returns its link. Generating local files is preparation.
-The game's `AGENTS.md` says which outputs it publishes (the game, a
-docs page, a review board) and routes to its publishing instructions.
+The game's publishing doc (`.agents/context/publishing.md`) lists its
+outputs (the game, a docs page, a review board), their prepared files and
+destinations. How to publish on the active host is in this repo's
+`publishing/` (`claude.md` or `chatgpt.md`): pick by the app and its
+tools, not the model name. The review board is built here with
+`python3 tools/render_review.py ../<game>`.
 
 ## 1. Review session (brainstorming or QA)
 
@@ -60,15 +66,15 @@ just that part, without the game, with the open choices as variants to
 switch between. When there is a game, show its current UI around it at
 its real places, as flat stand-ins, so the mock shows what the change
 bumps into. A mock lives in
-`.scratch/exploration/cycle/mocks/<YYYY-MM-DD>-<slug>/` (its `index.html`,
-images, the scripts that made them, a README), labelled as a mockup, and
-goes wherever the game shows its review (its `AGENTS.md`). The user
+`.scratch/<game>/exploration/cycle/mocks/<YYYY-MM-DD>-<slug>/` (its
+`index.html`, images, the scripts that made them, a README), labelled as a
+mockup, and goes on the game's review board. The user
 lands the design on the mock, and the refinement starts from what they
 chose.
 
 Make the assets in the review too, with the user, so each round is
 minutes, not a cycle: textures, sprites, icons, sounds and other art.
-They live in `.scratch/exploration/cycle/assets/`, with their source
+They live in `.scratch/<game>/exploration/cycle/assets/`, with their source
 scripts, for the user to iterate on. What the user agrees is what the
 implementation brings into the game; the spec names each asset.
 
@@ -78,7 +84,7 @@ into the Feedback, for the refinement and the implementation.
 As it goes, write the user's points into the cycle's `review.md` under
 `## Feedback`: their notes in their words, the ideas, the research, and
 anything explored, agreed or dropped. In a brainstorm with no build yet,
-start the cycle's folder in the game's `.scratch/` and its `review.md`
+start the cycle's folder in `.scratch/<game>/` and its `review.md`
 yourself. Review records
 feedback and accepted choices only in `review.md`; it never creates or
 updates `spec.md`, even when a design is approved. Before the session
@@ -105,8 +111,8 @@ is no persisted file carrying the interview into `/to-spec`.
    Neither `/to-spec` nor `/to-tickets` proceeds until the frontier is empty
    and the user confirms shared understanding.
 2. `/to-spec` reads the live conversation and publishes an
-   implementation-ready spec to the game's
-   `.scratch/<YYYY-MM-DD>-<slug>/spec.md`, with its `Repo:` line; an
+   implementation-ready spec to
+   `.scratch/<game>/<YYYY-MM-DD>-<slug>/spec.md`, with its `Repo:` line; an
    earlier interview draft is neither expected nor required. If revising a
    spec already published for this work, update it from the live
    conversation. Preserve agreed choices and words and remove superseded
@@ -145,7 +151,7 @@ configuration. There is no orchestrator. Each worker:
   issue;
 - builds to the issue, the spec and the mock it names (the mock is the
   agreed design), bringing in the agreed assets the issue names from
-  `.scratch/exploration/cycle/assets/` (copied into the game, with their
+  `.scratch/<game>/exploration/cycle/assets/` (copied into the game, with their
   scripts into the game's tools), not making new ones;
 - writes the issue's `Docs to write` in the same commit as the code;
 - runs `/code-review` once and fixes once (`implement`, step 10);
@@ -195,6 +201,7 @@ context, committed in its repo.
 - A game's repo never links to or names this one.
 - Assets are made in the review and only brought in by the
   implementation. Nothing in `.scratch/` is referenced from the game: an
-  agreed asset is copied into the game (its script into the tools).
+  agreed asset is copied into the game (its script into the tools), and
+  nothing the game builds or checks reads `.scratch/`.
 - Docs-only work (a refinement with no build) republishes the docs page,
   if the game has one, not the game itself.

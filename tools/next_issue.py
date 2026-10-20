@@ -6,7 +6,8 @@ first `open` issue whose `Blocked by` issues are all `done`; the last issue
 (the build) is ready once every other issue is `done` or `blocked`.
 See .agents/context/issue-tracker.md. --status prints every issue's status.
 The game's repo is the first argument, relative to this repo
-(`../<game>`); --game-root prints it back, checked. Paths print relative to this repo, where the
+(`../<game>`); --game-root prints it back, checked. Its cycles are in this
+repo's `.scratch/<game>/`. Paths print relative to this repo, where the
 workers run.
 """
 
@@ -29,7 +30,7 @@ def game_root(name):
 
 
 def latest_cycle(root):
-    scratch = root / ".scratch"
+    scratch = WORKFLOW / ".scratch" / root.name
     cycles = sorted(p for p in scratch.iterdir() if (p / "issues").is_dir()) if scratch.is_dir() else []
     if not cycles:
         sys.exit(f"No cycle with issues in {scratch}")

@@ -23,8 +23,14 @@ that game. Paths in a game's files are relative to that game's root.
   (`tools/work.sh`), build and publish, `/retro`, and back to review.
   Read it before any of those.
 - `.agents/context/issue-tracker.md`: cycles, specs and issues as local
-  Markdown in the game's `.scratch/`. Every ticket names its repo.
+  Markdown in this repo's `.scratch/<game>/`. Every ticket names its repo.
 - `.agents/context/project-setup.md`: what a game repo provides.
+- `.agents/context/machine.md`: the tools on this machine (Godot, uv,
+  display, Blender on hephaestus) and their gotchas.
+- `.agents/context/publishing/`: how to publish on each host (`claude.md`,
+  `chatgpt.md`). A game lists only its outputs and destinations.
+- `tools/render_review.py`: builds a game's review board from
+  `.scratch/<game>/`.
 - `.agents/skills/`: the skills, adapted from Matt Pocock's
   (https://github.com/mattpocock/skills).
 - `tools/work.sh`: the worker loop; `tools/next_issue.py`: the next

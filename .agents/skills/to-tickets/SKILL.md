@@ -60,7 +60,7 @@ Iterate until the user approves the breakdown.
 
 ### 5. Publish the tickets to the issue tracker
 
-Publish the approved tickets to the issue tracker (in the game's `.scratch/`), one per ticket, in dependency order (blockers first). Each ticket's "Blocked by" lists the tickets it depends on. Use the ticket template below: one ticket per file, never a single combined file.
+Publish the approved tickets to the issue tracker (this repo's `.scratch/<game>/`), one per ticket, in dependency order (blockers first). Each ticket's "Blocked by" lists the tickets it depends on. Use the ticket template below: one ticket per file, never a single combined file.
 
 Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
 
@@ -80,7 +80,7 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 
 **Mock:** the mock file and the variant the user picked, if the ticket has a look (the agreed design; the implementer matches it).
 
-**Assets:** each agreed asset this ticket brings into the game, by its path in `.scratch/exploration/cycle/assets/` (made in the review; the implementer copies it in, never remakes it).
+**Assets:** each agreed asset this ticket brings into the game, by its path in `.scratch/<game>/exploration/cycle/assets/` (made in the review; the implementer copies it in, never remakes it).
 
 **Docs to write:** each doc file this ticket updates, with the agreed text to put there, written as built. The implementer copies it in with the code.
 

@@ -28,7 +28,7 @@ Look for the originating spec, in this order:
 
 1. Issue references in the commit messages, fetched via the workflow in the issue tracker doc.
 2. A path the user passed as an argument.
-3. A spec file under the repo's `docs/` or `.scratch/` matching the branch name or feature.
+3. A spec file under the game's `docs/` or this repo's `.scratch/<game>/` matching the branch name or feature.
 The issue, the cycle's spec and the mock the issue names together are the spec. The mock is the agreed design.
 
 4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
