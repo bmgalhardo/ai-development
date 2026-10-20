@@ -5,8 +5,8 @@ Prints, per session in the window: the user's messages, skills invoked,
 denied or failed tool calls, and a count of tools used. Assistant text and
 tool output are left out, so a cycle's sessions fit in one read.
 
-Run it from the project's root (the project is the git repo of the
-current directory, not this file's):
+Sessions run in the workflow repo, so these are its logs, whichever
+game they worked on:
 
     python3 .agents/skills/retro/digest.py --since 2026-10-09T10:00 [--until ...]
     python3 .agents/skills/retro/digest.py --session <id>
@@ -16,10 +16,8 @@ import argparse
 from collections import Counter
 import json
 from pathlib import Path
-import subprocess
 
-ROOT = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True,
-                           text=True, check=True).stdout.strip())
+ROOT = Path(__file__).resolve().parents[3]
 CLAUDE_LOGS = Path.home() / ".claude/projects" / str(ROOT).replace("/", "-")
 CODEX_LOGS = Path.home() / ".codex/sessions"
 WORK_LOGS = ROOT / "artifacts/work"

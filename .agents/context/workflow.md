@@ -6,13 +6,16 @@ uses this workflow. It follows the main flow of Matt Pocock's skills
 grill, spec, tickets, implement, retro, and back to review. They are ours
 to change over time, mostly through `/retro`.
 
-This repo holds what every project shares: this cycle, the issue tracker
+This repo holds what every game shares: this cycle, the issue tracker
 (`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`) and
-the default coding standards. Each project holds its own context and
-links the skills in (`project-setup.md`). Paths below are from the
-project's root, where every session and script runs.
+the default coding standards. Every session and worker runs here. Each
+game is an independent repo beside this one (`../<game>/`) with its own
+`AGENTS.md` and context (`project-setup.md`); `AGENTS.md` here names the
+current game. Paths below in a game (`docs/`, `.scratch/`,
+`.agents/context/`) are relative to the game's root; all of a game's
+work, commits included, happens in its repo.
 
-## Where things live
+## Where things live (in the game's repo)
 
 | What | Where | Owner |
 |---|---|---|
@@ -21,7 +24,7 @@ project's root, where every session and script runs.
 | A cycle: review, spec, issues | `.scratch/<YYYY-MM-DD>-<slug>/` | See below |
 | Mocks and assets in the making | `.scratch/exploration/` | Review |
 | The game | the project's code folders (its engineering doc) | Implementation |
-| Agent context | `.agents/context/` | See `project-setup.md` |
+| The game's agent context | `.agents/context/` | See `project-setup.md` |
 
 So `docs/` describes what's built, the cycle's spec holds the design
 choices agreed and not built yet, and the published game is the build.
@@ -36,7 +39,7 @@ docs never run ahead of the game.
 
 Publishing updates the persistent, user-accessible version, verifies
 success, and returns its link. Generating local files is preparation.
-The project's `AGENTS.md` says which outputs it publishes (the game, a
+The game's `AGENTS.md` says which outputs it publishes (the game, a
 docs page, a review board) and routes to its publishing instructions.
 
 ## 1. Review session (brainstorming or QA)
@@ -59,7 +62,7 @@ its real places, as flat stand-ins, so the mock shows what the change
 bumps into. A mock lives in
 `.scratch/exploration/cycle/mocks/<YYYY-MM-DD>-<slug>/` (its `index.html`,
 images, the scripts that made them, a README), labelled as a mockup, and
-goes wherever the project shows its review (its `AGENTS.md`). The user
+goes wherever the game shows its review (its `AGENTS.md`). The user
 lands the design on the mock, and the refinement starts from what they
 chose.
 
@@ -75,7 +78,8 @@ into the Feedback, for the refinement and the implementation.
 As it goes, write the user's points into the cycle's `review.md` under
 `## Feedback`: their notes in their words, the ideas, the research, and
 anything explored, agreed or dropped. In a brainstorm with no build yet,
-start the cycle's folder and its `review.md` yourself. Review records
+start the cycle's folder in the game's `.scratch/` and its `review.md`
+yourself. Review records
 feedback and accepted choices only in `review.md`; it never creates or
 updates `spec.md`, even when a design is approved. Before the session
 ends, read the Feedback back to the user and confirm it's complete. The
@@ -101,29 +105,30 @@ is no persisted file carrying the interview into `/to-spec`.
    Neither `/to-spec` nor `/to-tickets` proceeds until the frontier is empty
    and the user confirms shared understanding.
 2. `/to-spec` reads the live conversation and publishes an
-   implementation-ready spec to `.scratch/<YYYY-MM-DD>-<slug>/spec.md`; an
+   implementation-ready spec to the game's
+   `.scratch/<YYYY-MM-DD>-<slug>/spec.md`, with its `Repo:` line; an
    earlier interview draft is neither expected nor required. If revising a
    spec already published for this work, update it from the live
    conversation. Preserve agreed choices and words and remove superseded
    choices. Make scope, implementation boundaries, affected docs and
-   testing seams explicit (the project's engineering doc lists its tests
+   testing seams explicit (the game's engineering doc lists its tests
    and captures). Check the testing seams with the user as the skill
    requires. This is synthesis, not another design round: unresolved
    choices stay explicit and are not silently approved. At publication,
    record settled glossary terms and the refinement's decision-log entry
-   as the project's domain doc specifies.
+   as the game's domain doc specifies.
 3. `/to-tickets` first verifies that grilling reached an empty frontier and
    the user explicitly confirmed shared understanding. It splits the spec
-   into `issues/NN-slug.md`, in dependency order. Each issue names the docs it
-   updates for what it builds. If ticketing exposes a missing product
+   into `issues/NN-slug.md`, in dependency order. Each issue names its
+   repo and the docs it updates for what it builds. If ticketing exposes a missing product
    decision, return to `/grill-me`, settle it, update the spec and only then
    resume ticketing. The user approves the breakdown. The last issue is
    always **Build and publish**, blocked by all the others.
 
 ## 3. Implementation (without the user)
 
-After `/to-tickets`, the user runs `../game-development/tools/work.sh`
-from the project's root and leaves. Nobody asks the user anything until
+After `/to-tickets`, the user runs `tools/work.sh` here (for the current
+game, or `tools/work.sh ../<game>`) and leaves. Nobody asks the user anything until
 the build is published: choices, open questions and declined review
 findings go into the issues' `## Comments`, and the build issue collects
 them into `review.md` for the next review.
@@ -134,12 +139,14 @@ The default is `codex exec` running the implementation skill;
 `WORK_AGENT=claude` selects `claude -p "/implement <issue>"`. Claude's
 per-issue budget is `WORK_BUDGET_USD` (default 15); Codex uses its CLI
 configuration. There is no orchestrator. Each worker:
+- runs here, with the issue's repo added to its workspace, and does all
+  the issue's work in that repo;
 - claims its issue (`in progress`, with its `Base:`) and touches no other
   issue;
 - builds to the issue, the spec and the mock it names (the mock is the
   agreed design), bringing in the agreed assets the issue names from
   `.scratch/exploration/cycle/assets/` (copied into the game, with their
-  scripts into the project's tools), not making new ones;
+  scripts into the game's tools), not making new ones;
 - writes the issue's `Docs to write` in the same commit as the code;
 - runs `/code-review` once and fixes once (`implement`, step 10);
 - sets the issue `done`, or `blocked` with its commits reverted.
@@ -147,8 +154,8 @@ configuration. There is no orchestrator. Each worker:
 The state lives in the issue files (`issue-tracker.md`), so the loop can
 be stopped and started again. An issue left `in progress` is restarted
 from its `Base:`. A usage limit waits and retries; an issue that fails
-twice stops the loop. Each worker's log is in `artifacts/work/`, which
-the project ignores in git.
+twice stops the loop. Each worker's log is in this repo's
+`artifacts/work/<game>/`, ignored in git.
 
 `/implement` also works alone, in a top-level session.
 
@@ -174,18 +181,20 @@ build is the next review.
 ## 5. Retro
 
 Soon after the build (the session logs are kept about 30 days), run
-`/retro` in a new session in the project. It reads the cycle (spec,
-issues and their comments, `review.md`, commits) and a digest of the
-cycle's sessions, and suggests changes to the skills, this workflow, the
-project's context and its checks. The user picks which to make. A change
-to a skill or to this workflow is made in this repo and reaches every
-project; one that suits only this project goes in its own context.
+`/retro` in a new session here. It reads the cycle (spec,
+issues and their comments, `review.md`, the game's commits) and a digest
+of the cycle's sessions, and suggests changes to the skills, this
+workflow, the game's context and its checks. The user picks which to
+make. A change to a skill or to this workflow is committed here and
+reaches every game; one that suits only this game goes in its own
+context, committed in its repo.
 
 ## Rules that hold in every step
 
-- The project's standing rules (its `AGENTS.md`) hold in every step.
+- The game's standing rules (its `AGENTS.md`) hold in every step.
+- A game's repo never links to or names this one.
 - Assets are made in the review and only brought in by the
   implementation. Nothing in `.scratch/` is referenced from the game: an
   agreed asset is copied into the game (its script into the tools).
 - Docs-only work (a refinement with no build) republishes the docs page,
-  if the project has one, not the game.
+  if the game has one, not the game itself.

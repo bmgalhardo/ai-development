@@ -60,13 +60,15 @@ Iterate until the user approves the breakdown.
 
 ### 5. Publish the tickets to the issue tracker
 
-Publish the approved tickets to the issue tracker, one per ticket, in dependency order (blockers first). Each ticket's "Blocked by" lists the tickets it depends on. Use the ticket template below: one ticket per file, never a single combined file.
+Publish the approved tickets to the issue tracker (in the game's `.scratch/`), one per ticket, in dependency order (blockers first). Each ticket's "Blocked by" lists the tickets it depends on. Use the ticket template below: one ticket per file, never a single combined file.
 
 Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
 
 <ticket-template>
 
 # <NN>: <Ticket title>
+
+**Repo:** the game's repo, relative to the workflow repo (`../03-prototype`). Workers act there.
 
 **What to build:** the end-to-end behaviour this ticket makes work, from the user's perspective, not a layer-by-layer implementation list.
 

@@ -5,18 +5,21 @@
 # and started again. The build issue runs last; then type /publish in an
 # interactive session (headless sessions can't publish artifacts).
 #
-# Run it from the project's root; the project is the git repo of the
-# current directory, and this script stays in the workflow repo:
+# Workers run in this repo, where the skills are, and act in the game's
+# repo that each issue names. The game is AGENTS.md's current one unless
+# given as an argument (relative to this repo):
 #
-#   ../game-development/tools/work.sh                       # Codex (default)
-#   WORK_AGENT=claude ../game-development/tools/work.sh      # Claude
-#   WORK_BUDGET_USD=25 WORK_AGENT=claude ../game-development/tools/work.sh
+#   tools/work.sh                          # Codex (default), current game
+#   tools/work.sh ../04-prototype          # another game
+#   WORK_AGENT=claude tools/work.sh        # Claude
+#   WORK_BUDGET_USD=25 WORK_AGENT=claude tools/work.sh  # Claude budget
 #
 # A worker that hits the usage limit is retried at the reported reset time
 # when available, or after WORK_WAIT seconds; other failures stop after two tries.
 set -uo pipefail
-NEXT_ISSUE="$(dirname "$(readlink -f "$0")")/next_issue.py"
-cd "$(git rev-parse --show-toplevel)" || exit 1
+cd "$(dirname "$(readlink -f "$0")")/.." || exit 1
+GAME="$(python3 tools/next_issue.py --game-root ${1:+--game "$1"})" || exit 1
+next_issue() { python3 tools/next_issue.py --game "$GAME" "$@"; }
 
 WAIT="${WORK_WAIT:-1800}"
 WORKER="${WORK_AGENT:-codex}"
@@ -29,21 +32,21 @@ if ! command -v "$WORKER" >/dev/null 2>&1; then
     echo "$WORKER is not installed or not on PATH." >&2
     exit 1
 fi
-LOG_DIR="artifacts/work"
+LOG_DIR="artifacts/work/$(basename "$GAME")"
 mkdir -p "$LOG_DIR"
 
-if [ -n "$(git status --porcelain)" ] && [ -z "$(python3 "$NEXT_ISSUE" --status | grep 'in progress')" ]; then
-    echo "The working tree has changes and no issue is in progress: commit or stash them first." >&2
+if [ -n "$(git -C "$GAME" status --porcelain)" ] && [ -z "$(next_issue --status | grep 'in progress')" ]; then
+    echo "$GAME has uncommitted changes and no issue is in progress: commit or stash them first." >&2
     exit 1
 fi
 
 failures=0
 last=""
 while :; do
-    issue="$(python3 "$NEXT_ISSUE")"
+    issue="$(next_issue)"
     if [ -z "$issue" ]; then
         echo "No issue is ready."
-        python3 "$NEXT_ISSUE" --status
+        next_issue --status
         exit 0
     fi
     if [ "$issue" != "$last" ]; then failures=0; last="$issue"; fi
@@ -58,12 +61,12 @@ while :; do
             code=$?
             ;;
         claude)
-            claude -p "/implement $issue" --permission-mode auto --max-budget-usd "$BUDGET" \
+            claude -p "/implement $issue" --add-dir "$GAME" --permission-mode auto --max-budget-usd "$BUDGET" \
                 --output-format text > "$log" 2>&1
             code=$?
             ;;
     esac
-    status="$(python3 "$NEXT_ISSUE" --status | grep " $(basename "$issue")\$" | awk '{$1=""; $NF=""; print}' | xargs)"
+    status="$(next_issue --status | grep " $(basename "$issue")\$" | awk '{$1=""; $NF=""; print}' | xargs)"
     case "$status" in
         done|blocked) continue ;;
     esac

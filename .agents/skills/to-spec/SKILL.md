@@ -10,11 +10,11 @@ Use the live chat as the source of the interview's decisions and wording. Consul
 
 Before consolidating, verify that `/grill-me` reached an empty frontier and the user explicitly confirmed shared understanding. If that handoff is absent, stop and return to `/grill-me`; do not publish an implementation-ready spec from a partial interview. If the user changes workflow or terminology during grilling, resume the product-decision frontier afterward.
 
-The issue tracker should have been provided to you. Follow its publishing conventions; do not assume a local filename in the skill. The tracker is local Markdown, as defined in the workflow's `context/issue-tracker.md`. If revising an already-published spec for this work, update that tracker entry using the live conversation.
+The issue tracker should have been provided to you. Follow its publishing conventions; do not assume a local filename in the skill. The tracker is local Markdown in the game's `.scratch/`, as defined in `.agents/context/issue-tracker.md`. The spec starts with a `**Repo:**` line naming the game's repo. If revising an already-published spec for this work, update that tracker entry using the live conversation.
 
 ## Process
 
-1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the spec, and respect the decisions in the domain docs in the area you're touching.
+1. Explore the game's repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the spec, and respect the decisions in the domain docs in the area you're touching.
 
 2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
 

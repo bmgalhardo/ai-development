@@ -8,14 +8,14 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 
 ## Steps
 
-1. **Gather the cycle.** Default to the latest cycle in the issue tracker unless the user names another. Read its spec, every issue (with its `## Comments`: the implementer's choices and open questions), its `review.md`, and the commits made for it (`git log` over the cycle's dates).
+1. **Gather the cycle.** Default to the current game's latest cycle unless the user names another. Read its spec, every issue (with its `## Comments`: the implementer's choices and open questions), its `review.md`, and the commits made for it in the game's repo (`git -C <repo> log` over the cycle's dates).
 
 2. **Read the sessions.** A cycle spans several sessions: the refinement, then one per issue. Run `python3 .agents/skills/retro/digest.py --since <first day of the cycle>` for a compact digest of each one: the user's messages, the skills invoked, and the denied or failed tool calls. Read the full log of a session (its path is in the digest's header) only where the digest shows something worth a closer look. Logs are deleted after about 30 days, so a retro belongs soon after the build.
 
 3. **Look for candidates** in these categories.
 
-- **Skills**: did a skill do the wrong thing, miss a step, ask the user something it shouldn't (implementation runs without the user), or get worked around? Did the refinement leave a question that implementation then had to guess? Did a spec or issue lack what the implementer needed? _Use when_ the cycle's sessions show friction at a skill's step. The fix is an edit to that skill. Skills live in the workflow repo (`../game-development/skills/`), shared by every project: say so when a change would affect the others, and commit it there.
-- **Workflow**: was a step of the cycle missing, in the wrong order, or done twice? _Use when_ the cycle itself caused rework. The fix is an edit to the workflow doc (`../game-development/context/workflow.md`), or to the project's own context when only this project is affected.
+- **Skills**: did a skill do the wrong thing, miss a step, ask the user something it shouldn't (implementation runs without the user), or get worked around? Did the refinement leave a question that implementation then had to guess? Did a spec or issue lack what the implementer needed? _Use when_ the cycle's sessions show friction at a skill's step. The fix is an edit to that skill. Skills live in this workflow repo (`.agents/skills/`), shared by every game: say so when a change would affect the others, and commit it here.
+- **Workflow**: was a step of the cycle missing, in the wrong order, or done twice? _Use when_ the cycle itself caused rework. The fix is an edit to `.agents/context/workflow.md`, or to the game's own context (committed in its repo) when only that game is affected.
 - **Navigation**: how easy was it for the agent to find the right files? Are there hidden dependencies between files? Would a **navigation pointer** make it easier? _Use when_ a session took a long time to find a piece of information.
 - **Automated checks**: are there checks that could catch errors the agent made? Read the project's own check command first, so a check that exists but is unwired or broken is the finding, not a reinvention. _Use when_ the agent made a mistake a check could have caught.
 - **Coding standards**: should the **reviewer** (`code-review`) be given a new rule, or an existing rule removed or clarified? A **mechanical** violation (a fixed pattern, a banned API, a file-location rule) gets a deterministic check instead. Keep written standards for genuine **judgement calls**. _Use when_ the review failed to catch a mistake.
@@ -34,8 +34,8 @@ All work goes through two stages: implementation and review. The implementation 
 
 ### Files
 
-- `AGENTS.md` (and `CLAUDE.md`, a link to it): loaded into every agent's context. Use it sparingly, mostly for **navigation pointers** to other files.
-- Skills (`../game-development/skills/`, linked into each project as `.agents/skills/`): their descriptions are always in context, their bodies only when used. Keep each one to the steps of its stage; project details belong in the docs they point to.
+- `AGENTS.md` (and `CLAUDE.md`, a link to it), here and in each game: loaded into every agent's context. Use it sparingly, mostly for **navigation pointers** to other files.
+- Skills (this repo's `.agents/skills/`): their descriptions are always in context, their bodies only when used. Keep each one to the steps of its stage; project details belong in the docs they point to.
 - Docs: reference files, pointed to by other files. Look for an existing doc before writing a new one.
 - `CODING_STANDARDS.md`, if it exists: read during review, not implementation.
 
