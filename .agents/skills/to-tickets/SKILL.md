@@ -79,7 +79,9 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 
 **Touches:** the main modules and docs this ticket changes, by name, so tickets that don't overlap can be built at the same time.
 
-**Mock:** the mock file, by its path from the workflow repo's root (`.scratch/<game>/exploration/cycle/mocks/...`), and the variant the user picked, if the ticket has a look (the agreed design; the implementer matches it).
+**Spec:** a link to the spec (`../spec.md`) and the sections this ticket relies on, by heading.
+
+**Mock:** if the ticket has a look: the mock file, by its path from the workflow repo's root (`.scratch/<game>/exploration/cycle/mocks/...`), the variant the user picked, and only the parts this ticket builds, each with where it is in the file (line ranges or element ids, and its CSS rules). The mock is the agreed design; the implementer matches it.
 
 **Assets:** each agreed asset this ticket brings into the game, by its path in `.scratch/<game>/exploration/cycle/assets/` (made in the review; the implementer copies it in, never remakes it).
 
@@ -90,5 +92,7 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 - [ ] The docs updated for what this builds, in the same commit
 
 </ticket-template>
+
+Keep each ticket self-contained: a worker starts from a fresh context and reads only the ticket and what it points to, so point to sections and parts, never to whole files.
 
 Avoid specific file paths or code snippets: they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
