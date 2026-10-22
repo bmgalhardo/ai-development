@@ -10,8 +10,9 @@ commands.
   `artifacts/godot/`. Its engineering doc names the version.
 - `/snap/bin/godot-4` is the .NET build. It runs projects but **cannot
   export Web**.
-- Headless Firefox has no WebGL2 here, so it can't check a Web build. The
-  desktop Compatibility renders are the local check.
+- Headless Firefox has no WebGL2 here. Check a Web build in Playwright's
+  headless Chromium (below), which renders with software WebGL. It is
+  slow: report its times as this machine's, not the phone's.
 
 ## Python
 
@@ -20,6 +21,9 @@ commands.
   `uv run --project tools python tools/<script>.py`.
 - If a venv's Python fails to start ("No module named 'encodings'", after a
   Python upgrade), run `uv sync --project tools` again.
+- The system Python has no PIL. To read or convert images, use a uv
+  venv with pillow: `uv venv ~/.cache/img-venv`, then
+  `uv pip install -p ~/.cache/img-venv/bin/python pillow`.
 - `/tmp` is small. Put venvs and downloads under `~/.cache/` or the
   scratchpad.
 
@@ -35,7 +39,11 @@ commands.
   (Xvfb only looks for `/usr/bin/xkbcomp`), with
   `LD_LIBRARY_PATH=root/usr/lib/x86_64-linux-gnu` and `Xvfb :77 -screen 0
   1280x1024x24 +extension GLX -xkbdir root/usr/share/X11/xkb`. Then
-  `DISPLAY=:77`. Needs the sandbox off.
+  `DISPLAY=:77`. It runs with the sandbox on.
+- A launcher for it already exists: run `unshare -r -m
+  ~/.cache/xvfb/start.sh` in the background, then use `DISPLAY=:77`.
+  Background commands are killed at their time limit: if `:77` is gone,
+  start it again.
 - **Web pages:** no browser is installed. Screenshot a page in Playwright's
   Chromium: `uv venv ~/.cache/pw-venv`, `uv pip install -p
   ~/.cache/pw-venv/bin/python playwright`, then
@@ -52,6 +60,8 @@ Merge the branch and `git worktree remove` it when done.
 
 ## Shell
 
+- Wait for a long run with `run_in_background`, not `sleep`: a chained
+  `sleep` is blocked. Give the run a `timeout` above its expected time.
 - `pkill -f <pattern>` kills the shell itself if the pattern appears in
   the command line.
 

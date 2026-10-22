@@ -34,6 +34,7 @@ Break the work into **tracer bullet** tickets.
 - A completed slice is demoable or verifiable on its own
 - Each slice is sized to fit in a single fresh context window
 - Any prefactoring should be done first
+- A spec's performance target is measured in the first slice that builds the hot path, against the target, as an acceptance criterion. It extrapolates from a sample rather than timing a full worst-case run, and records the result in Comments
 - A slice includes the docs for what it builds: it copies its part of the spec's agreed text into the docs in the same commit, so the docs never run ahead of the build
 
 </vertical-slice-rules>
@@ -78,7 +79,7 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 
 **Touches:** the main modules and docs this ticket changes, by name, so tickets that don't overlap can be built at the same time.
 
-**Mock:** the mock file and the variant the user picked, if the ticket has a look (the agreed design; the implementer matches it).
+**Mock:** the mock file, by its path from the workflow repo's root (`.scratch/<game>/exploration/cycle/mocks/...`), and the variant the user picked, if the ticket has a look (the agreed design; the implementer matches it).
 
 **Assets:** each agreed asset this ticket brings into the game, by its path in `.scratch/<game>/exploration/cycle/assets/` (made in the review; the implementer copies it in, never remakes it).
 

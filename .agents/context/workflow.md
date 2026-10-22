@@ -158,9 +158,9 @@ configuration. There is no orchestrator. Each worker:
 - sets the issue `done`, or `blocked` with its commits reverted.
 
 The state lives in the issue files (`issue-tracker.md`), so the loop can
-be stopped and started again. An issue left `in progress` is restarted
-from its `Base:`. A usage limit waits and retries; an issue that fails
-twice stops the loop. Each worker's log is in this repo's
+be stopped and started again. An issue left `in progress` is resumed: its
+commits past `Base:` are kept if the checks pass (`implement`, step 1). A
+usage limit waits and retries; an issue that fails twice stops the loop. Each worker's log is in this repo's
 `artifacts/work/<game>/`, ignored in git.
 
 `/implement` also works alone, in a top-level session.
@@ -173,8 +173,10 @@ A worker does the build issue like any other:
    screenshots. Copy the ones that show the change to `docs/img/` as JPEGs.
 3. Package the game for publishing (the engineering doc).
 4. Write the cycle's `review.md`: the game version and date, what changed
-   to try (with the screenshots), the implementer's choices, and open
-   questions.
+   to try (with the screenshots), the implementer's choices, open
+   questions, and **Code debt**: the files past the coding standards'
+   limits, with their size, and the review findings deferred as a later
+   refactor. The next refinement can ticket a refactor from it.
 5. Update `.agents/context/status.md` (where things stand).
 6. Commit, and close the build issue.
 

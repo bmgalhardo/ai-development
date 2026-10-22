@@ -30,7 +30,8 @@ game is the session's game (`AGENTS.md`).
   `in progress` (a worker claimed it), then `done`; or `blocked` (it
   couldn't go green; its commits are reverted and `## Comments` says why).
   An issue left `in progress` means its worker died: the next worker
-  resets its repo to its `Base:` and starts it again.
+  keeps its commits past `Base:` if the checks pass and resumes it, or
+  resets to `Base:` and starts again if they fail.
 - An issue is **ready** when it's `open` and every issue in its `Blocked by`
   is `done`. The build issue is ready when every other issue is `done` or
   `blocked`.
