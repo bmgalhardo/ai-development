@@ -87,9 +87,9 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 
 **Spec:** a link to the spec (`../spec.md`) and the sections this ticket relies on, by heading.
 
-**Mock:** if the ticket has a look: the mock file, by its path from the workflow repo's root (`.scratch/<game>/exploration/cycle/mocks/...`), the variant the user picked, and only the parts this ticket builds, each with where it is in the file (line ranges or element ids, and its CSS rules). The mock is the agreed design; the implementer matches it.
+**Mock:** if the ticket has a look: the mock file, by its path from the workflow repo's root (`.scratch/<game>/<cycle>/mocks/...`), the variant the user picked, and only the parts this ticket builds, each with where it is in the file (line ranges or element ids, and its CSS rules). The mock is the agreed design; the implementer matches it.
 
-**Assets:** each agreed asset this ticket brings into the game, by its path in `.scratch/<game>/exploration/cycle/assets/` (made in the review; the implementer copies it in, never remakes it).
+**Assets:** each agreed asset this ticket brings into the game, by its path in `.scratch/<game>/<cycle>/assets/` (made in the review; the implementer copies it in, never remakes it).
 
 **Docs to write:** each doc file this ticket updates, with the agreed text to put there, written as built. The implementer copies it in with the code.
 

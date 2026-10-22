@@ -17,18 +17,25 @@ user names it (`AGENTS.md`).
 - `.agents/context/engineering.md`: Godot version, code map, the check
   command, tests and captures, test boundaries, build and packaging,
   gotchas. Only what is true of this game: the machine's tools and how to
-  publish on a host are the workflow's (`machine.md`, `publishing/`).
+  publish are the workflow's (`machine.md`, `games-server.md`).
 - `.agents/context/decisions.md`: the iteration log of what the user
   asked for, liked and rejected, newest first.
 - `.agents/context/status.md`: what's built, agreed and next.
-- `.agents/context/publishing.md`: the outputs, their prepared files and
-  destinations on each host (once there is something to publish). The
-  review board has no prepared files in the game; give its name and
-  destinations.
+- `.agents/context/publishing.md`: the outputs and their prepared folders
+  (once there is something to publish), as a table whose rows start
+  `| game | \`<folder>/\`` or `| docs | \`<folder>/\``. The mocks are
+  published from outside the game; don't list them.
 - `docs/`: the user's docs; `docs/README.md` says what's where.
+  `docs/review.md` is the current build's review (written by the build
+  issue), second in the nav. `docs/direction/` holds what the review
+  agrees beyond a cycle: art direction, type, references, research
+  (direction, not built; `README.md` first, images in `img/`).
+- `mkdocs.yml`: the docs page, built with MkDocs and the Material theme
+  into `artifacts/docs-site/`, the `docs` output. It names the site, sets
+  `site_dir: artifacts/docs-site`, lists every doc in `nav` and turns on
+  `validation` (omitted files, links, anchors) as warnings. The check
+  command builds it with `uvx --from mkdocs==1.6.1 --with
+  mkdocs-material==9.7.7 mkdocs build --strict`, so a broken link or a doc
+  missing from the nav fails the check.
 - `CODING_STANDARDS.md` only when the game departs from this repo's.
 - `.gitignore` covering `artifacts/`.
-
-The game's review board settings (its name, extra sections from the
-game's repo, its own pages) are in the workflow's
-`.scratch/<game>/exploration/page/board.json` (`tools/review/render_review.py`).

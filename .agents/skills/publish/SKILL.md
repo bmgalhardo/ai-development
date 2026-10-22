@@ -1,18 +1,13 @@
 ---
 name: publish
-description: "Publish the cycle's build (the game, and the docs page if the project has one) after the workers finished."
+description: "Publish the cycle's build (the game, the docs page with its review, and the mocks) to the games server after the workers finished."
 disable-model-invocation: true
 ---
 
 Publish the latest cycle's build as the automatic final step after the
-workers (`tools/work.sh`) prepare it, for the game the build issue's `Repo:` names. The host session selects the route
-from the active app (`.agents/context/publishing/chatgpt.md` for ChatGPT Sites, `claude.md` for Claude Artifacts),
-independent of whether Codex or Claude wrote the code. If the last issue
-worker has the required native publishing tools, it may publish directly;
-otherwise the host session runs this skill immediately when the worker
-loop exits. Never wait for the user to type `/publish` or ask the user
+workers (`tools/work.sh`) prepare it, for the game the build issue's `Repo:` names. Claude and Codex publish the same way (`.agents/context/games-server.md`). Never wait for the user to type `/publish` or ask the user
 anything.
 
 1. **Check it's ready.** `python3 tools/workers/next_issue.py ../<game> --status`: every issue is `done` or `blocked`, and the build issue is `done`. If not, say which issue is left and stop.
-2. **Publish each output.** The game's publishing doc (`../<game>/.agents/context/publishing.md`) lists the outputs (the game, usually a docs page and a review board), the prepared files for each and their destinations. Build the review board with `python3 tools/review/render_review.py ../<game>`. Publish each one using the selected host's instructions, reusing its destination. A docs page is a view of the Markdown.
-3. **Verify and report.** Verify success and return each output's link, what was built, every blocked issue with why, and the open questions from `review.md`. Keep it short. Local files alone do not count as publication; report any actual publishing blocker.
+2. **Publish.** `python3 tools/publish/publish.py ../<game>`. It uploads each output the game's publishing doc lists, and the mocks. If it stops on a missing output, prepare it (the game's engineering doc) and run it again.
+3. **Report.** Return the links it printed, what was built, every blocked issue with why, and the open questions from the game's `docs/review.md`. Keep it short. Report any upload error as the blocker; local files alone are not a publication.

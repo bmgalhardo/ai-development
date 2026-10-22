@@ -15,7 +15,7 @@ The domain doc should have been provided to you. It says which docs hold the pro
 
 When used during `grill-me`, this skill is conversational only: discuss
 terms and decisions in chat, and skip all file-writing instructions below.
-Review records feedback in `review.md`; `to-spec` later reads the live
+Review records feedback in `feedback.md`; `to-spec` later reads the live
 conversation and publishes the spec. Outside grilling, follow the domain
 context's rules for where and when to persist changes.
 
@@ -25,7 +25,7 @@ When the user uses a term that conflicts with the existing language in the gloss
 
 ### Prefer the user's words
 
-Before proposing a canonical term, look for the user's own word in the review's Feedback and the docs. If they already use one, it's the term.
+Before proposing a canonical term, look for the user's own word in the cycle's `feedback.md` and the docs. If they already use one, it's the term.
 
 ### Sharpen fuzzy language
 
@@ -47,7 +47,7 @@ The glossary should be totally devoid of implementation details. Do not treat th
 
 ### Write decisions down as they settle
 
-Outside grilling, write settled decisions where the domain doc says. In this repo, review feedback and accepted choices go only into `review.md` under Feedback. During `grill-me`, keep them in chat without writing anything. `to-spec` turns the live conversation into the tracker spec, naming the doc file each decision will change. The docs themselves describe only what's built, and the issue that builds a decision writes it into them.
+Outside grilling, write settled decisions where the domain doc says. In this repo, review feedback and accepted choices go only into the cycle's `feedback.md`. During `grill-me`, keep them in chat without writing anything. `to-spec` turns the live conversation into the tracker spec, naming the doc file each decision will change. The docs themselves describe only what's built, and the issue that builds a decision writes it into them; the exception is `docs/direction/`, which the review writes (art direction, references, research), labelled direction.
 
 Record the *why* sparingly: only when all three are true:
 

@@ -12,10 +12,13 @@ game is the session's game (`AGENTS.md`).
 - One cycle per folder: `.scratch/<game>/<YYYY-MM-DD>-<slug>/`, dated
   the day it starts, the slug naming the change. Folders sort by date, and
   the latest is the current cycle.
+- A cycle runs from the review that starts it to its build. The review
+  session creates the folder and writes `feedback.md`, `mocks/` and
+  `assets/` in it; the refinement adds `spec.md` and `issues/`.
 - `/to-spec` publishes the spec to `<cycle>/spec.md` from the live
   conversation. This filename is our local tracker's convention, not a
   prerequisite or a filename imposed by the skill. Review records feedback
-  and accepted choices in `review.md`; `/grill-me` writes nothing. There
+  and accepted choices in `feedback.md`; `/grill-me` writes nothing. There
   is no persisted interview handoff between them.
 - Issues are one file per issue at `<cycle>/issues/<NN>-<slug>.md`,
   numbered from `01` in dependency order, never one combined file.
@@ -23,9 +26,10 @@ game is the session's game (`AGENTS.md`).
   (`**Repo:** ../<game>`, relative to this workflow repo). Workers
   run here, where the skills are, and do all the issue's work in that
   repo: code, docs, checks and commits (`git -C <repo>`).
-- The last issue of every cycle is the build: it writes the cycle's
-  `review.md` (see `workflow.md`). The review session then adds a
-  `## Feedback` section to it, which the next `/grill-me` starts from.
+- The last issue of every cycle is the build: it writes the game's
+  `docs/review.md` (see `workflow.md`), published with the docs. The
+  review session then writes the cycle's `feedback.md`, which the next
+  `/grill-me` starts from.
 - Each issue file has a `Status:` line near the top: `open`, then
   `in progress` (a worker claimed it), then `done`; or `blocked` (it
   couldn't go green; its commits are reverted and `## Comments` says why).
@@ -47,9 +51,10 @@ game is the session's game (`AGENTS.md`).
   entries into the next cycle during ticketing.
 - Comments and history go at the bottom of the file under `## Comments`.
 - Link to the game's files by path relative to the linking file: from a
-  cycle's `review.md` or `spec.md`, `../../../../<game>/docs/<file>.md`;
+  cycle's `feedback.md` or `spec.md`, `../../../../<game>/docs/<file>.md`;
   from an issue, `../../../../../<game>/docs/img/<name>.jpg`. Link to the
-  spec as `../spec.md`. The review board copies linked images.
+  spec as `../spec.md`. The game's `docs/review.md` links only inside
+  `docs/` (never to `.scratch/`): the docs build fails on any other link.
 - `.scratch/` is working material. What lasts goes to the game's `docs/`
   (when built), its `.agents/context/decisions.md` and its code.
 

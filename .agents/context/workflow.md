@@ -8,8 +8,8 @@ to change over time, mostly through `/retro`.
 
 This repo holds what every game shares: this cycle, the issue tracker
 (`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`), the
-review board (`tools/review/render_review.py`), the machine's tools
-(`machine.md`), how to publish on each host (`publishing/`) and the
+publisher (`tools/publish/publish.py`), the machine's tools
+(`machine.md`), how to publish (`games-server.md`) and the
 default coding standards. It also holds each game's cycles and
 explorations, in `.scratch/<game>/` (not in git). Every session and
 worker runs here. Each game is an independent repo beside this one
@@ -23,16 +23,18 @@ game's work on the game itself, commits included, happens in its repo.
 |---|---|---|
 | The user's docs | the game's `docs/` | Each issue (grilling's glossary terms: to-spec) |
 | Screenshots the docs show | the game's `docs/img/` | The build issue |
-| A cycle: review, spec, issues | `.scratch/<game>/<YYYY-MM-DD>-<slug>/` here | See below |
-| Mocks and assets in the making | `.scratch/<game>/exploration/` here | Review |
+| The current build's review | the game's `docs/review.md` | The build issue |
+| Direction: art direction, references, research | the game's `docs/direction/` | Review |
+| A cycle: feedback, mocks, assets, spec, issues | `.scratch/<game>/<YYYY-MM-DD>-<slug>/` here | See below |
 | The game | the game's code folders (its engineering doc) | Implementation |
 | The game's agent context | the game's `.agents/context/` | See `project-setup.md` |
 
 So `docs/` describes what's built, the cycle's spec holds the design
 choices agreed and not built yet, and the published game is the build.
-Two things in `docs/` aren't built, by design: the glossary (terms settled
-in grilling go in at `/to-spec`) and the user's direction and ideas,
-labelled as such ("direction, not built", "liked, not built", "parked").
+Three things in `docs/` aren't built, by design: the glossary (terms
+settled in grilling go in at `/to-spec`), `docs/direction/` (written in
+review) and the user's direction and ideas elsewhere, labelled as such
+("direction, not built", "liked, not built", "parked").
 An agreed design choice is never written there as "(agreed, not built)".
 Each issue writes the docs for what it builds, in the same commit, so the
 docs never run ahead of the game.
@@ -42,11 +44,9 @@ docs never run ahead of the game.
 Publishing updates the persistent, user-accessible version, verifies
 success, and returns its link. Generating local files is preparation.
 The game's publishing doc (`.agents/context/publishing.md`) lists its
-outputs (the game, a docs page, a review board), their prepared files and
-destinations. How to publish on the active host is in this repo's
-`publishing/` (`claude.md` or `chatgpt.md`): pick by the app and its
-tools, not the model name. The review board is built here with
-`python3 tools/review/render_review.py ../<game>`.
+outputs (the game, a docs page) and their prepared folders. Every host
+publishes them, with the cycle's mocks, to the games server with
+`python3 tools/publish/publish.py ../<game>` (`games-server.md`).
 
 ## 1. Review session (brainstorming or QA)
 
@@ -56,8 +56,9 @@ skill.
 - **Brainstorming:** a new game, or a new direction. Research the
   competition, interview the user in rounds of a few multiple-choice
   questions, recommend rather than survey, and let ideas be dropped.
-- **QA:** the user plays the published build and reads the cycle's
-  `review.md`, which says what changed and lists open questions. They
+- **QA:** the user plays the published build and reads the Review page
+  of its docs (`docs/review.md`), which says what changed and lists open
+  questions. They
   say what they saw, what to change, and new features.
 
 Build mocks for the user to see while the feedback is fresh: when a
@@ -66,27 +67,33 @@ just that part, without the game, with the open choices as variants to
 switch between. When there is a game, show its current UI around it at
 its real places, as flat stand-ins, so the mock shows what the change
 bumps into. A mock lives in
-`.scratch/<game>/exploration/cycle/mocks/<YYYY-MM-DD>-<slug>/` (its
+the cycle's `mocks/<YYYY-MM-DD>-<slug>/` (its
 `index.html`, images, the scripts that made them, a README), labelled as a
-mockup, and goes on the game's review board. The user
+mockup. Publishing puts it on the game's Mocks page. The user
 lands the design on the mock, and the refinement starts from what they
 chose.
 
 Make the assets in the review too, with the user, so each round is
 minutes, not a cycle: textures, sprites, icons, sounds and other art.
-They live in `.scratch/<game>/exploration/cycle/assets/`, with their source
+They live in the cycle's `assets/`, with their source
 scripts, for the user to iterate on. What the user agrees is what the
 implementation brings into the game; the spec names each asset.
 
 Never change the game or the docs in a review: points that change them go
-into the Feedback, for the refinement and the implementation.
+into the Feedback, for the refinement and the implementation. The one
+exception is `docs/direction/`: what lasts beyond the cycle (the art
+direction, the type, references, research) goes there as the user agrees
+it, labelled direction, and is committed in the game's repo. Keep its
+pages in the docs nav. A mock or an asset in the making stays in the
+cycle; the direction page links nothing in `.scratch/`, so copy any image
+it shows into `docs/direction/img/`.
 
-As it goes, write the user's points into the cycle's `review.md` under
-`## Feedback`: their notes in their words, the ideas, the research, and
-anything explored, agreed or dropped. In a brainstorm with no build yet,
-start the cycle's folder in `.scratch/<game>/` and its `review.md`
-yourself. Review records
-feedback and accepted choices only in `review.md`; it never creates or
+Each review starts the next cycle: create its folder in
+`.scratch/<game>/` (dated today, the slug naming the change) as soon as
+the review begins. As it goes, write the user's points into its
+`feedback.md`: their notes in their words, the ideas, the research, and
+anything explored, agreed or dropped. Review records
+feedback and accepted choices only in `feedback.md`; it never creates or
 updates `spec.md`, even when a design is approved. Before the session
 ends, read the Feedback back to the user and confirm it's complete. The
 next grill session may start fresh or continue this conversation: the
@@ -99,7 +106,7 @@ Keep the live conversation from grilling through `/to-spec` and
 is no persisted file carrying the interview into `/to-spec`.
 
 1. `/grill-me` interviews the user in rounds. Its primary input is the
-   latest `review.md`, especially Feedback, with the domain docs as
+   latest `feedback.md`, with the game's `docs/review.md` and the domain docs as
    context. It works whether or not the review conversation is still
    present. Keep the design tree, terms, decisions and open questions in
    chat. **Write nothing:** no spec, review updates, glossary, decision
@@ -137,7 +144,7 @@ After `/to-tickets`, the user runs `tools/work.sh` here (for the current
 game, or `tools/work.sh ../<game>`) and leaves. Nobody asks the user anything until
 the build is published: choices, open questions and declined review
 findings go into the issues' `## Comments`, and the build issue collects
-them into `review.md` for the next review.
+them into the game's `docs/review.md` for the next review.
 
 `work.sh` runs independent workers: for each ready issue
 (`next_issue.py`), one fresh worker at a time, until no issue is ready.
@@ -153,7 +160,7 @@ service. Each worker:
   issue;
 - builds to the issue, the spec and the mock it names (the mock is the
   agreed design), bringing in the agreed assets the issue names from
-  `.scratch/<game>/exploration/cycle/assets/` (copied into the game, with their
+  the cycle's `assets/` (copied into the game, with their
   scripts into the game's tools), not making new ones;
 - writes the issue's `Docs to write` in the same commit as the code;
 - runs `/code-review` once and fixes once (`implement`, step 10);
@@ -176,27 +183,27 @@ A worker does the build issue like any other:
 2. Render the project's captures into the scratchpad and look at the
    screenshots. Copy the ones that show the change to `docs/img/` as JPEGs.
 3. Package the game for publishing (the engineering doc).
-4. Write the cycle's `review.md`: the game version and date, what changed
+4. Write the game's `docs/review.md`, replacing the last cycle's: the game version and date, what changed
    to try (with the screenshots), the implementer's choices, open
    questions, and **Code debt**: files beyond the coding standards'
    size warnings, with their size, and the review findings deferred as a later
    refactor. Read every issue's Comments and the cycle's `debt.md`, including
    unresolved findings carried from earlier cycles. The next refinement
-   can ticket a refactor from it.
+   can ticket a refactor from it. Its links stay inside `docs/`: name
+   issues by number, never link into `.scratch/`.
 5. Update `.agents/context/status.md` (where things stand).
 6. Commit, and close the build issue.
 
 As soon as the worker loop finishes, the active host session runs
-`/publish` automatically. The coding CLI (`WORK_AGENT`) does not select
-the publishing destination. The cycle is complete only after every
-output's deployment is verified and its link returned. That published
+`/publish` automatically. The cycle is complete only after every
+output is on the games server and its link returned. That published
 build is the next review.
 
 ## 5. Retro
 
 Soon after the build (the session logs are kept about 30 days), run
 `/retro` in a new session here. It reads the cycle (spec,
-issues and their comments, `review.md`, the game's commits) and a digest
+issues and their comments, `feedback.md`, the game's `docs/review.md` and commits) and a digest
 of the cycle's sessions, and suggests changes to the skills, this
 workflow, the game's context and its checks. The user picks which to
 make. A change to a skill or to this workflow is committed here and

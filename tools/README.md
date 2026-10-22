@@ -6,7 +6,7 @@ Keep the root `work.sh` as the stable worker entry point.
 | Folder | Responsibility | Command from the repo root |
 |---|---|---|
 | `workers/` | Provider selection, issue readiness, cooldowns, recovery and attempt records | `tools/work.sh ../<game>` |
-| `review/` | Review-board rendering, debt inclusion and the HTML template | `python3 tools/review/render_review.py ../<game>` |
+| `publish/` | Upload to the games server and its menu pages | `python3 tools/publish/publish.py ../<game>` |
 
 Inspect issue status without starting a worker:
 
@@ -18,7 +18,7 @@ Run the tests for the folder being changed:
 
 ```bash
 python3 -m unittest discover -s tools/workers -t .
-python3 -m unittest discover -s tools/review -t .
+python3 -m unittest discover -s tools/publish -t .
 ```
 
 Run all tool tests after changes spanning folders:

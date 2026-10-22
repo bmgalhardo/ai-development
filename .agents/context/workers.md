@@ -77,5 +77,5 @@ Workers record deferred findings in the cycle's `debt.md` and keep their source 
 Relevant small prefactors can be committed before a feature.
 Wider changes require their own approved ticket.
 File size warnings require a recorded disposition, not an automatic refactor.
-The build gathers unresolved debt into `review.md`.
+The build gathers unresolved debt into the game's `docs/review.md`.
 Ticketing carries unresolved entries to the next cycle and assigns relevant work explicitly.
