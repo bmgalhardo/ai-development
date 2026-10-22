@@ -183,7 +183,7 @@ A worker does the build issue like any other:
 2. Render the project's captures into the scratchpad and look at the
    screenshots. Copy the ones that show the change to `docs/img/` as JPEGs.
 3. Package the game for publishing (the engineering doc).
-4. Write the game's `docs/review.md`, replacing the last cycle's: the game version and date, what changed
+4. Write the game's `docs/review.md`, replacing the last cycle's: the game version and date (the title), `[TOC]` on its own line before the first section, what changed
    to try (with the screenshots), the implementer's choices, open
    questions, and **Code debt**: files beyond the coding standards'
    size warnings, with their size, and the review findings deferred as a later
