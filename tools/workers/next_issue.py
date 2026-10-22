@@ -17,7 +17,7 @@ from pathlib import Path
 import re
 import sys
 
-WORKFLOW = Path(__file__).resolve().parents[1]
+WORKFLOW = Path(__file__).resolve().parents[2]
 STATUS = re.compile(r"^\*\*Status:\*\*\s*(.+?)\s*$", re.M)
 BLOCKED_BY = re.compile(r"^\*\*Blocked by:\*\*\s*(.+?)\s*$", re.M)
 
@@ -51,6 +51,8 @@ def read_issues(cycle):
 
 
 def next_issue(issues):
+    if not issues:
+        return None
     for issue in issues.values():
         if issue["status"] == "in progress":
             return issue

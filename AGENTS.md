@@ -29,12 +29,14 @@ that game. Paths in a game's files are relative to that game's root.
   display, Blender on hephaestus) and their gotchas.
 - `.agents/context/publishing/`: how to publish on each host (`claude.md`,
   `chatgpt.md`). A game lists only its outputs and destinations.
-- `tools/render_review.py`: builds a game's review board from
+- `tools/review/render_review.py`: builds a game's review board from
   `.scratch/<game>/`.
 - `.agents/skills/`: the skills, adapted from Matt Pocock's
   (https://github.com/mattpocock/skills).
-- `tools/work.sh`: the worker loop; `tools/next_issue.py`: the next
+- `tools/work.sh`: the worker loop; `tools/workers/next_issue.py`: the next
   ready issue. Both take the game as an argument (`../<game>`).
+- `tools/README.md`: tool folders, entry points and focused test commands.
+- `.agents/context/roadmap.md`: worker improvements, completed steps and next increments.
 - `CODING_STANDARDS.md`: the default standards (Clean Code for Godot),
   for a game without its own.
 

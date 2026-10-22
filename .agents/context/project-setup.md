@@ -31,4 +31,4 @@ user names it (`AGENTS.md`).
 
 The game's review board settings (its name, extra sections from the
 game's repo, its own pages) are in the workflow's
-`.scratch/<game>/exploration/page/board.json` (`tools/render_review.py`).
+`.scratch/<game>/exploration/page/board.json` (`tools/review/render_review.py`).

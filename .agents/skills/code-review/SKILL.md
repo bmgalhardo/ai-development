@@ -59,6 +59,10 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 
 ### 4. Spawn both sub-agents in parallel
 
+If the user or worker prompt supplies a review model, request that model for both sub-agents using the host's supported model selector.
+If it cannot be selected, report the limitation and the model actually used; never claim the requested model ran without evidence.
+Otherwise inherit the implementation session's model.
+
 **Standards sub-agent prompt** should include:
 
 - The full diff command and commit list.

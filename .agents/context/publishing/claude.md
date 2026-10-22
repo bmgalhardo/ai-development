@@ -17,7 +17,7 @@ the link.
 - **Docs page:** include `img/`. Comments (composer only) and "Send to
   Claude" reach a watching session. Edit the Markdown, not the generated
   page.
-- **Review board:** build it with `python3 tools/render_review.py ../<game>`;
+- **Review board:** build it with `python3 tools/review/render_review.py ../<game>`;
   the prepared files are this repo's `artifacts/review/<game>/`. Include
   `assets/`, `img/` and the mock pages. No comment buttons or declared
   capabilities.

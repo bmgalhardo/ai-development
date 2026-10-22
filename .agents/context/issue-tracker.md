@@ -30,8 +30,8 @@ game is the session's game (`AGENTS.md`).
   `in progress` (a worker claimed it), then `done`; or `blocked` (it
   couldn't go green; its commits are reverted and `## Comments` says why).
   An issue left `in progress` means its worker died: the next worker
-  keeps its commits past `Base:` if the checks pass and resumes it, or
-  resets to `Base:` and starts again if they fail.
+  preserves its commits and unfinished changes, reads `## Progress`,
+  and repairs failing checks before continuing.
 - An issue is **ready** when it's `open` and every issue in its `Blocked by`
   is `done`. The build issue is ready when every other issue is `done` or
   `blocked`.
@@ -39,6 +39,12 @@ game is the session's game (`AGENTS.md`).
   the issue started from, for its review. `Touches:` (written by
   `/to-tickets`) names the main modules and docs it changes, so issues
   that don't overlap can run at once.
+- `## Progress` records the last completed implementation step, commit, checks,
+  reviewed commit and remaining work for recovery.
+- A cycle's `debt.md` carries deferred review findings: affected files,
+  suggested change, source issue and disposition (`open`, `assigned`,
+  `resolved` with commit, or `accepted` with reason). Carry unresolved
+  entries into the next cycle during ticketing.
 - Comments and history go at the bottom of the file under `## Comments`.
 - Link to the game's files by path relative to the linking file: from a
   cycle's `review.md` or `spec.md`, `../../../../<game>/docs/<file>.md`;
@@ -56,4 +62,4 @@ if needed, with its `Repo:` line.
 
 Read the file at the referenced path. The user will normally pass the path
 or the issue number directly; a bare number means the session's game's
-current cycle. `python3 tools/next_issue.py ../<game>` finds the next ready one.
+current cycle. `python3 tools/workers/next_issue.py ../<game>` finds the next ready one.

@@ -13,6 +13,6 @@ otherwise the host session runs this skill immediately when the worker
 loop exits. Never wait for the user to type `/publish` or ask the user
 anything.
 
-1. **Check it's ready.** `python3 tools/next_issue.py ../<game> --status`: every issue is `done` or `blocked`, and the build issue is `done`. If not, say which issue is left and stop.
-2. **Publish each output.** The game's publishing doc (`../<game>/.agents/context/publishing.md`) lists the outputs (the game, usually a docs page and a review board), the prepared files for each and their destinations. Build the review board with `python3 tools/render_review.py ../<game>`. Publish each one using the selected host's instructions, reusing its destination. A docs page is a view of the Markdown.
+1. **Check it's ready.** `python3 tools/workers/next_issue.py ../<game> --status`: every issue is `done` or `blocked`, and the build issue is `done`. If not, say which issue is left and stop.
+2. **Publish each output.** The game's publishing doc (`../<game>/.agents/context/publishing.md`) lists the outputs (the game, usually a docs page and a review board), the prepared files for each and their destinations. Build the review board with `python3 tools/review/render_review.py ../<game>`. Publish each one using the selected host's instructions, reusing its destination. A docs page is a view of the Markdown.
 3. **Verify and report.** Verify success and return each output's link, what was built, every blocked issue with why, and the open questions from `review.md`. Keep it short. Local files alone do not count as publication; report any actual publishing blocker.

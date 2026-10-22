@@ -9,7 +9,7 @@ tools.
 The game's publishing doc lists its outputs, the prepared files for each
 and their Sites. Keep each output a separate Site. The review board's
 prepared files are this repo's `artifacts/review/<game>/`, built with
-`python3 tools/render_review.py ../<game>`. Read the installed Sites skill
+`python3 tools/review/render_review.py ../<game>`. Read the installed Sites skill
 for the current source, packaging and deployment procedure.
 
 - Use a separate source checkout and `.openai/hosting.json` for each Site.

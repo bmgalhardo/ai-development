@@ -4,7 +4,7 @@
 The board is made from this repo's `.scratch/<game>/` (gitignored):
 
 - the latest cycle (`<YYYY-MM-DD>-<slug>/`): review.md (the board opens on
-  it), spec.md and issues/;
+  it), spec.md, debt.md when present, and issues/;
 - exploration/cycle/mocks/<YYYY-MM-DD>-<slug>/: each mock's index.html, the
   images it shows, the scripts that made them and a README;
 - exploration/page/: the board's own settings (board.json), its pages as
@@ -21,13 +21,13 @@ board.json (all optional):
 root), shown after the cycle: their README first, then their files in name
 order. `pages` are the fragments in exploration/page/, shown last.
 
-The tree: This cycle (Review, Spec, Issues), Mocks (each mock's README
+The tree: This cycle (Review, Spec, Code debt, Issues), Mocks (each mock's README
 under a button that opens the mock), the sections, then the pages. Images
 the pages link to are copied under img/. Writes
 artifacts/review/<game>/index.html. Publish that folder as the game's
 review board (.agents/context/publishing/).
 
-    python3 tools/render_review.py ../<game>
+    python3 tools/review/render_review.py ../<game>
 """
 
 import argparse
@@ -39,8 +39,8 @@ import re
 import shutil
 import sys
 
-WORKFLOW = Path(__file__).resolve().parents[1]
-TEMPLATE = WORKFLOW / "tools/review_page.html"
+WORKFLOW = Path(__file__).resolve().parents[2]
+TEMPLATE = Path(__file__).with_name("review_page.html")
 HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
 LINK = re.compile(r"(!?\[[^\]]*\]\()([^)\s]+)((?:\s+\"[^\"]*\")?\))")
 EXTERNAL = re.compile(r"^([a-z]+:|#|/)")
@@ -161,9 +161,11 @@ class Board:
         cycles = sorted(p for p in self.scratch.iterdir() if re.match(r"\d{4}-\d{2}-\d{2}-", p.name) and p.is_dir())
         if cycles:
             cycle, node = cycles[-1], {"label": "This cycle", "children": []}
-            for label, name in [("Review", "review.md"), ("Spec", "spec.md")]:
+            for label, name in [("Review", "review.md"), ("Spec", "spec.md"), ("Code debt", "debt.md")]:
                 if (cycle / name).exists():
                     node["children"].append(self.add(cycle / name, name[:-3], label))
+            if "review" in self.pages and "debt" in self.pages:
+                self.include_debt()
             issues = [self.add(issue, "issues/" + issue.stem) for issue in sorted((cycle / "issues").glob("*.md"))]
             if issues:
                 node["children"].append({"label": "Issues", "children": issues})
@@ -197,6 +199,22 @@ class Board:
             self.tree.append(self.add(self.page_dir / name, name.rsplit(".", 1)[0], label))
         if self.start not in self.pages and self.pages:
             self.start = next(iter(self.pages))
+
+    def include_debt(self):
+        """Render the register in the review without maintaining a second copy."""
+        review = self.pages["review"]
+        debt = self.pages["debt"].text
+        # Drop the register's title; its body belongs under the review's section.
+        body = re.sub(r"\A\s*# [^\n]*\n", "", debt).strip()
+        section = "## Code debt\n\n" + body + "\n\n"
+        pattern = r"^## Code debt\s*\n.*?(?=^## |\Z)"
+        if re.search(pattern, review.text, re.M | re.S):
+            review.text = re.sub(pattern, lambda _: section, review.text, count=1, flags=re.M | re.S)
+        elif re.search(r"^## Feedback\s*$", review.text, re.M):
+            review.text = re.sub(r"^## Feedback\s*$", lambda m: section + m[0],
+                                 review.text, count=1, flags=re.M)
+        else:
+            review.text = review.text.rstrip() + "\n\n" + section
 
     def image_name(self, path):
         """The image's name under img/: its own, or prefixed with its folder's if taken."""

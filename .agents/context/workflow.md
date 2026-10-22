@@ -8,7 +8,7 @@ to change over time, mostly through `/retro`.
 
 This repo holds what every game shares: this cycle, the issue tracker
 (`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`), the
-review board (`tools/render_review.py`), the machine's tools
+review board (`tools/review/render_review.py`), the machine's tools
 (`machine.md`), how to publish on each host (`publishing/`) and the
 default coding standards. It also holds each game's cycles and
 explorations, in `.scratch/<game>/` (not in git). Every session and
@@ -46,7 +46,7 @@ outputs (the game, a docs page, a review board), their prepared files and
 destinations. How to publish on the active host is in this repo's
 `publishing/` (`claude.md` or `chatgpt.md`): pick by the app and its
 tools, not the model name. The review board is built here with
-`python3 tools/render_review.py ../<game>`.
+`python3 tools/review/render_review.py ../<game>`.
 
 ## 1. Review session (brainstorming or QA)
 
@@ -142,9 +142,11 @@ them into `review.md` for the next review.
 `work.sh` runs independent workers: for each ready issue
 (`next_issue.py`), one fresh worker at a time, until no issue is ready.
 The default is `codex exec` running the implementation skill;
-`WORK_AGENT=claude` selects `claude -p "/implement <issue>"`. Claude's
-per-issue budget is `WORK_BUDGET_USD` (default 15); Codex uses its CLI
-configuration. There is no orchestrator. Each worker:
+`WORK_AGENT=claude` selects Claude Code with the implementation skill.
+Claude's per-attempt budget is `WORK_BUDGET_USD` (default 15). Codex uses
+its CLI configuration. Model settings, quota fallback, recovery artifacts
+and attempt metrics are documented in `workers.md`. There is no queue
+service. Each worker:
 - runs here, with the issue's repo added to its workspace, and does all
   the issue's work in that repo;
 - claims its issue (`in progress`, with its `Base:`) and touches no other
@@ -159,9 +161,11 @@ configuration. There is no orchestrator. Each worker:
 
 The state lives in the issue files (`issue-tracker.md`), so the loop can
 be stopped and started again. An issue left `in progress` is resumed: its
-commits past `Base:` are kept if the checks pass (`implement`, step 1). A
-usage limit waits and retries; an issue that fails twice stops the loop. Each worker's log is in this repo's
-`artifacts/work/<game>/`, ignored in git.
+commits and unfinished edits are preserved, including failing work
+(`implement`, step 1). A usage limit cools down that provider and tries the
+other; the loop waits when no configured provider is available. An issue
+that fails twice stops the loop. Authentication failures stop for repair.
+Each worker's log is in this repo's `artifacts/work/<game>/`, ignored in git.
 
 `/implement` also works alone, in a top-level session.
 
@@ -174,9 +178,11 @@ A worker does the build issue like any other:
 3. Package the game for publishing (the engineering doc).
 4. Write the cycle's `review.md`: the game version and date, what changed
    to try (with the screenshots), the implementer's choices, open
-   questions, and **Code debt**: the files past the coding standards'
-   limits, with their size, and the review findings deferred as a later
-   refactor. The next refinement can ticket a refactor from it.
+   questions, and **Code debt**: files beyond the coding standards'
+   size warnings, with their size, and the review findings deferred as a later
+   refactor. Read every issue's Comments and the cycle's `debt.md`, including
+   unresolved findings carried from earlier cycles. The next refinement
+   can ticket a refactor from it.
 5. Update `.agents/context/status.md` (where things stand).
 6. Commit, and close the build issue.
 

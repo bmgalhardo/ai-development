@@ -22,6 +22,12 @@ Before drafting, verify in the live conversation that `/grill-me` reached an emp
 
 If you have not already explored the codebase, do so to understand the current state of the code. Ticket titles and descriptions should use the project's domain glossary vocabulary, and respect the decisions in the domain docs in the area you're touching.
 
+Read unresolved entries in the previous cycle's `debt.md` and its review's Code debt section.
+Carry unresolved entries into the new cycle's `debt.md`, preserving their source.
+Assign a relevant small prefactor explicitly to the ticket that needs it.
+Propose a separate ticket and blocking edges for a wide refactor needed by the planned work.
+Leave other debt open; do not silently add it to approved scope.
+
 Look for opportunities to prefactor the code to make the implementation easier. "Make the change easy, then make the easy change."
 
 ### 3. Draft vertical slices
