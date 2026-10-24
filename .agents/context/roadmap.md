@@ -1,6 +1,6 @@
 # Agentic queues roadmap
 
-Updated: 2026-10-22.
+Updated: 2026-10-24.
 This roadmap concerns the shared workflow, not a game feature cycle.
 The previous game cycle is complete.
 Future increments below are proposed work, not instructions to implement them automatically.
@@ -18,7 +18,9 @@ Treat provider quota exhaustion as an interrupted attempt, not a blocked issue.
 
 - Keep `tools/work.sh ../<game>` as the worker entry point.
 - Run one implementation at a time per game, with a per-game runner lock.
-- Prefer `WORK_AGENT`; fall back to the other installed provider on quota exhaustion.
+- Prefer `WORK_AGENT` (Claude); fall back to the other installed provider on quota exhaustion.
+- Review each issue in two parallel read-only sessions by `WORK_REVIEW_AGENT` (Codex), one per axis, then fix in a fresh implementer session.
+- Save review reports in the cycle's `reviews/`; never repeat a saved review.
 - Persist provider cooldowns and wait when both configured providers are unavailable.
 - Configure implementation models and request review models separately per provider.
 - Preserve commits and unfinished edits, including work whose checks fail.
@@ -41,7 +43,7 @@ Code is grouped by responsibility:
 These quick wins remain sequential and use the game's existing checkout and branch.
 There are no container workers, isolated attempt branches, queue service or progress dashboard yet.
 Recovery snapshots occur after an attempt ends, not periodically during execution.
-Review model selection depends on the host's selector and must be reported honestly.
+A self-review's subagent model depends on the host's selector and must be reported honestly.
 Usage records are not estimates of remaining subscription quota.
 
 ## 1. Container workers

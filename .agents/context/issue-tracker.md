@@ -31,8 +31,10 @@ game is the session's game (`AGENTS.md`).
   review session then writes the cycle's `feedback.md`, which the next
   `/grill-me` starts from.
 - Each issue file has a `Status:` line near the top: `open`, then
-  `in progress` (a worker claimed it), then `done`; or `blocked` (it
-  couldn't go green; its commits are reverted and `## Comments` says why).
+  `in progress` (a worker claimed it), then `in review` (implemented and
+  committed, waiting for its review session), then `done`; or `blocked`
+  (it couldn't go green; its commits are reverted and `## Comments` says
+  why). An issue `in review` is not `done`: its dependents wait for it.
   An issue left `in progress` means its worker died: the next worker
   preserves its commits and unfinished changes, reads `## Progress`,
   and repairs failing checks before continuing.
@@ -45,6 +47,8 @@ game is the session's game (`AGENTS.md`).
   that don't overlap can run at once.
 - `## Progress` records the last completed implementation step, commit, checks,
   reviewed commit and remaining work for recovery.
+- A cycle's `reviews/NN-standards.md` and `reviews/NN-spec.md` are an
+  issue's saved review reports, written by the worker loop for the fixer.
 - A cycle's `debt.md` carries deferred review findings: affected files,
   suggested change, source issue and disposition (`open`, `assigned`,
   `resolved` with commit, or `accepted` with reason). Carry unresolved

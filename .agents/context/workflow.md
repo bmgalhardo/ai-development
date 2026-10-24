@@ -148,8 +148,13 @@ them into the game's `docs/review.md` for the next review.
 
 `work.sh` runs independent workers: for each ready issue
 (`next_issue.py`), one fresh worker at a time, until no issue is ready.
-The default is `codex exec` running the implementation skill;
-`WORK_AGENT=claude` selects Claude Code with the implementation skill.
+Claude Code implements and Codex reviews, each in its own sessions
+(`WORK_AGENT` and `WORK_REVIEW_AGENT` change them). The implementer
+commits and leaves the issue `in review`. Two read-only reviewers, one
+per `/code-review` axis, run in parallel; the runner saves their reports
+in the cycle's `reviews/`. A fresh fixer handles the findings and closes
+the issue. When the reviewer has no quota, an available implementer
+reviews instead.
 Claude's per-attempt budget is `WORK_BUDGET_USD` (default 15). Codex uses
 its CLI configuration. Model settings, quota fallback, recovery artifacts
 and attempt metrics are documented in `workers.md`. There is no queue
@@ -163,7 +168,8 @@ service. Each worker:
   the cycle's `assets/` (copied into the game, with their
   scripts into the game's tools), not making new ones;
 - writes the issue's `Docs to write` in the same commit as the code;
-- runs `/code-review` once and fixes once (`implement`, step 10);
+- is reviewed once and fixed once (`implement`, step 10): by separate
+  reviewer and fixer sessions when a reviewer is configured;
 - sets the issue `done`, or `blocked` with its commits reverted.
 
 The state lives in the issue files (`issue-tracker.md`), so the loop can

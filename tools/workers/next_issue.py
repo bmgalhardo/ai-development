@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Print the next issue a worker should take in the latest cycle, or nothing.
 
-An issue left `in progress` comes first (its worker died). Otherwise the
+An issue left `in progress` comes first (its worker died), then one
+`in review` (implemented, waiting for its review session). Otherwise the
 first `open` issue whose `Blocked by` issues are all `done`; the last issue
 (the build) is ready once every other issue is `done` or `blocked`.
 See .agents/context/issue-tracker.md. --status prints every issue's status.
@@ -50,12 +51,17 @@ def read_issues(cycle):
     return issues
 
 
+def build_issue(issues):
+    return issues[list(issues)[-1]] if issues else None
+
+
 def next_issue(issues):
     if not issues:
         return None
-    for issue in issues.values():
-        if issue["status"] == "in progress":
-            return issue
+    for status in ("in progress", "in review"):
+        for issue in issues.values():
+            if issue["status"] == status:
+                return issue
     numbers = list(issues)
     build = numbers[-1]
     for number in numbers:

@@ -34,6 +34,23 @@ def read_result(log):
     return "\n".join(messages), usage
 
 
+def final_message(log):
+    """The session's last reply: Claude's successful result, or Codex's last agent message."""
+    final = ""
+    for line in log.read_text(errors="replace").splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        if event.get("type") == "result" and not event.get("is_error"):
+            final = str(event.get("result", ""))
+        elif event.get("type") == "item.completed" and event.get("item", {}).get("type") == "agent_message":
+            final = event["item"].get("text", "")
+    return final.strip()
+
+
 def failure_kind(message):
     if re.search(r"invalid_api_key|authentication[_ ](?:failed|required|error)|not logged in|"
                  r"(?:refresh|access|oauth)[_ ]token.*(?:expired|revoked)|401 Unauthorized", message, re.I):

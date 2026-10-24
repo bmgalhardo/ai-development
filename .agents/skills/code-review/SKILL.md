@@ -10,6 +10,8 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
+**Single axis.** When told to review one axis only (the worker loop runs each axis as its own session), do steps 1 to 3, then do that axis's brief from step 4 yourself, without sub-agents. Edit nothing. Your final message is that axis's report alone, under its `## Standards` or `## Spec` heading, ending with the axis's one-line summary.
+
 The issue tracker should have been provided to you.
 
 ## Process

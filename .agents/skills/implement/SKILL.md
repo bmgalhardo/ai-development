@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Implement one issue, without the user. The issue tracker should have been provided to you. You run in the workflow repo; the issue's `Repo:` line names the game's repo, and all its work happens there: read the game's `AGENTS.md` and context first, and run code, checks and every git command in that repo (`git -C <repo>`). Paths in the game's files are relative to its root. Never ask the user anything and never wait for input: a doubt becomes a note in the issue. Work only on your issue: never edit another issue's file.
 
-1. **Pick the issue.** The one you were given; if none, `python3 tools/workers/next_issue.py ../<game>` (the session's game's first ready issue). If none is ready, say so and stop. If an issue is `in progress`, resume it. Read its `## Progress`, commits past `Base:`, staged and unstaged diffs, and untracked files. Keep unfinished work and commits even when checks fail; diagnose and repair them. Never reset to `Base:` or clean the repo to restart an interrupted attempt. Keep the existing `Base:` for the final review. Read the issue, then only the spec sections and mock parts it names (line ranges or element ids, with `sed -n` or `grep`), not whole files. Read further only to answer a question the issue leaves. State the issue's title.
+1. **Pick the issue.** The one you were given; if none, `python3 tools/workers/next_issue.py ../<game>` (the session's game's first ready issue). If none is ready, say so and stop. If an issue is `in review`, it is implemented: follow the Fix session below, with its reviews in the cycle's `reviews/` (run `/code-review <Base>` first if they are missing). If an issue is `in progress`, resume it. Read its `## Progress`, commits past `Base:`, staged and unstaged diffs, and untracked files. Keep unfinished work and commits even when checks fail; diagnose and repair them. Never reset to `Base:` or clean the repo to restart an interrupted attempt. Keep the existing `Base:` for the final review. Read the issue, then only the spec sections and mock parts it names (line ranges or element ids, with `sed -n` or `grep`), not whole files. Read further only to answer a question the issue leaves. State the issue's title.
 2. **Claim it.** Set the status to `in progress` and write `**Base:** <the repo's HEAD sha>` under the Status line (keep an existing Base when restarting).
    - Read the cycle's `debt.md` if it exists, focusing on entries for the modules this issue touches. A small behaviour-preserving prefactor may go in its own commit before the feature. Leave wider refactors open for refinement; do not expand the issue's scope to clear the register.
 3. **Build from the issue, the spec and its mock.** The mock is the agreed design: match it. Where the mock and the general docs disagree (a font, a colour, a size), the mock wins, and the docs you write say what you built. Assets were made and agreed in the review: bring in the ones the issue names from the cycle's `assets/` (into `assets/`, their scripts into `tools/`); don't make or restyle an asset.
@@ -19,6 +19,7 @@ Implement one issue, without the user. The issue tracker should have been provid
 8. **If interrupted by quota or authentication,** leave the issue `in progress` and preserve all work. Update `## Progress` if possible. Do not revert or mark it blocked for an infrastructure interruption.
    **If implementation cannot go green after diagnosis,** revert your commits (`git -C <repo> revert --no-edit <Base>..HEAD`), set the status to `blocked`, write why under `## Comments`, and stop.
 9. **Commit** your work in the issue's repo, on its current branch (stage files explicitly). Never commit in the workflow repo.
+   - **Review handoff:** when told separate review sessions follow, stop here. Update `## Progress` with the commit and checks, set the status to `in review`, and report the commits, the checks, your choices and open questions. Skip steps 10 and 11.
 10. **Review once.** Run `/code-review <Base>` for this issue. Handle each finding once:
     - Fix spec gaps and broken rules (`AGENTS.md`, the coding standards).
     - Fix a smell only if it's cheap; otherwise write a `Review:` note saying why not and add an open entry to the cycle's `debt.md`. Name the affected files, the suggested change, the source issue, and the disposition (`open`, `assigned: <issue>`, `resolved: <commit>`, or `accepted: <reason>`). Reuse an existing entry for the same finding.
@@ -29,6 +30,19 @@ Implement one issue, without the user. The issue tracker should have been provid
 
     Re-run the checks and commit. Do not review those fixes again.
 11. **Close:** tick each acceptance box you met; for a box you didn't meet, write why under `## Comments`. Set the status to `done` and stop. Report the commits, the checks, your choices and open questions.
+
+## Fix session
+
+When given an issue `in review` with its saved reviews, other sessions implemented and reviewed it.
+You handle the findings and close it. Do not run `/code-review` again.
+
+1. Read the game's `AGENTS.md` and context, the issue, its `## Progress` and `## Comments`, and both reviews. Keep the status `in review` and keep `Base:`.
+2. Read the code, spec sections and mock parts only as a finding needs them.
+3. Handle each finding with step 10's rules. Fix only what the findings call for; don't extend the implementation.
+4. If a fix can't go green, revert that fix, record the finding in `debt.md` with a `Review:` note, and go on. Never revert the implementer's commits.
+5. Re-run the checks, commit, then step 11: close the issue `done`. Report what you fixed and what you deferred.
+
+If interrupted, leave the issue `in review` and record the findings handled so far in `## Progress`.
 
 ## Recovery progress
 

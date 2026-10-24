@@ -1,7 +1,7 @@
 # Implementation workers
 
 Run `tools/work.sh ../<game>` from this repo.
-It starts one fresh implementation session per attempt.
+It starts one fresh session per attempt: implement, then two reviews in parallel, then fix.
 It pins the latest cycle at startup.
 It holds a per-game lock for the run, including quota waits.
 Do not run standalone implementation sessions against that checkout while the loop owns it.
@@ -11,25 +11,42 @@ The loop never launches parallel implementations.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `WORK_AGENT` | `codex` | Preferred provider: `codex` or `claude` |
-| `WORK_FALLBACK_AGENT` | The other provider | Fallback on quota exhaustion; `none` disables it |
+| `WORK_AGENT` | `claude` | Preferred implementer: `codex` or `claude` |
+| `WORK_FALLBACK_AGENT` | The other provider | Fallback implementer on quota exhaustion; `none` disables it |
+| `WORK_REVIEW_AGENT` | The other provider | Reviewer sessions' provider; `none` keeps the review in the implementation session |
 | `WORK_MODEL` | CLI configuration | Model for the preferred provider only |
-| `WORK_REVIEW_MODEL` | Inherit | Requested review subagent model for the preferred provider |
+| `WORK_REVIEW_MODEL` | CLI configuration | Model for the reviewer's sessions (the implementer's subagents when it reviews itself) |
 | `WORK_CODEX_MODEL` / `WORK_CLAUDE_MODEL` | CLI configuration | Provider-specific model; overrides `WORK_MODEL` |
-| `WORK_CODEX_REVIEW_MODEL` / `WORK_CLAUDE_REVIEW_MODEL` | Inherit | Provider-specific review model request |
+| `WORK_CODEX_REVIEW_MODEL` / `WORK_CLAUDE_REVIEW_MODEL` | CLI configuration | Provider-specific review model; overrides `WORK_REVIEW_MODEL` |
 | `WORK_WAIT` | `1800` | Fallback cooldown seconds when no reset time is understood |
 | `WORK_BUDGET_USD` | `15` | Claude CLI's per-attempt budget flag |
 
 Model names belong to their provider.
 The generic model settings never carry a Claude alias into Codex or vice versa.
 An unset model preserves the CLI's configured default.
-Review model selection depends on the host's subagent model selector.
-The review must report an unavailable selector and the actual model used.
+Reviewer sessions get their model as a CLI flag.
+Only a self-review uses subagents; their model depends on the host's subagent model selector.
+That review must report an unavailable selector and the actual model used.
 
 ```bash
-WORK_AGENT=claude WORK_MODEL=sonnet WORK_REVIEW_MODEL=sonnet tools/work.sh ../<game>
+WORK_MODEL=sonnet tools/work.sh ../<game>
+WORK_REVIEW_AGENT=none tools/work.sh ../<game>
 WORK_FALLBACK_AGENT=none tools/work.sh ../<game>
 ```
+
+## Review pipeline
+
+By default Claude implements and Codex reviews.
+
+1. **Implement:** the implementer commits, sets the issue `in review` and exits.
+2. **Review:** the runner starts one reviewer session per axis (Standards, Spec), in parallel. Each runs `/code-review` on its axis against `Base:` and edits nothing. Codex reviewers run in a read-only sandbox; Claude reviewers run without edit tools.
+3. **Save:** the runner writes each final report to the cycle's `reviews/NN-standards.md` and `reviews/NN-spec.md`, with the reviewer and the reviewed commit.
+4. **Fix:** a fresh implementer session (the implement skill's Fix session) handles the saved findings, commits and closes the issue.
+
+The runner picks the step from the files: a missing review runs again; with both saved, the fixer runs.
+A saved review is never repeated.
+When the reviewer is cooling down, an available implementer reviews instead; the runner never waits for the reviewer.
+The build issue keeps its review in the implementation session.
 
 Both providers must already be authenticated for unattended fallback.
 The preferred provider runs whenever its cooldown has expired.
@@ -44,8 +61,8 @@ Time-only reset messages use their named timezone; unknown formats use `WORK_WAI
 
 Artifacts live in `artifacts/work/<game>/`, ignored by Git.
 
-- `current.json`: latest attempt, including its outcome when finished.
-- `attempts.jsonl`: completed attempts with provider, requested models, duration, exit code and outcome.
+- `current.json`: the latest attempts (both reviewers when they run together), with outcomes when finished.
+- `attempts.jsonl`: completed attempts with role (`implement`, `review` or `fix`), review axis, provider, requested models, duration, exit code and outcome.
 - `<attempt>.log`: native Codex JSONL or Claude JSON result plus CLI diagnostics.
 - `<attempt>-recovery/`: HEAD, tracked binary patch, staged patch, untracked files and issue copy after an unfinished attempt.
 - `cooldowns.json`: provider reset timestamps as Unix seconds.

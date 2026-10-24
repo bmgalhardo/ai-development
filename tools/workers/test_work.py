@@ -26,8 +26,25 @@ provider = pathlib.Path(sys.argv[0]).name
 root = pathlib.Path.cwd()
 with (root / 'calls.jsonl').open('a') as out:
     out.write(json.dumps({'provider': provider, 'args': sys.argv[1:]}) + '\\n')
-issue = root / re.search(r'implement (.+?)\\. Work', sys.argv[-1])[1]
+issue = root / re.search(r'(\\S+/issues/\\S+?\\.md)', sys.argv[-1])[1]
 scenario = os.environ.get('TEST_SCENARIO', 'quota')
+if scenario in ('review', 'review_quota'):
+    prompt = sys.argv[-1]
+    if 'axis only' in prompt:
+        if scenario == 'review_quota' and provider == 'codex':
+            print(json.dumps({'type': 'error', 'message': 'usage_limit_reached'}))
+            sys.exit(1)
+        report = f"## {re.search(r'the (\\w+) axis', prompt)[1]}\\nNo findings by {provider}."
+        if provider == 'codex':
+            print(json.dumps({'type': 'item.completed', 'item': {'type': 'agent_message', 'text': report}}))
+        else:
+            print(json.dumps({'type': 'result', 'result': report}))
+    elif 'Fix session' in prompt:
+        assert all((root / r).exists() for r in re.findall(r'(\\S+/reviews/\\S+?\\.md)', prompt))
+        issue.write_text(issue.read_text().replace('Status:** in review', 'Status:** done'))
+    else:
+        issue.write_text(issue.read_text().replace('Status:** open', 'Status:** in review'))
+    sys.exit(0)
 if scenario == 'auth':
     print(json.dumps({'type': 'error', 'message': 'authentication failed: not logged in'}))
     sys.exit(1)
@@ -76,7 +93,7 @@ class WorkerTests(unittest.TestCase):
             executable.chmod(0o755)
         self.stack.enter_context(patch.dict(os.environ, {
             'PATH': f"{binaries}:{os.environ['PATH']}", 'WORK_AGENT': 'claude',
-            'WORK_FALLBACK_AGENT': 'codex', 'WORK_MODEL': 'test-claude',
+            'WORK_FALLBACK_AGENT': 'codex', 'WORK_REVIEW_AGENT': 'none', 'WORK_MODEL': 'test-claude',
             'WORK_REVIEW_MODEL': 'test-review', 'WORK_WAIT': '60',
         }))
         self.stack.enter_context(patch.object(next_issue, 'WORKFLOW', self.root))
@@ -172,8 +189,10 @@ class WorkerTests(unittest.TestCase):
                                      'WORK_CODEX_REVIEW_MODEL': 'codex-review'}):
             codex = work.worker_command('codex', self.game, 'issue.md')
             claude = work.worker_command('claude', self.game, 'issue.md')
+            review = work.worker_command('codex', self.game, 'issue.md', 'review', axis='spec')
         self.assertIn('test-codex', codex)
         self.assertIn('codex-review', codex[-1])
+        self.assertIn('codex-review', review)
         self.assertIn('override-claude', claude)
 
     def test_interrupt_stops_real_worker_before_returning(self):
@@ -197,6 +216,66 @@ class WorkerTests(unittest.TestCase):
         worker_pid = int(log.read_text().strip())
         with self.assertRaises(ProcessLookupError):
             os.kill(worker_pid, 0)
+
+    def calls(self):
+        return [json.loads(line) for line in (self.root / 'calls.jsonl').read_text().splitlines()]
+
+    def add_build_issue(self):
+        build = self.cycle / 'issues/02-build.md'
+        build.write_text('**Status:** open\n**Blocked by:** 01\n')
+        return build
+
+    def test_reviewers_then_fixer_each_in_their_own_session(self):
+        self.add_build_issue()
+        with patch.dict(os.environ, {'TEST_SCENARIO': 'review', 'WORK_REVIEW_AGENT': 'codex',
+                                     'WORK_CODEX_REVIEW_MODEL': 'codex-review'}):
+            self.assertEqual(self.run_loop(), 0)
+        records = self.records()
+        self.assertEqual([(r['role'], r['axis'], r['provider'], r['outcome']) for r in records[:4]],
+                         [('implement', None, 'claude', 'in review'),
+                          ('review', 'standards', 'codex', 'reviewed'),
+                          ('review', 'spec', 'codex', 'reviewed'),
+                          ('fix', None, 'claude', 'done')])
+        calls = self.calls()
+        self.assertIn('Review handoff', calls[0]['args'][-1])
+        reviewer = next(c for c in calls if 'axis only' in c['args'][-1])
+        self.assertIn('read-only', reviewer['args'])
+        self.assertIn('codex-review', reviewer['args'])
+        spec = (self.cycle / 'reviews/01-spec.md').read_text()
+        self.assertIn('No findings by codex', spec)
+        self.assertIn('Reviewer: codex (codex-review)', spec)
+        # The build issue is never handed off: its implementer reviews it.
+        self.assertEqual(records[4]['role'], 'implement')
+        self.assertNotIn('Review handoff', calls[4]['args'][-1])
+
+    def test_saved_review_is_not_repeated(self):
+        self.issue.write_text('**Status:** in review\n**Blocked by:** None\n')
+        (self.cycle / 'reviews').mkdir()
+        (self.cycle / 'reviews/01-standards.md').write_text('## Standards\nsaved\n')
+        with patch.dict(os.environ, {'TEST_SCENARIO': 'review', 'WORK_REVIEW_AGENT': 'codex'}):
+            self.assertEqual(self.run_loop(), 0)
+        self.assertEqual([(r['role'], r['axis']) for r in self.records()],
+                         [('review', 'spec'), ('fix', None)])
+        self.assertEqual((self.cycle / 'reviews/01-standards.md').read_text(), '## Standards\nsaved\n')
+
+    def test_reviewer_out_of_quota_is_replaced_by_implementer(self):
+        with patch.dict(os.environ, {'TEST_SCENARIO': 'review_quota', 'WORK_REVIEW_AGENT': 'codex'}):
+            self.assertEqual(self.run_loop(), 0)
+        self.assertEqual([(r['role'], r['provider'], r['outcome']) for r in self.records()],
+                         [('implement', 'claude', 'in review'), ('review', 'codex', 'quota'),
+                          ('review', 'codex', 'quota'), ('review', 'claude', 'reviewed'),
+                          ('review', 'claude', 'reviewed'), ('fix', 'claude', 'done')])
+
+    def test_no_reviewer_keeps_review_in_implementer_session(self):
+        self.assertEqual(self.run_loop(), 0)
+        self.assertEqual([r['role'] for r in self.records()], ['implement', 'implement'])
+        self.assertFalse(any('Review handoff' in c['args'][-1] for c in self.calls()))
+
+    def test_defaults_implement_with_claude_and_review_with_codex(self):
+        with patch.dict(os.environ):
+            for name in ('WORK_AGENT', 'WORK_FALLBACK_AGENT', 'WORK_REVIEW_AGENT'):
+                del os.environ[name]
+            self.assertEqual(work.providers(), (['claude', 'codex'], ['codex', 'claude']))
 
     def test_empty_cycle_does_not_launch_worker(self):
         self.issue.unlink()
