@@ -21,9 +21,11 @@ def read_result(log):
             continue
         kind = event.get("type")
         if kind in ("error", "turn.failed"):
-            messages.append(json.dumps(event))
+            messages.append(json.dumps(event, ensure_ascii=False))
         elif kind == "result":
             messages.append(str(event.get("result", "")))
+            if event.get("api_error"):
+                messages.append(str(event["api_error"]))
             messages.extend(str(error) for error in event.get("errors", []))
             usage.append({key: event[key] for key in
                           ("usage", "modelUsage", "total_cost_usd", "num_turns") if key in event})
@@ -56,7 +58,7 @@ def failure_kind(message):
                  r"(?:refresh|access|oauth)[_ ]token.*(?:expired|revoked)|401 Unauthorized", message, re.I):
         return "authentication"
     if re.search(r"usage_limit_reached|rate_limit_exceeded|rate_limit_error|"
-                 r"you(?:'ve| have) (?:hit|reached) your (?:usage )?limit|"
+                 r"you(?:['’]ve| have) (?:hit|reached) your (?:(?:usage|session|weekly) )?limit|"
                  r"(?:usage|session|weekly) limit (?:reached|exceeded)|"
                  r"rate limit (?:reached|exceeded)|too many requests|429 Too Many Requests", message, re.I):
         return "quota"
@@ -72,6 +74,16 @@ def retry_at(message, fallback, now=None):
             reset = datetime.strptime(value, "%b %d, %Y %I:%M %p").replace(tzinfo=now.tzinfo)
             if reset > now:
                 return reset.timestamp() + 30
+        except ValueError:
+            pass
+    match = re.search(r"try again at (\d{1,2}:\d{2} [AP]M)\b", message, re.I)
+    if match:
+        try:
+            clock = datetime.strptime(match[1].upper(), "%I:%M %p")
+            reset = now.replace(hour=clock.hour, minute=clock.minute, second=0, microsecond=0)
+            if reset <= now:
+                reset += timedelta(days=1)
+            return reset.timestamp() + 30
         except ValueError:
             pass
     match = re.search(r"resets\s+(\d{1,2}(?::\d{2})?\s*[ap]m)\s*\(([^)]+)\)", message, re.I)

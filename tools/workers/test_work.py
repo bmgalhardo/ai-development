@@ -57,7 +57,8 @@ if provider == 'claude' or scenario == 'both_quota':
     (game / 'code.txt').write_text('unfinished tracked work\\n')
     (game / 'new.txt').write_text('unfinished untracked work\\n')
     print(json.dumps({'type': 'result', 'is_error': True,
-        'result': "You've hit your limit · resets 11pm (UTC)",
+        'api_error': 'usage_limit_reached', 'api_error_status': 429,
+        'result': "You've hit your session limit · resets 11pm (UTC)",
         'usage': {'input_tokens': 100, 'cache_read_input_tokens': 500}}))
     sys.exit(1)
 assert (game / 'new.txt').read_text() == 'unfinished untracked work\\n'
@@ -284,6 +285,34 @@ class WorkerTests(unittest.TestCase):
 
 
 class ResultTests(unittest.TestCase):
+    def test_claude_limit_messages_trigger_quota(self):
+        for message in ("You've hit your limit", "You've hit your usage limit",
+                        "You've hit your session limit · resets 4am (Europe/Lisbon)",
+                        "You have reached your weekly limit",
+                        "You’ve hit your usage limit. Upgrade to Pro or try again at 4:52 AM."):
+            with self.subTest(message=message):
+                self.assertEqual(failure_kind(message), 'quota')
+
+    def test_claude_structured_api_error_triggers_quota_without_limit_text(self):
+        with tempfile.TemporaryDirectory() as temp:
+            log = Path(temp) / 'output.log'
+            log.write_text(json.dumps({'type': 'result', 'is_error': True,
+                                       'api_error': 'usage_limit_reached',
+                                       'result': 'Request could not complete'}))
+            message, _ = read_result(log)
+            self.assertEqual(failure_kind(message), 'quota')
+
+    def test_codex_limit_event_triggers_quota(self):
+        with tempfile.TemporaryDirectory() as temp:
+            log = Path(temp) / 'output.log'
+            text = 'You’ve hit your usage limit. Try again at 1:53 PM.'
+            log.write_text('Reading additional input from stdin...\n'
+                           + json.dumps({'type': 'error', 'message': text}) + '\n'
+                           + json.dumps({'type': 'turn.failed', 'error': {'message': text}}) + '\n')
+            message, _ = read_result(log)
+            self.assertEqual(failure_kind(message), 'quota')
+            self.assertGreater(retry_at(message, 60), time.time())
+
     def test_tool_output_does_not_trigger_quota_wait(self):
         with tempfile.TemporaryDirectory() as temp:
             log = Path(temp) / 'output.log'
@@ -300,6 +329,15 @@ class ResultTests(unittest.TestCase):
         reset = retry_at('resets 9pm (UTC)', 60, now)
         self.assertEqual(datetime.fromtimestamp(reset, timezone.utc),
                          datetime(2026, 10, 23, 21, 0, 30, tzinfo=timezone.utc))
+
+    def test_codex_time_only_reset_uses_local_time(self):
+        now = datetime(2026, 10, 25, 3, 6, tzinfo=timezone.utc)
+        reset = retry_at('try again at 4:52 AM.', 60, now)
+        self.assertEqual(datetime.fromtimestamp(reset, timezone.utc),
+                         datetime(2026, 10, 25, 4, 52, 30, tzinfo=timezone.utc))
+        reset = retry_at('try again at 2:00 AM.', 60, now)
+        self.assertEqual(datetime.fromtimestamp(reset, timezone.utc),
+                         datetime(2026, 10, 26, 2, 0, 30, tzinfo=timezone.utc))
 
     def test_unknown_reset_and_malformed_time_use_fallback(self):
         now = datetime(2026, 10, 22, 22, 0, tzinfo=timezone.utc)
