@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import socket
 import subprocess
 import sys
 import tarfile
@@ -45,13 +46,21 @@ if scenario in ('review', 'review_quota'):
     else:
         issue.write_text(issue.read_text().replace('Status:** open', 'Status:** in review'))
     sys.exit(0)
-if scenario == 'auth':
-    print(json.dumps({'type': 'error', 'message': 'authentication failed: not logged in'}))
+game = root / 'game'
+if scenario == 'hang':
+    if provider == 'claude':
+        issue.write_text(issue.read_text().replace('Status:** open', 'Status:** done'))
+    import time; time.sleep(30)
+if scenario == 'auth_both' or (scenario == 'auth' and provider == 'claude'):
+    issue.write_text(issue.read_text().replace('Status:** open', 'Status:** in progress'))
+    (game / 'code.txt').write_text('unfinished tracked work\\n')
+    (game / 'new.txt').write_text('unfinished untracked work\\n')
+    print(json.dumps({'type': 'result', 'is_error': True,
+        'result': 'Failed to authenticate: OAuth session expired and could not be refreshed'}))
     sys.exit(1)
 if scenario == 'failure':
     print('Implementation check failed')
     sys.exit(1)
-game = root / 'game'
 if provider == 'claude' or scenario == 'both_quota':
     issue.write_text(issue.read_text().replace('Status:** open', 'Status:** in progress'))
     (game / 'code.txt').write_text('unfinished tracked work\\n')
@@ -95,7 +104,7 @@ class WorkerTests(unittest.TestCase):
         self.stack.enter_context(patch.dict(os.environ, {
             'PATH': f"{binaries}:{os.environ['PATH']}", 'WORK_AGENT': 'claude',
             'WORK_FALLBACK_AGENT': 'codex', 'WORK_REVIEW_AGENT': 'none', 'WORK_MODEL': 'test-claude',
-            'WORK_REVIEW_MODEL': 'test-review', 'WORK_WAIT': '60',
+            'WORK_REVIEW_MODEL': 'test-review', 'WORK_WAIT': '60', 'WORK_DASHBOARD': '0',
         }))
         self.stack.enter_context(patch.object(next_issue, 'WORKFLOW', self.root))
         previous = Path.cwd()
@@ -135,16 +144,41 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(self.run_loop(), 0)
         self.assertEqual([r['provider'] for r in self.records()], ['codex'])
 
-    def test_authentication_stops_without_retry_or_fallback(self):
+    def test_authentication_failure_hands_work_to_other_provider(self):
         with patch.dict(os.environ, {'TEST_SCENARIO': 'auth'}):
-            self.assertEqual(self.run_loop(), 1)
-        self.assertEqual([r['outcome'] for r in self.records()], ['authentication'])
+            self.assertEqual(self.run_loop(), 0)
+        records = self.records()
+        self.assertEqual([r['outcome'] for r in records], ['authentication', 'done'])
+        self.assertEqual([r['provider'] for r in records], ['claude', 'codex'])
+        self.assertFalse((self.directory / 'cooldowns.json').exists())
 
-    def test_implementation_failure_stops_after_two_attempts(self):
+    def test_authentication_stops_when_no_provider_is_signed_in(self):
+        with patch.dict(os.environ, {'TEST_SCENARIO': 'auth_both'}):
+            self.assertEqual(self.run_loop(), 1)
+        records = self.records()
+        self.assertEqual([r['outcome'] for r in records], ['authentication', 'authentication'])
+        self.assertEqual([r['provider'] for r in records], ['claude', 'codex'])
+
+    def test_implementation_failure_retries_with_other_provider_then_stops(self):
         with patch.dict(os.environ, {'TEST_SCENARIO': 'failure'}):
             self.assertEqual(self.run_loop(), 1)
-        self.assertEqual([r['outcome'] for r in self.records()], ['failure', 'failure'])
+        records = self.records()
+        self.assertEqual([r['outcome'] for r in records], ['failure', 'failure'])
+        self.assertEqual([r['provider'] for r in records], ['claude', 'codex'])
         self.assertFalse((self.directory / 'cooldowns.json').exists())
+
+    def test_finished_worker_that_never_exits_is_stopped_and_counted_done(self):
+        with patch.dict(os.environ, {'TEST_SCENARIO': 'hang', 'WORK_TIMEOUT': '1'}):
+            self.assertEqual(self.run_loop(), 0)
+        record = self.records()[0]
+        self.assertEqual((record['outcome'], record['exit_code']), ('done', work.TIMED_OUT))
+        self.assertIn('Worker timed out after 1s', Path(record['log']).read_text())
+
+    def test_unfinished_worker_that_times_out_is_a_timeout(self):
+        self.issue.write_text('**Status:** in progress\n**Blocked by:** None\n')
+        with patch.dict(os.environ, {'TEST_SCENARIO': 'hang', 'WORK_TIMEOUT': '1', 'WORK_FALLBACK_AGENT': 'none'}):
+            self.assertEqual(self.run_loop(), 1)
+        self.assertEqual([r['outcome'] for r in self.records()], ['timeout', 'timeout'])
 
     def test_interrupt_snapshots_work(self):
         def interrupt(command, log, lock_fd):
@@ -167,6 +201,26 @@ class WorkerTests(unittest.TestCase):
         with patch.object(sys, 'argv', ['work.py', str(self.game)]):
             with self.assertRaisesRegex(SystemExit, 'already owns'):
                 work.main()
+
+    def test_dashboard_stops_with_the_runner(self):
+        uv = self.root / 'bin/uv'
+        uv.write_text(f"#!{sys.executable}\nimport os, time\nopen('dashboard.pid', 'w').write(str(os.getpid()))\n"
+                      "time.sleep(60)\n")
+        uv.chmod(0o755)
+        with socket.socket() as free:
+            free.bind(('127.0.0.1', 0))
+            port = free.getsockname()[1]
+
+        def run(*_):
+            while not (self.root / 'dashboard.pid').exists():
+                time.sleep(0.05)
+            return 0
+        with patch.dict(os.environ, {'WORK_DASHBOARD': '1', 'WORK_DASHBOARD_PORT': str(port)}):
+            with patch.object(sys, 'argv', ['work.py', str(self.game)]), patch.object(work, 'run', run):
+                self.assertEqual(work.main(), 0)
+        pid = int((self.root / 'dashboard.pid').read_text())
+        with self.assertRaises(ProcessLookupError):
+            os.kill(pid, 0)
 
     def test_both_quotas_wait_only_after_trying_both_providers(self):
         with patch.dict(os.environ, {'TEST_SCENARIO': 'both_quota'}):
@@ -292,6 +346,15 @@ class ResultTests(unittest.TestCase):
                         "You’ve hit your usage limit. Upgrade to Pro or try again at 4:52 AM."):
             with self.subTest(message=message):
                 self.assertEqual(failure_kind(message), 'quota')
+
+    def test_claude_expired_login_triggers_authentication(self):
+        with tempfile.TemporaryDirectory() as temp:
+            log = Path(temp) / 'output.log'
+            log.write_text(json.dumps({'type': 'result', 'is_error': True, 'terminal_reason': 'api_error',
+                                       'result': 'Failed to authenticate: OAuth session expired '
+                                                 'and could not be refreshed'}))
+            message, _ = read_result(log)
+            self.assertEqual(failure_kind(message), 'authentication')
 
     def test_claude_structured_api_error_triggers_quota_without_limit_text(self):
         with tempfile.TemporaryDirectory() as temp:

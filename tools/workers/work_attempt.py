@@ -55,7 +55,8 @@ def final_message(log):
 
 def failure_kind(message):
     if re.search(r"invalid_api_key|authentication[_ ](?:failed|required|error)|not logged in|"
-                 r"(?:refresh|access|oauth)[_ ]token.*(?:expired|revoked)|401 Unauthorized", message, re.I):
+                 r"failed to authenticate|(?:refresh|access|oauth)[_ ](?:token|session).*(?:expired|revoked)|"
+                 r"401 Unauthorized", message, re.I):
         return "authentication"
     if re.search(r"usage_limit_reached|rate_limit_exceeded|rate_limit_error|"
                  r"you(?:['’]ve| have) (?:hit|reached) your (?:(?:usage|session|weekly) )?limit|"

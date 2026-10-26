@@ -1,6 +1,8 @@
 # Implementation workers
 
 Run `tools/work.sh ../<game>` from this repo.
+It also starts the dashboard (`tools/dashboard/`) on port 8765 unless something already listens there.
+The dashboard stops with the runner; its log is `artifacts/work/<game>/dashboard.log`.
 It starts one fresh session per attempt: implement, then two reviews in parallel, then fix.
 It pins the latest cycle at startup.
 It holds a per-game lock for the run, including quota waits.
@@ -12,14 +14,17 @@ The loop never launches parallel implementations.
 | Variable | Default | Meaning |
 |---|---|---|
 | `WORK_AGENT` | `claude` | Preferred implementer: `codex` or `claude` |
-| `WORK_FALLBACK_AGENT` | The other provider | Fallback implementer on quota exhaustion; `none` disables it |
+| `WORK_FALLBACK_AGENT` | The other provider | Fallback implementer on quota, authentication or repeated failure; `none` disables it |
 | `WORK_REVIEW_AGENT` | The other provider | Reviewer sessions' provider; `none` keeps the review in the implementation session |
 | `WORK_MODEL` | CLI configuration | Model for the preferred provider only |
 | `WORK_REVIEW_MODEL` | CLI configuration | Model for the reviewer's sessions (the implementer's subagents when it reviews itself) |
 | `WORK_CODEX_MODEL` / `WORK_CLAUDE_MODEL` | CLI configuration | Provider-specific model; overrides `WORK_MODEL` |
 | `WORK_CODEX_REVIEW_MODEL` / `WORK_CLAUDE_REVIEW_MODEL` | CLI configuration | Provider-specific review model; overrides `WORK_REVIEW_MODEL` |
 | `WORK_WAIT` | `1800` | Fallback cooldown seconds when no reset time is understood |
+| `WORK_TIMEOUT` | `14400` | Seconds before an attempt is stopped; a stopped attempt whose issue isn't finished counts as a failure (`timeout`) |
 | `WORK_BUDGET_USD` | `15` | Claude CLI's per-attempt budget flag |
+| `WORK_DASHBOARD` | `1` | `0` skips starting the dashboard |
+| `WORK_DASHBOARD_PORT` | `8765` | Dashboard port |
 
 Model names belong to their provider.
 The generic model settings never carry a Claude alias into Codex or vice versa.
@@ -51,11 +56,15 @@ The build issue keeps its review in the implementation session.
 Both providers must already be authenticated for unattended fallback.
 The preferred provider runs whenever its cooldown has expired.
 An unavailable fallback executable is skipped.
-Authentication failures stop the runner rather than consuming implementation retries.
+An authentication failure sets that provider aside until the runner restarts; the other provider continues the issue.
+The runner stops only when no configured provider is signed in.
+Authentication failures do not count toward the two implementation failures.
+After a failure, the retry uses a different provider when one is ready.
 Quota interruptions do not count toward the two implementation failures.
 When every configured provider is cooling down, the runner waits for the earliest reset.
 Cooldowns persist across runner restarts.
 Time-only reset messages use their named timezone; unknown formats use `WORK_WAIT`.
+An attempt still running after `WORK_TIMEOUT` is stopped with its process group; the issue's status decides its outcome.
 
 ## Recovery and observation
 

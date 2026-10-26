@@ -8,8 +8,10 @@ import json
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import sys
+import threading
 import time
 from uuid import uuid4
 
@@ -17,6 +19,7 @@ from . import next_issue
 from .work_attempt import failure_kind, final_message, git, read_result, retry_at, snapshot
 
 AXES = ("standards", "spec")
+TIMED_OUT = 124  # the exit code of coreutils timeout
 
 
 def say(message):
@@ -114,6 +117,27 @@ def stop(child):
         child.wait()
 
 
+def start_dashboard(directory):
+    """Start the issue dashboard for this run, unless disabled or its port is taken; None otherwise."""
+    port = int(os.environ.get("WORK_DASHBOARD_PORT", "8765"))
+    if os.environ.get("WORK_DASHBOARD", "1") == "0":
+        return None
+    with socket.socket() as probe:
+        if probe.connect_ex(("127.0.0.1", port)) == 0:
+            say(f"Dashboard port {port} already in use; not starting another")
+            return None
+    if not shutil.which("uv"):
+        say("Dashboard not started: uv not found")
+        return None
+    with (directory / "dashboard.log").open("w") as log:
+        child = subprocess.Popen(["uv", "run", "--project", "tools/dashboard", "python", "-m", "tools.dashboard",
+                                  "--port", str(port)],
+                                 stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
+                                 start_new_session=True)
+    say(f"Dashboard on port {port}; it stops with this runner")
+    return child
+
+
 def run_workers(jobs, lock_fd):
     """Run (command, log) jobs at once; return their exit codes."""
     outputs, children = [], []
@@ -124,7 +148,26 @@ def run_workers(jobs, lock_fd):
             children.append(subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=outputs[-1],
                                              stderr=subprocess.STDOUT, start_new_session=True,
                                              pass_fds=(lock_fd,)))
-        return [child.wait() for child in children]
+        # A session can finish its work yet never exit, e.g. waiting on a display server it started.
+        timeout = int(os.environ.get("WORK_TIMEOUT", "14400"))
+        expired = []
+        def expire():
+            for child in children:
+                if child.poll() is None:
+                    expired.append(child)
+                    stop(child)
+        timer = threading.Timer(timeout, expire)
+        timer.daemon = True
+        timer.start()
+        try:
+            codes = [child.wait() for child in children]
+        finally:
+            timer.cancel()
+        for index, child in enumerate(children):
+            if child in expired:
+                outputs[index].write(f"\nWorker timed out after {timeout}s and was stopped.\n")
+                codes[index] = TIMED_OUT
+        return codes
     except KeyboardInterrupt:
         for child in children:
             stop(child)
@@ -180,6 +223,8 @@ def run(game, directory, lock_fd):
     wait = int(os.environ.get("WORK_WAIT", "1800"))
     if wait < 1:
         raise ValueError("WORK_WAIT must be positive")
+    if int(os.environ.get("WORK_TIMEOUT", "14400")) < 1:
+        raise ValueError("WORK_TIMEOUT must be positive")
     cycle = next_issue.latest_cycle(game)
     issues = next_issue.read_issues(cycle)
     if git(game, "status", "--porcelain").strip() and not any(i["status"] in ("in progress", "in review") for i in issues.values()):
@@ -187,6 +232,8 @@ def run(game, directory, lock_fd):
     state_file = directory / "cooldowns.json"
     cooldowns = json.loads(state_file.read_text()) if state_file.exists() else {}
     failures = {}
+    failed = {}  # issue path -> providers that failed it this run; the retry prefers another
+    signed_out = set()  # providers whose login failed; they sit out until the runner restarts
     while True:
         issues = next_issue.read_issues(cycle)
         issue = next_issue.next_issue(issues)
@@ -202,8 +249,13 @@ def run(game, directory, lock_fd):
             role = "implement"
         else:
             role = "review" if missing else "fix"
-        available = (reviewers or implementers) if role == "review" else implementers
-        provider = next((p for p in available if cooldowns.get(p, 0) <= time.time()), None)
+        available = [p for p in ((reviewers or implementers) if role == "review" else implementers)
+                     if p not in signed_out]
+        if not available:
+            say(f"Stopping: {', '.join(sorted(signed_out))} authentication needs attention. See {directory}")
+            return 1
+        ready = [p for p in available if cooldowns.get(p, 0) <= time.time()]
+        provider = next((p for p in ready if p not in failed.get(path, ())), ready[0] if ready else None)
         if provider is None:
             delay = max(1, min(cooldowns[p] for p in available) - time.time())
             say(f"All configured providers cooling down; next reset in {int(delay)}s (Ctrl-C stops safely)")
@@ -249,7 +301,7 @@ def run(game, directory, lock_fd):
                 outcome = "interrupted"
             elif role == "review":
                 report = final_message(log) if code == 0 else ""
-                outcome = "reviewed" if report else failure_kind(message)
+                outcome = "reviewed" if report else "timeout" if code == TIMED_OUT else failure_kind(message)
                 if report:
                     review = review_file(cycle, path, record["axis"])
                     review.parent.mkdir(exist_ok=True)
@@ -257,7 +309,7 @@ def run(game, directory, lock_fd):
                     review.write_text(f"# {record['axis'].capitalize()} review of {path.name}\n\n"
                                       f"Reviewer: {provider} ({record['model']}), at {head}.\n\n{report}\n")
             else:
-                outcome = status if status in finished else failure_kind(message)
+                outcome = status if status in finished else "timeout" if code == TIMED_OUT else failure_kind(message)
             if role != "review" and outcome not in finished:
                 recovery = directory / f"{record['attempt']}-recovery"
                 snapshot(game, path, recovery)
@@ -273,8 +325,9 @@ def run(game, directory, lock_fd):
         if all(outcome in finished + ("reviewed",) for outcome in outcomes):
             continue
         if "authentication" in outcomes:
-            say(f"Stopping: {provider} authentication needs attention. See {directory}")
-            return 1
+            signed_out.add(provider)
+            say(f"{provider} authentication failed; continuing without it (log in and restart to use it again)")
+            continue
         if "quota" in outcomes:
             message = "\n".join(read_result(log)[0] for _, log in jobs)
             cooldowns[provider] = retry_at(message, wait)
@@ -283,6 +336,7 @@ def run(game, directory, lock_fd):
             if "failure" not in outcomes:
                 continue
         failures[path] = failures.get(path, 0) + 1
+        failed.setdefault(path, set()).add(provider)
         say(f"Worker stopped (exit {codes}); {path.name} {status} ({failures[path]}/2)")
         if failures[path] >= 2:
             return 1
@@ -302,10 +356,14 @@ def main():
         except BlockingIOError:
             sys.exit(f"A worker loop already owns {game}. Stop it before starting another.")
         signal.signal(signal.SIGTERM, interrupt)
+        dashboard = start_dashboard(directory)
         try:
             return run(game, directory, lock.fileno())
         except KeyboardInterrupt:
             return 130
+        finally:
+            if dashboard:
+                stop(dashboard)
 
 
 if __name__ == "__main__":

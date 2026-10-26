@@ -44,6 +44,9 @@ commands.
   ~/.cache/xvfb/start.sh` in the background, then use `DISPLAY=:77`.
   Background commands are killed at their time limit: if `:77` is gone,
   start it again.
+- Stop the Xvfb you started before you finish (`pkill -f 'Xvfb :77'`).
+  A headless session doesn't exit while it runs, and the worker loop
+  waits for it.
 - **Web pages:** no browser is installed. Screenshot a page in Playwright's
   Chromium: `uv venv ~/.cache/pw-venv`, `uv pip install -p
   ~/.cache/pw-venv/bin/python playwright`, then

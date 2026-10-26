@@ -26,7 +26,7 @@ Treat provider quota exhaustion as an interrupted attempt, not a blocked issue.
 - Preserve commits and unfinished edits, including work whose checks fail.
 - Snapshot tracked edits, the index, untracked files, HEAD and the issue after unfinished attempts.
 - Record attempt outcomes, durations and available provider-native usage.
-- Stop on authentication failures; stop after two implementation failures.
+- Hand work to the other provider on authentication failures; retry a failure with the other provider; stop after two implementation failures.
 - Record completed implementation and review steps in each issue's Progress section.
 - Keep deferred findings in each cycle's `debt.md` with source and disposition.
 - Carry unresolved debt into the next cycle during ticketing.
