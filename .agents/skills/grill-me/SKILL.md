@@ -14,6 +14,8 @@ Interview the user relentlessly until you reach a shared understanding. Map this
 
 Work the tree in **rounds**. The **frontier** is every decision whose prerequisites are already settled: the questions you can ask _now_ without guessing at answers you haven't heard yet. Ask the whole frontier in one round: number each question and give your recommended answer. Then wait for the user's answers before the next round.
 
+Mark a recommendation **new** when it adds something the feedback doesn't contain. A new item is settled only by an answer to its own question; a blanket "the others are fine" settles only recommendations that keep to the feedback. The final summary lists the new items the user accepted, apart from the rest.
+
 After each answer, recompute the frontier and continue the interview. A detour into workflow, terminology or tool questions does not close unresolved product branches; answer the detour, then return to the frontier before invoking `/to-spec` or `/to-tickets`.
 
 Format a round like so:

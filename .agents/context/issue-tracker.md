@@ -33,8 +33,8 @@ game is the session's game (`AGENTS.md`).
 - Each issue file has a `Status:` line near the top: `open`, then
   `in progress` (a worker claimed it), then `in review` (implemented and
   committed, waiting for its review session), then `done`; or `blocked`
-  (it couldn't go green; its commits are reverted and `## Comments` says
-  why). An issue `in review` is not `done`: its dependents wait for it.
+  (it couldn't go green, so its commits are reverted; or it met its
+  `Stop if`, so its commits stay; `## Comments` says why). An issue `in review` is not `done`: its dependents wait for it.
   An issue left `in progress` means its worker died: the next worker
   preserves its commits and unfinished changes, reads `## Progress`,
   and repairs failing checks before continuing.

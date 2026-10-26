@@ -117,6 +117,20 @@ Verify that credential renewal, artifact persistence and provider cooldowns surv
 
 Done when work continues after the local terminal closes and progress remains accessible.
 
+## 7. Generic projects: deploy and review
+
+Proposed at the 03-prototype retro (2026-10-26), for making the workflow project-agnostic.
+Split today's build issue into a project deploy and a workflow review.
+The project declares a deploy command in its context, like its check command.
+The project picks when it deploys: per issue (like CI after a merge) or per cycle.
+The review stops being a ticket: when the loop ends, however it ends, a review step writes `review.md`.
+That review lists blocked issues and the issues they kept from running, with their reasons.
+The workflow publishes the mocks itself; the project never sees them.
+This removes the build issue's special readiness rule in `next_issue.py`.
+Today a blocked issue with a dependent chain leaves the build issue never ready, so nothing is published.
+
+Done when a cycle with a blocked issue still deploys its finished work and its review names the block.
+
 ## Evidence and evaluation
 
 The last retrospective reported two quota interruptions involving about 14% of the cycle's weighted usage.

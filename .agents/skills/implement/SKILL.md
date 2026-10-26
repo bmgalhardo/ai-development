@@ -17,6 +17,7 @@ Implement one issue, without the user. The issue tracker should have been provid
 6. **Make the small choices yourself,** within the mock, the docs and the standing rules. Note each one under `## Comments` in the issue, so the review lists it.
 7. **Don't decide what would change agreed design.** Only something the spec and the mock don't cover becomes a question. Take the safest reading, build it, and note it under `## Comments` as `Open question:`.
 8. **If interrupted by quota or authentication,** leave the issue `in progress` and preserve all work. Update `## Progress` if possible. Do not revert or mark it blocked for an infrastructure interruption.
+   **If the issue's `Stop if` condition is met,** finish to green what you built, commit it and keep it. Set the status to `blocked`, write under `## Comments` what met the condition and its evidence, and stop. Don't work around the condition.
    **If implementation cannot go green after diagnosis,** revert your commits (`git -C <repo> revert --no-edit <Base>..HEAD`), set the status to `blocked`, write why under `## Comments`, and stop.
 9. **Commit** your work in the issue's repo, on its current branch (stage files explicitly). Never commit in the workflow repo.
    - **Review handoff:** when told separate review sessions follow, stop here. Update `## Progress` with the commit and checks, set the status to `in review`, and report the commits, the checks, your choices and open questions. Skip steps 10 and 11.

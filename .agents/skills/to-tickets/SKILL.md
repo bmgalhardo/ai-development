@@ -41,6 +41,8 @@ Break the work into **tracer bullet** tickets.
 - Each slice is sized to fit in a single fresh context window
 - Any prefactoring should be done first
 - A spec's performance target is measured in the first slice that builds the hot path, against the target, as an acceptance criterion. It extrapolates from a sample rather than timing a full worst-case run, and records the result in Comments
+- A risk the user raised in review or grilling gets a **Stop if** condition on the first ticket that can show it, when its failure would carry into later tickets. Name the condition so the implementer can check it (a threshold, an observable outcome). No other ticket gets one
+- A shared artefact that several tickets would each have to keep passing (a reference, a baseline, a fixture) is a dependency, not a per-ticket chore. Either the first ticket that can set it does, and later tickets don't change it, or no ticket touches it this cycle and its check only reports. Choose by whether the artefact depends on what the cycle builds, and show the choice in the breakdown the user approves
 - A slice includes the docs for what it builds: it copies its part of the spec's agreed text into the docs in the same commit, so the docs never run ahead of the build
 
 </vertical-slice-rules>
@@ -92,6 +94,8 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 **Assets:** each agreed asset this ticket brings into the game, by its path in `.scratch/<game>/<cycle>/assets/` (made in the review; the implementer copies it in, never remakes it).
 
 **Docs to write:** each doc file this ticket updates, with the agreed text to put there, written as built. The implementer copies it in with the code.
+
+**Stop if:** only on a ticket that carries a raised risk: the condition that blocks it for the user's decision. Omit the line otherwise.
 
 - [ ] Acceptance criterion 1
 - [ ] Acceptance criterion 2
