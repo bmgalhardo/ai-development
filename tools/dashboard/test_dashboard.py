@@ -20,6 +20,8 @@ class DashboardTests(unittest.TestCase):
         (self.cycle / "issues").mkdir(parents=True)
         self.artifacts = self.root / "artifacts" / "work" / "game"
         self.artifacts.mkdir(parents=True)
+        self.logs = self.cycle / "work"
+        self.logs.mkdir()
         self.client = TestClient(create_app(self.root))
         self.addCleanup(self.client.close)
 
@@ -71,7 +73,7 @@ class DashboardTests(unittest.TestCase):
             self.assertTrue(board["runner"]["active"])
             self.assertEqual(len(board["issues"][0]["active_attempts"]), 2)
         records = [{**row, "duration_seconds": 25, "outcome": "reviewed"} for row in records]
-        (self.artifacts / "attempts.jsonl").write_text("\n".join(map(json.dumps, records)))
+        (self.logs / "attempts.jsonl").write_text("\n".join(map(json.dumps, records)))
         (self.artifacts / "current.json").write_text(json.dumps(records))
         board = self.board()
         self.assertFalse(board["runner"]["active"])
@@ -89,7 +91,7 @@ class DashboardTests(unittest.TestCase):
     def test_partial_artifacts_leave_the_issue_board_available(self):
         self.issue("01", "done")
         (self.artifacts / "current.json").write_text("[")
-        (self.artifacts / "attempts.jsonl").write_text('{"attempt":')
+        (self.logs / "attempts.jsonl").write_text('{"attempt":')
         board = self.board()
         self.assertEqual(board["issues"][0]["stage"], "done")
         self.assertEqual(len(board["warnings"]), 2)
@@ -142,7 +144,7 @@ class DashboardTests(unittest.TestCase):
 
     def test_reads_leave_all_tracker_and_artifact_bytes_unchanged(self):
         self.issue("01", "done")
-        (self.artifacts / "attempts.jsonl").write_text("")
+        (self.logs / "attempts.jsonl").write_text("")
         before = {path: path.read_bytes() for path in self.root.rglob("*") if path.is_file()}
         self.board()
         self.assertEqual({path: path.read_bytes() for path in self.root.rglob("*") if path.is_file()}, before)

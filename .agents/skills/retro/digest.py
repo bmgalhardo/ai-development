@@ -16,11 +16,12 @@ import argparse
 from collections import Counter
 import json
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[3]
 CLAUDE_LOGS = Path.home() / ".claude/projects" / str(ROOT).replace("/", "-")
 CODEX_LOGS = Path.home() / ".codex/sessions"
-WORK_LOGS = ROOT / "artifacts/work"
+WORK_LOGS = ROOT / ".scratch"  # each cycle keeps its worker logs in <game>/<cycle>/work/
 SKIP = ("<local-command-caveat>", "<system-reminder>", "<command-message>", "Caveat:")
 
 
@@ -89,11 +90,12 @@ def digest(path, since, until):
 
 def digest_worker(path, since, until):
     """Summarize a plain-text tools/work.sh log using its timestamped name."""
-    parts = path.stem.rsplit("-", 2)
-    if len(parts) != 3 or len(parts[-2]) != 8 or len(parts[-1]) != 6 \
-            or not (parts[-2] + parts[-1]).isdigit():
+    # <issue>[-<role>]-YYYYMMDD-HHMMSS[-<attempt id>]
+    match = re.fullmatch(r"(.+)-(\d{8})-(\d{6})(?:-[0-9a-f]{8})?", path.stem)
+    if not match:
         return None
-    stamp = parts[-2] + parts[-1]
+    parts = [match[1]]
+    stamp = match[2] + match[3]
     date = f"{stamp[:4]}-{stamp[4:6]}-{stamp[6:8]}T{stamp[8:10]}:{stamp[10:12]}"
     if (since and date < since) or (until and date > until):
         return None
@@ -116,7 +118,7 @@ def digest_worker(path, since, until):
             if event not in interesting:
                 interesting.append(event)
     title = parts[0]
-    return "\n".join([f"## Worker {title}", "", date, "Source: artifacts/work", ""] + interesting[:24])
+    return "\n".join([f"## Worker {title}", "", date, f"Source: {path.relative_to(ROOT)}", ""] + interesting[:24])
 
 
 def codex_digest(path, since, until):
@@ -205,7 +207,7 @@ def main():
     codex_digests = [codex_digest(p, args.since, args.until) for p in codex_paths]
     found.extend(d for d in codex_digests if d)
     codex_ids = {codex_session_id(p) for p in codex_paths}
-    worker_paths = sorted(WORK_LOGS.glob("*.log"))
+    worker_paths = sorted(WORK_LOGS.glob("*/*/work/*.log"))
     if args.session:
         worker_paths = [p for p in worker_paths if p.stem == args.session or
                         f"session id: {args.session}" in p.read_text(errors="replace")]

@@ -49,6 +49,8 @@ game is the session's game (`AGENTS.md`).
   reviewed commit and remaining work for recovery.
 - A cycle's `reviews/NN-standards.md` and `reviews/NN-spec.md` are an
   issue's saved review reports, written by the worker loop for the fixer.
+- A cycle's `work/` holds the worker loop's attempts: `attempts.jsonl`,
+  each attempt's log and the recovery snapshots of unfinished attempts.
 - A cycle's `debt.md` carries deferred review findings: affected files,
   suggested change, source issue and disposition (`open`, `assigned`,
   `resolved` with commit, or `accepted` with reason). Carry unresolved

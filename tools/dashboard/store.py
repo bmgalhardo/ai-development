@@ -42,7 +42,7 @@ class Store:
             raise ValueError("Issue files are being updated or cannot be read; retry shortly") from error
         directory = self.root / "artifacts" / "work" / game
         current = read_json(directory / "current.json", [], warnings)
-        history = read_history(directory / "attempts.jsonl", warnings)
+        history = read_history(path / "work" / "attempts.jsonl", warnings)
         cooldowns = read_json(directory / "cooldowns.json", {}, warnings)
         if not isinstance(current, list) or not all(isinstance(row, dict) for row in current):
             warnings.append("Invalid current attempt snapshot")
@@ -56,11 +56,11 @@ class Store:
             identity = str((path / "issues" / card["filename"]).relative_to(self.root))
             attempts = {row.get("attempt"): row for row in history if row.get("issue") == identity}
             attempts.update({row.get("attempt"): row for row in current if row.get("issue") == identity})
-            card["attempts"] = [public_attempt(row, running, directory) for row in attempts.values()]
+            card["attempts"] = [public_attempt(row, running, path / "work") for row in attempts.values()]
             card["total_attempt_seconds"] = sum(row["elapsed_seconds"] for row in card["attempts"])
             card["active_attempts"] = [row for row in card["attempts"] if row["active"]]
         selected_prefix = str(path.relative_to(self.root)) + "/issues/"
-        active = [public_attempt(row, running, directory) for row in current
+        active = [public_attempt(row, running, path / "work") for row in current
                   if str(row.get("issue", "")).startswith(selected_prefix) and not row.get("outcome")]
         return {"game": game, "cycle": cycle, "issues": cards, "warnings": warnings,
                 "runner": {"active": running, "attempts": active,

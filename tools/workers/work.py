@@ -227,6 +227,9 @@ def run(game, directory, lock_fd):
         raise ValueError("WORK_TIMEOUT must be positive")
     cycle = next_issue.latest_cycle(game)
     issues = next_issue.read_issues(cycle)
+    # The runner's state stays in directory; the cycle's attempts are kept with its issues.
+    logs = cycle / "work"
+    logs.mkdir(exist_ok=True)
     if git(game, "status", "--porcelain").strip() and not any(i["status"] in ("in progress", "in review") for i in issues.values()):
         raise ValueError(f"{game} has uncommitted changes and no issue is in progress or in review: commit or stash them first")
     state_file = directory / "cooldowns.json"
@@ -252,7 +255,7 @@ def run(game, directory, lock_fd):
         available = [p for p in ((reviewers or implementers) if role == "review" else implementers)
                      if p not in signed_out]
         if not available:
-            say(f"Stopping: {', '.join(sorted(signed_out))} authentication needs attention. See {directory}")
+            say(f"Stopping: {', '.join(sorted(signed_out))} authentication needs attention. See {logs}")
             return 1
         ready = [p for p in available if cooldowns.get(p, 0) <= time.time()]
         provider = next((p for p in ready if p not in failed.get(path, ())), ready[0] if ready else None)
@@ -264,11 +267,11 @@ def run(game, directory, lock_fd):
                 delay = min(cooldowns[p] for p in available) - time.time()
             continue
         if role == "review":
-            attempts = [new_attempt(directory, path, role, provider, axis) for axis in missing]
+            attempts = [new_attempt(logs, path, role, provider, axis) for axis in missing]
             jobs = [(worker_command(provider, game, record["issue"], role, axis=record["axis"]), log)
                     for record, log in attempts]
         else:
-            attempts = [new_attempt(directory, path, role, provider)]
+            attempts = [new_attempt(logs, path, role, provider)]
             handoff = bool(reviewers) and issue is not next_issue.build_issue(issues)
             jobs = [(worker_command(provider, game, attempts[0][0]["issue"], role, handoff,
                                     reviews=[r.relative_to(next_issue.WORKFLOW) for r in reviews]),
@@ -311,12 +314,12 @@ def run(game, directory, lock_fd):
             else:
                 outcome = status if status in finished else "timeout" if code == TIMED_OUT else failure_kind(message)
             if role != "review" and outcome not in finished:
-                recovery = directory / f"{record['attempt']}-recovery"
+                recovery = logs / f"{record['attempt']}-recovery"
                 snapshot(game, path, recovery)
                 say(f"Unfinished work preserved; recovery snapshot: {recovery}")
             record.update(exit_code=code, outcome=outcome, duration_seconds=round(time.time() - started, 2),
                           usage=usage, recovery=str(recovery) if recovery else None)
-            with (directory / "attempts.jsonl").open("a") as output:
+            with (logs / "attempts.jsonl").open("a") as output:
                 output.write(json.dumps(record) + "\n")
             outcomes.append(outcome)
         save_json(directory / "current.json", [record for record, _ in attempts])

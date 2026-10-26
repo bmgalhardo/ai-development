@@ -68,13 +68,18 @@ An attempt still running after `WORK_TIMEOUT` is stopped with its process group;
 
 ## Recovery and observation
 
-Artifacts live in `artifacts/work/<game>/`, ignored by Git.
+A cycle's attempts live with its issues, in `.scratch/<game>/<cycle>/work/`:
 
-- `current.json`: the latest attempts (both reviewers when they run together), with outcomes when finished.
 - `attempts.jsonl`: completed attempts with role (`implement`, `review` or `fix`), review axis, provider, requested models, duration, exit code and outcome.
 - `<attempt>.log`: native Codex JSONL or Claude JSON result plus CLI diagnostics.
 - `<attempt>-recovery/`: HEAD, tracked binary patch, staged patch, untracked files and issue copy after an unfinished attempt.
+
+The runner's own state lives in `artifacts/work/<game>/`, ignored by Git:
+
+- `current.json`: the latest attempts (both reviewers when they run together), with outcomes when finished.
 - `cooldowns.json`: provider reset timestamps as Unix seconds.
+- `runner.lock`: held while a runner or its children are alive.
+- `dashboard.log`: the dashboard's output.
 
 The JSON records retain provider-reported usage in native units when available.
 Empty usage means the CLI did not report it; do not treat it as zero.
@@ -93,7 +98,7 @@ Check status without starting a worker:
 
 ```bash
 python3 tools/workers/next_issue.py ../<game> --status
-tail -n 5 artifacts/work/<game>/attempts.jsonl
+tail -n 5 .scratch/<game>/<cycle>/work/attempts.jsonl
 cat artifacts/work/<game>/current.json
 ```
 

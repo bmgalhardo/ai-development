@@ -49,7 +49,7 @@ The provider's capture time is preserved; a successful poll does not imply a new
 
 ## Worker status
 
-The server reads `.scratch/<game>/<cycle>/issues/` and `artifacts/work/<game>/`.
+The server reads `.scratch/<game>/<cycle>/issues/` and `work/` (the attempts), and `artifacts/work/<game>/` (the runner).
 The existing runner lock indicates that a runner or its children are alive.
 Detection reads Linux's `/proc/locks` without acquiring the worker's lock.
 It does not prove that an agent is making progress. Last log output age is shown separately.

@@ -178,7 +178,8 @@ commits and unfinished edits are preserved, including failing work
 (`implement`, step 1). A usage limit cools down that provider and tries the
 other; the loop waits when no configured provider is available. An issue
 that fails twice stops the loop. Authentication failures stop for repair.
-Each worker's log is in this repo's `artifacts/work/<game>/`, ignored in git.
+Each worker's log is in the cycle's `work/`; the runner's state is in this repo's
+`artifacts/work/<game>/`, ignored in git.
 
 `/implement` also works alone, in a top-level session.
 

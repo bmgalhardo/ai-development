@@ -116,7 +116,7 @@ class WorkerTests(unittest.TestCase):
         return work.run(self.game, self.directory, self.lock.fileno())
 
     def records(self):
-        return [json.loads(line) for line in (self.directory / 'attempts.jsonl').read_text().splitlines()]
+        return [json.loads(line) for line in (self.cycle / 'work/attempts.jsonl').read_text().splitlines()]
 
     def test_quota_handoff_preserves_work_and_does_not_leak_model(self):
         self.assertEqual(self.run_loop(), 0)
