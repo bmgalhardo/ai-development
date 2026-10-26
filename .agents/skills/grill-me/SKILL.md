@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Use domain-modeling's conversational techniques throughout the interview: challenge terminology, prefer the user's words, and stress-test decisions with concrete scenarios. Its file-writing steps do not apply here.
 
-The issue tracker should have been provided to you. The main input is the session's game's latest `feedback.md` (in `.scratch/<game>/<cycle>/`); read it, the game's `docs/review.md` and the domain docs. The feedback is the plan to grill. The session may start fresh or continue the review conversation: do not require earlier chat to understand the review, and retain relevant live context when it is available.
+The issue tracker should have been provided to you. The main input is the session's project's latest `feedback.md` (in `.scratch/<project>/<cycle>/`); read it, the project's `docs/review.md` and the domain docs. The feedback is the plan to grill. The session may start fresh or continue the review conversation: do not require earlier chat to understand the review, and retain relevant live context when it is available.
 
 This skill is pure conversation. Do not create or update any files: no spec, review notes, glossary, decision log, scratch notes or mocks. Keep the design tree, settled terms, decisions and open questions in the chat. There is no persisted handoff from grilling to `to-spec`; that skill reads the live conversation and publishes the spec to the configured issue tracker. An existing spec is not an interview scratchpad.
 

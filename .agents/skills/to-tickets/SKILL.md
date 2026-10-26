@@ -69,7 +69,7 @@ Iterate until the user approves the breakdown.
 
 ### 5. Publish the tickets to the issue tracker
 
-Publish the approved tickets to the issue tracker (this repo's `.scratch/<game>/`), one per ticket, in dependency order (blockers first). Each ticket's "Blocked by" lists the tickets it depends on. Use the ticket template below: one ticket per file, never a single combined file.
+Publish the approved tickets to the issue tracker (this repo's `.scratch/<project>/`), one per ticket, in dependency order (blockers first). Each ticket's "Blocked by" lists the tickets it depends on. Use the ticket template below: one ticket per file, never a single combined file.
 
 Work the **frontier**: any ticket whose blockers are all done. For a purely linear chain that means top to bottom.
 
@@ -77,7 +77,7 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 
 # <NN>: <Ticket title>
 
-**Repo:** the game's repo, relative to the workflow repo (`../<game>`). Workers act there.
+**Repo:** the project's repo, relative to the workflow repo (`../<project>`). Workers act there.
 
 **What to build:** the end-to-end behaviour this ticket makes work, from the user's perspective, not a layer-by-layer implementation list.
 
@@ -89,9 +89,9 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 
 **Spec:** a link to the spec (`../spec.md`) and the sections this ticket relies on, by heading.
 
-**Mock:** if the ticket has a look: the mock file, by its path from the workflow repo's root (`.scratch/<game>/<cycle>/mocks/...`), the variant the user picked, and only the parts this ticket builds, each with where it is in the file (line ranges or element ids, and its CSS rules). The mock is the agreed design; the implementer matches it.
+**Mock:** if the ticket has a look: the mock file, by its path from the workflow repo's root (`.scratch/<project>/<cycle>/mocks/...`), the variant the user picked, and only the parts this ticket builds, each with where it is in the file (line ranges or element ids, and its CSS rules). The mock is the agreed design; the implementer matches it.
 
-**Assets:** each agreed asset this ticket brings into the game, by its path in `.scratch/<game>/<cycle>/assets/` (made in the review; the implementer copies it in, never remakes it).
+**Assets:** each agreed asset this ticket brings into the project, by its path in `.scratch/<project>/<cycle>/assets/` (made in the review; the implementer copies it in, never remakes it).
 
 **Docs to write:** each doc file this ticket updates, with the agreed text to put there, written as built. The implementer copies it in with the code.
 

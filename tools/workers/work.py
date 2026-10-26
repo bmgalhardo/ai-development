@@ -54,7 +54,7 @@ def review_file(cycle, issue, axis):
     return cycle / "reviews" / f"{issue.name[:2]}-{axis}.md"
 
 
-def worker_command(provider, game, issue, role="implement", handoff=False, axis=None, reviews=()):
+def worker_command(provider, project, issue, role="implement", handoff=False, axis=None, reviews=()):
     skill = ".agents/skills/implement/SKILL.md"
     if role == "review":
         instruction = (
@@ -89,7 +89,7 @@ def worker_command(provider, game, issue, role="implement", handoff=False, axis=
         command = ["codex", "exec", "--sandbox", sandbox, "-c",
                    'approval_policy="never"', "--color", "never", "--json"]
     else:
-        command = ["claude", "-p", "--add-dir", str(game), "--permission-mode", "auto",
+        command = ["claude", "-p", "--add-dir", str(project), "--permission-mode", "auto",
                    "--max-budget-usd", os.environ.get("WORK_BUDGET_USD", "15"),
                    "--output-format", "json"]
         if role == "review":
@@ -218,20 +218,20 @@ def new_attempt(directory, path, role, provider, axis=None):
     return record, log
 
 
-def run(game, directory, lock_fd):
+def run(project, directory, lock_fd):
     implementers, reviewers = providers()
     wait = int(os.environ.get("WORK_WAIT", "1800"))
     if wait < 1:
         raise ValueError("WORK_WAIT must be positive")
     if int(os.environ.get("WORK_TIMEOUT", "14400")) < 1:
         raise ValueError("WORK_TIMEOUT must be positive")
-    cycle = next_issue.latest_cycle(game)
+    cycle = next_issue.latest_cycle(project)
     issues = next_issue.read_issues(cycle)
     # The runner's state stays in directory; the cycle's attempts are kept with its issues.
     logs = cycle / "work"
     logs.mkdir(exist_ok=True)
-    if git(game, "status", "--porcelain").strip() and not any(i["status"] in ("in progress", "in review") for i in issues.values()):
-        raise ValueError(f"{game} has uncommitted changes and no issue is in progress or in review: commit or stash them first")
+    if git(project, "status", "--porcelain").strip() and not any(i["status"] in ("in progress", "in review") for i in issues.values()):
+        raise ValueError(f"{project} has uncommitted changes and no issue is in progress or in review: commit or stash them first")
     state_file = directory / "cooldowns.json"
     cooldowns = json.loads(state_file.read_text()) if state_file.exists() else {}
     failures = {}
@@ -268,12 +268,12 @@ def run(game, directory, lock_fd):
             continue
         if role == "review":
             attempts = [new_attempt(logs, path, role, provider, axis) for axis in missing]
-            jobs = [(worker_command(provider, game, record["issue"], role, axis=record["axis"]), log)
+            jobs = [(worker_command(provider, project, record["issue"], role, axis=record["axis"]), log)
                     for record, log in attempts]
         else:
             attempts = [new_attempt(logs, path, role, provider)]
             handoff = bool(reviewers) and issue is not next_issue.build_issue(issues)
-            jobs = [(worker_command(provider, game, attempts[0][0]["issue"], role, handoff,
+            jobs = [(worker_command(provider, project, attempts[0][0]["issue"], role, handoff,
                                     reviews=[r.relative_to(next_issue.WORKFLOW) for r in reviews]),
                      attempts[0][1])]
         save_json(directory / "current.json", [record for record, _ in attempts])
@@ -308,14 +308,14 @@ def run(game, directory, lock_fd):
                 if report:
                     review = review_file(cycle, path, record["axis"])
                     review.parent.mkdir(exist_ok=True)
-                    head = git(game, "rev-parse", "--short", "HEAD").decode().strip()
+                    head = git(project, "rev-parse", "--short", "HEAD").decode().strip()
                     review.write_text(f"# {record['axis'].capitalize()} review of {path.name}\n\n"
                                       f"Reviewer: {provider} ({record['model']}), at {head}.\n\n{report}\n")
             else:
                 outcome = status if status in finished else "timeout" if code == TIMED_OUT else failure_kind(message)
             if role != "review" and outcome not in finished:
                 recovery = logs / f"{record['attempt']}-recovery"
-                snapshot(game, path, recovery)
+                snapshot(project, path, recovery)
                 say(f"Unfinished work preserved; recovery snapshot: {recovery}")
             record.update(exit_code=code, outcome=outcome, duration_seconds=round(time.time() - started, 2),
                           usage=usage, recovery=str(recovery) if recovery else None)
@@ -347,21 +347,21 @@ def run(game, directory, lock_fd):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("game", help="game repo, relative to this workflow repo")
+    parser.add_argument("project", help="project repo, relative to this workflow repo")
     args = parser.parse_args()
     os.chdir(next_issue.WORKFLOW)
-    game = next_issue.game_root(args.game)
-    directory = next_issue.WORKFLOW / "artifacts" / "work" / game.name
+    project = next_issue.project_root(args.project)
+    directory = next_issue.WORKFLOW / "artifacts" / "work" / project.name
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / "runner.lock").open("a") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            sys.exit(f"A worker loop already owns {game}. Stop it before starting another.")
+            sys.exit(f"A worker loop already owns {project}. Stop it before starting another.")
         signal.signal(signal.SIGTERM, interrupt)
         dashboard = start_dashboard(directory)
         try:
-            return run(game, directory, lock.fileno())
+            return run(project, directory, lock.fileno())
         except KeyboardInterrupt:
             return 130
         finally:

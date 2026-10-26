@@ -102,20 +102,20 @@ def retry_at(message, fallback, now=None):
     return now.timestamp() + fallback
 
 
-def git(game, *args):
-    return subprocess.check_output(["git", "-C", str(game), *args])
+def git(project, *args):
+    return subprocess.check_output(["git", "-C", str(project), *args])
 
 
-def snapshot(game, issue, directory):
+def snapshot(project, issue, directory):
     """Save tracked edits, untracked files and issue state, including failing work."""
     directory.mkdir()
-    (directory / "HEAD").write_bytes(git(game, "rev-parse", "HEAD"))
-    (directory / "status.txt").write_bytes(git(game, "status", "--porcelain"))
-    (directory / "changes.patch").write_bytes(git(game, "diff", "--binary", "HEAD"))
-    (directory / "index.patch").write_bytes(git(game, "diff", "--binary", "--cached"))
+    (directory / "HEAD").write_bytes(git(project, "rev-parse", "HEAD"))
+    (directory / "status.txt").write_bytes(git(project, "status", "--porcelain"))
+    (directory / "changes.patch").write_bytes(git(project, "diff", "--binary", "HEAD"))
+    (directory / "index.patch").write_bytes(git(project, "diff", "--binary", "--cached"))
     (directory / "issue.md").write_bytes(issue.read_bytes())
-    paths = git(game, "ls-files", "--others", "--exclude-standard", "-z").split(b"\0")
+    paths = git(project, "ls-files", "--others", "--exclude-standard", "-z").split(b"\0")
     with tarfile.open(directory / "untracked.tar", "w") as archive:
         for path in filter(None, paths):
             name = path.decode("utf-8", errors="surrogateescape")
-            archive.add(game / name, arcname=name, recursive=False)
+            archive.add(project / name, arcname=name, recursive=False)

@@ -6,7 +6,7 @@ denied or failed tool calls, and a count of tools used. Assistant text and
 tool output are left out, so a cycle's sessions fit in one read.
 
 Sessions run in the workflow repo, so these are its logs, whichever
-game they worked on:
+project they worked on:
 
     python3 .agents/skills/retro/digest.py --since 2026-10-09T10:00 [--until ...]
     python3 .agents/skills/retro/digest.py --session <id>
@@ -21,7 +21,7 @@ import re
 ROOT = Path(__file__).resolve().parents[3]
 CLAUDE_LOGS = Path.home() / ".claude/projects" / str(ROOT).replace("/", "-")
 CODEX_LOGS = Path.home() / ".codex/sessions"
-WORK_LOGS = ROOT / ".scratch"  # each cycle keeps its worker logs in <game>/<cycle>/work/
+WORK_LOGS = ROOT / ".scratch"  # each cycle keeps its worker logs in <project>/<cycle>/work/
 SKIP = ("<local-command-caveat>", "<system-reminder>", "<command-message>", "Caveat:")
 
 

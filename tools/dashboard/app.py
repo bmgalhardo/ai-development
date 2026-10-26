@@ -14,7 +14,7 @@ STATIC = Path(__file__).parent / "static"
 
 
 def create_app(root=ROOT, quotas=None):
-    app = FastAPI(title="Game workflow", docs_url=None, redoc_url=None)
+    app = FastAPI(title="Dev workflow", docs_url=None, redoc_url=None)
     store = Store(root)
     quota_reader = quotas if quotas is not None else Quotas()
 
@@ -29,10 +29,10 @@ def create_app(root=ROOT, quotas=None):
         return store.catalog()
 
     @app.get("/api/board")
-    def board(game: str, cycle: str, response: Response):
+    def board(project: str, cycle: str, response: Response):
         response.headers["Cache-Control"] = "no-store"
         try:
-            return store.board(game, cycle)
+            return store.board(project, cycle)
         except LookupError as error:
             raise HTTPException(404, str(error)) from error
         except ValueError as error:

@@ -19,28 +19,28 @@ class Store:
         if not scratch.is_dir():
             return []
         return [
-            {"game": game.name, "cycles": cycles}
-            for game in sorted(scratch.iterdir()) if game.is_dir() and not game.is_symlink()
-            if (cycles := [cycle.name for cycle in sorted(game.iterdir(), reverse=True)
+            {"project": project.name, "cycles": cycles}
+            for project in sorted(scratch.iterdir()) if project.is_dir() and not project.is_symlink()
+            if (cycles := [cycle.name for cycle in sorted(project.iterdir(), reverse=True)
                            if cycle.is_dir() and not cycle.is_symlink()
                            and (cycle / "issues").is_dir()])
         ]
 
-    def cycle_path(self, game, cycle):
-        entry = next((entry for entry in self.catalog() if entry["game"] == game), None)
+    def cycle_path(self, project, cycle):
+        entry = next((entry for entry in self.catalog() if entry["project"] == project), None)
         if entry is None or cycle not in entry["cycles"]:
-            raise LookupError("Game or cycle not found")
-        return self.root / ".scratch" / game / cycle
+            raise LookupError("Project or cycle not found")
+        return self.root / ".scratch" / project / cycle
 
-    def board(self, game, cycle):
-        path = self.cycle_path(game, cycle)
+    def board(self, project, cycle):
+        path = self.cycle_path(project, cycle)
         warnings = []
         try:
             issues = next_issue.read_issues(path)
             cards = [self.card(number, issue, issues) for number, issue in issues.items()]
         except (OSError, SystemExit) as error:
             raise ValueError("Issue files are being updated or cannot be read; retry shortly") from error
-        directory = self.root / "artifacts" / "work" / game
+        directory = self.root / "artifacts" / "work" / project
         current = read_json(directory / "current.json", [], warnings)
         history = read_history(path / "work" / "attempts.jsonl", warnings)
         cooldowns = read_json(directory / "cooldowns.json", {}, warnings)
@@ -62,7 +62,7 @@ class Store:
         selected_prefix = str(path.relative_to(self.root)) + "/issues/"
         active = [public_attempt(row, running, path / "work") for row in current
                   if str(row.get("issue", "")).startswith(selected_prefix) and not row.get("outcome")]
-        return {"game": game, "cycle": cycle, "issues": cards, "warnings": warnings,
+        return {"project": project, "cycle": cycle, "issues": cards, "warnings": warnings,
                 "runner": {"active": running, "attempts": active,
                            "cooldowns": {provider: reset for provider, reset in cooldowns.items()
                                          if isinstance(reset, (int, float)) and reset > time.time()}},

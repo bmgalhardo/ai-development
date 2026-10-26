@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Issue board · Game workflow</title>
+  <title>Issue board · Dev workflow</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/board.js" defer></script>
 </head>
 <body>
-  <header><a class="brand" href="/">◈ <span>GAME WORKFLOW</span></a><span id="connection" role="status">Connecting…</span></header>
+  <header><a class="brand" href="/">◈ <span>DEV WORKFLOW</span></a><span id="connection" role="status">Connecting…</span></header>
   <main>
-    <div class="intro"><div><p class="eyebrow">WORKSPACE / PROGRESS</p><h1>Issue board<span>.</span></h1><p class="subtitle">What’s moving, what’s waiting, and what needs attention.</p></div><div class="selectors"><label>Game<select id="game" aria-label="Game"></select></label><label>Cycle<select id="cycle" aria-label="Cycle"></select></label></div></div>
+    <div class="intro"><div><p class="eyebrow">WORKSPACE / PROGRESS</p><h1>Issue board<span>.</span></h1><p class="subtitle">What’s moving, what’s waiting, and what needs attention.</p></div><div class="selectors"><label>Project<select id="project" aria-label="Project"></select></label><label>Cycle<select id="cycle" aria-label="Cycle"></select></label></div></div>
     <div id="error" role="alert" hidden></div>
     <section class="overview" aria-label="Cycle progress"><div><span class="eyebrow">CYCLE COMPLETION</span><p id="completion">No issues yet</p></div><progress id="progress" max="1" value="0" aria-label="Issues completed"></progress><div id="counts"></div></section>
     <section class="worker" aria-label="Worker status"><div class="worker-heading"><span class="pulse" id="pulse"></span><div><p class="eyebrow">WORKER</p><h2 id="worker-state">Reading status…</h2></div></div><div id="activity"></div><div id="cooldowns"></div></section>

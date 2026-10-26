@@ -1,11 +1,11 @@
 # Implementation workers
 
-Run `tools/work.sh ../<game>` from this repo.
+Run `tools/work.sh ../<project>` from this repo.
 It also starts the dashboard (`tools/dashboard/`) on port 8765 unless something already listens there.
-The dashboard stops with the runner; its log is `artifacts/work/<game>/dashboard.log`.
+The dashboard stops with the runner; its log is `artifacts/work/<project>/dashboard.log`.
 It starts one fresh session per attempt: implement, then two reviews in parallel, then fix.
 It pins the latest cycle at startup.
-It holds a per-game lock for the run, including quota waits.
+It holds a per-project lock for the run, including quota waits.
 Do not run standalone implementation sessions against that checkout while the loop owns it.
 The loop never launches parallel implementations.
 
@@ -34,9 +34,9 @@ Only a self-review uses subagents; their model depends on the host's subagent mo
 That review must report an unavailable selector and the actual model used.
 
 ```bash
-WORK_MODEL=sonnet tools/work.sh ../<game>
-WORK_REVIEW_AGENT=none tools/work.sh ../<game>
-WORK_FALLBACK_AGENT=none tools/work.sh ../<game>
+WORK_MODEL=sonnet tools/work.sh ../<project>
+WORK_REVIEW_AGENT=none tools/work.sh ../<project>
+WORK_FALLBACK_AGENT=none tools/work.sh ../<project>
 ```
 
 ## Review pipeline
@@ -68,13 +68,13 @@ An attempt still running after `WORK_TIMEOUT` is stopped with its process group;
 
 ## Recovery and observation
 
-A cycle's attempts live with its issues, in `.scratch/<game>/<cycle>/work/`:
+A cycle's attempts live with its issues, in `.scratch/<project>/<cycle>/work/`:
 
 - `attempts.jsonl`: completed attempts with role (`implement`, `review` or `fix`), review axis, provider, requested models, duration, exit code and outcome.
 - `<attempt>.log`: native Codex JSONL or Claude JSON result plus CLI diagnostics.
 - `<attempt>-recovery/`: HEAD, tracked binary patch, staged patch, untracked files and issue copy after an unfinished attempt.
 
-The runner's own state lives in `artifacts/work/<game>/`, ignored by Git:
+The runner's own state lives in `artifacts/work/<project>/`, ignored by Git:
 
 - `current.json`: the latest attempts (both reviewers when they run together), with outcomes when finished.
 - `cooldowns.json`: provider reset timestamps as Unix seconds.
@@ -86,7 +86,7 @@ Empty usage means the CLI did not report it; do not treat it as zero.
 These are not subscription quota estimates or comparable weighted-token totals.
 
 The runner snapshots unfinished work after quota errors, failures and graceful interruption.
-It does not reset, clean, commit, push or restore the game's files.
+It does not reset, clean, commit, push or restore the project's files.
 The next worker inspects the existing checkout and the issue's Progress section.
 The patch records all tracked changes against the saved HEAD; the staged patch separately records the index.
 The untracked archive excludes ignored files.
@@ -97,9 +97,9 @@ Ctrl-C or SIGTERM stops the worker process group before recovery and exit.
 Check status without starting a worker:
 
 ```bash
-python3 tools/workers/next_issue.py ../<game> --status
-tail -n 5 .scratch/<game>/<cycle>/work/attempts.jsonl
-cat artifacts/work/<game>/current.json
+python3 tools/workers/next_issue.py ../<project> --status
+tail -n 5 .scratch/<project>/<cycle>/work/attempts.jsonl
+cat artifacts/work/<project>/current.json
 ```
 
 ## Deferred code debt
@@ -108,5 +108,5 @@ Workers record deferred findings in the cycle's `debt.md` and keep their source 
 Relevant small prefactors can be committed before a feature.
 Wider changes require their own approved ticket.
 File size warnings require a recorded disposition, not an automatic refactor.
-The build gathers unresolved debt into the game's `docs/review.md`.
+The build gathers unresolved debt into the project's `docs/review.md`.
 Ticketing carries unresolved entries to the next cycle and assigns relevant work explicitly.

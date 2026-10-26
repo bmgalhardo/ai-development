@@ -1,1 +1,1 @@
-"""Shared game-development workflow tools."""
+"""Shared development workflow tools."""

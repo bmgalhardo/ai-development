@@ -1,15 +1,15 @@
 # Issue tracker: local Markdown
 
-Specs and issues for each game live as Markdown files in this repo's
-`.scratch/<game>/`, one folder per cycle, named by the game's folder
+Specs and issues for each project live as Markdown files in this repo's
+`.scratch/<project>/`, one folder per cycle, named by the project's folder
 (`.scratch/02-prototype/` for `../02-prototype`). `.scratch/` is not in
 git. Written for the
 skills in `.agents/skills/`; the cycle itself is in `workflow.md`. The
-game is the session's game (`AGENTS.md`).
+project is the session's project (`AGENTS.md`).
 
 ## Conventions
 
-- One cycle per folder: `.scratch/<game>/<YYYY-MM-DD>-<slug>/`, dated
+- One cycle per folder: `.scratch/<project>/<YYYY-MM-DD>-<slug>/`, dated
   the day it starts, the slug naming the change. Folders sort by date, and
   the latest is the current cycle.
 - A cycle runs from the review that starts it to its build. The review
@@ -23,10 +23,10 @@ game is the session's game (`AGENTS.md`).
 - Issues are one file per issue at `<cycle>/issues/<NN>-<slug>.md`,
   numbered from `01` in dependency order, never one combined file.
 - **Every spec and issue names its repo** on a `Repo:` line near the top
-  (`**Repo:** ../<game>`, relative to this workflow repo). Workers
+  (`**Repo:** ../<project>`, relative to this workflow repo). Workers
   run here, where the skills are, and do all the issue's work in that
   repo: code, docs, checks and commits (`git -C <repo>`).
-- The last issue of every cycle is the build: it writes the game's
+- The last issue of every cycle is the build: it writes the project's
   `docs/review.md` (see `workflow.md`), published with the docs. The
   review session then writes the cycle's `feedback.md`, which the next
   `/grill-me` starts from.
@@ -56,21 +56,21 @@ game is the session's game (`AGENTS.md`).
   `resolved` with commit, or `accepted` with reason). Carry unresolved
   entries into the next cycle during ticketing.
 - Comments and history go at the bottom of the file under `## Comments`.
-- Link to the game's files by path relative to the linking file: from a
-  cycle's `feedback.md` or `spec.md`, `../../../../<game>/docs/<file>.md`;
-  from an issue, `../../../../../<game>/docs/img/<name>.jpg`. Link to the
-  spec as `../spec.md`. The game's `docs/review.md` links only inside
+- Link to the project's files by path relative to the linking file: from a
+  cycle's `feedback.md` or `spec.md`, `../../../../<project>/docs/<file>.md`;
+  from an issue, `../../../../../<project>/docs/img/<name>.jpg`. Link to the
+  spec as `../spec.md`. The project's `docs/review.md` links only inside
   `docs/` (never to `.scratch/`): the docs build fails on any other link.
-- `.scratch/` is working material. What lasts goes to the game's `docs/`
+- `.scratch/` is working material. What lasts goes to the project's `docs/`
   (when built), its `.agents/context/decisions.md` and its code.
 
 ## When a skill says "publish to the issue tracker"
 
-Create a new file under `.scratch/<game>/<cycle>/`, creating the folder
+Create a new file under `.scratch/<project>/<cycle>/`, creating the folder
 if needed, with its `Repo:` line.
 
 ## When a skill says "fetch the relevant ticket"
 
 Read the file at the referenced path. The user will normally pass the path
-or the issue number directly; a bare number means the session's game's
-current cycle. `python3 tools/workers/next_issue.py ../<game>` finds the next ready one.
+or the issue number directly; a bare number means the session's project's
+current cycle. `python3 tools/workers/next_issue.py ../<project>` finds the next ready one.

@@ -187,16 +187,16 @@ async function refresh() {
     const catalog = await get('/api/catalog');
     if (requestRevision !== revision) return;
     const params = new URLSearchParams(location.search);
-    options($('game'), catalog.map(entry => entry.game), $('game').value || params.get('game') || catalog.at(-1)?.game);
-    const game = catalog.find(entry => entry.game === $('game').value);
-    options($('cycle'), game?.cycles || [], $('cycle').value || params.get('cycle'));
-    if (!game) {
+    options($('project'), catalog.map(entry => entry.project), $('project').value || params.get('project') || catalog.at(-1)?.project);
+    const project = catalog.find(entry => entry.project === $('project').value);
+    options($('cycle'), project?.cycles || [], $('cycle').value || params.get('cycle'));
+    if (!project) {
       $('board').replaceChildren(node('p', '', 'No cycles with issues yet. Create tickets to see them here.'));
-      $('worker-state').textContent = 'No game selected';
+      $('worker-state').textContent = 'No project selected';
       $('connection').textContent = 'Connected · no issues';
       return;
     }
-    const query = new URLSearchParams({game: game.game, cycle: $('cycle').value});
+    const query = new URLSearchParams({project: project.project, cycle: $('cycle').value});
     const board = await get(`/api/board?${query}`);
     if (requestRevision !== revision) return;
     render(board);
@@ -213,7 +213,7 @@ async function refresh() {
     if (requestRevision !== revision) refresh();
   }
 }
-$('game').addEventListener('change', () => { $('cycle').replaceChildren(); revision++; refresh(); });
+$('project').addEventListener('change', () => { $('cycle').replaceChildren(); revision++; refresh(); });
 $('cycle').addEventListener('change', () => { revision++; refresh(); });
 $('close').addEventListener('click', () => $('details').close());
 $('details').addEventListener('click', event => { if (event.target === $('details') && event.offsetX < 0) $('details').close(); });

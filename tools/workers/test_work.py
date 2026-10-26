@@ -46,15 +46,15 @@ if scenario in ('review', 'review_quota'):
     else:
         issue.write_text(issue.read_text().replace('Status:** open', 'Status:** in review'))
     sys.exit(0)
-game = root / 'game'
+project = root / 'project'
 if scenario == 'hang':
     if provider == 'claude':
         issue.write_text(issue.read_text().replace('Status:** open', 'Status:** done'))
     import time; time.sleep(30)
 if scenario == 'auth_both' or (scenario == 'auth' and provider == 'claude'):
     issue.write_text(issue.read_text().replace('Status:** open', 'Status:** in progress'))
-    (game / 'code.txt').write_text('unfinished tracked work\\n')
-    (game / 'new.txt').write_text('unfinished untracked work\\n')
+    (project / 'code.txt').write_text('unfinished tracked work\\n')
+    (project / 'new.txt').write_text('unfinished untracked work\\n')
     print(json.dumps({'type': 'result', 'is_error': True,
         'result': 'Failed to authenticate: OAuth session expired and could not be refreshed'}))
     sys.exit(1)
@@ -63,15 +63,15 @@ if scenario == 'failure':
     sys.exit(1)
 if provider == 'claude' or scenario == 'both_quota':
     issue.write_text(issue.read_text().replace('Status:** open', 'Status:** in progress'))
-    (game / 'code.txt').write_text('unfinished tracked work\\n')
-    (game / 'new.txt').write_text('unfinished untracked work\\n')
+    (project / 'code.txt').write_text('unfinished tracked work\\n')
+    (project / 'new.txt').write_text('unfinished untracked work\\n')
     print(json.dumps({'type': 'result', 'is_error': True,
         'api_error': 'usage_limit_reached', 'api_error_status': 429,
         'result': "You've hit your session limit · resets 11pm (UTC)",
         'usage': {'input_tokens': 100, 'cache_read_input_tokens': 500}}))
     sys.exit(1)
-assert (game / 'new.txt').read_text() == 'unfinished untracked work\\n'
-assert (game / 'code.txt').read_text() == 'unfinished tracked work\\n'
+assert (project / 'new.txt').read_text() == 'unfinished untracked work\\n'
+assert (project / 'code.txt').read_text() == 'unfinished tracked work\\n'
 issue.write_text(issue.read_text().replace('Status:** in progress', 'Status:** done'))
 print(json.dumps({'type': 'turn.completed', 'usage': {'input_tokens': 25, 'output_tokens': 5}}))
 '''
@@ -82,18 +82,18 @@ class WorkerTests(unittest.TestCase):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
         self.root = Path(self.stack.enter_context(tempfile.TemporaryDirectory()))
-        self.game = self.root / 'game'
-        self.game.mkdir()
-        subprocess.run(['git', 'init', '-q', str(self.game)], check=True)
-        (self.game / 'code.txt').write_text('original\n')
-        git(self.game, 'add', 'code.txt')
-        git(self.game, '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
+        self.project = self.root / 'project'
+        self.project.mkdir()
+        subprocess.run(['git', 'init', '-q', str(self.project)], check=True)
+        (self.project / 'code.txt').write_text('original\n')
+        git(self.project, 'add', 'code.txt')
+        git(self.project, '-c', 'user.name=Test', '-c', 'user.email=test@example.com',
             'commit', '-qm', 'base')
-        self.cycle = self.root / '.scratch/game/2026-10-22-test'
+        self.cycle = self.root / '.scratch/project/2026-10-22-test'
         (self.cycle / 'issues').mkdir(parents=True)
         self.issue = self.cycle / 'issues/01-feature.md'
         self.issue.write_text('**Status:** open\n**Blocked by:** None\n')
-        self.directory = self.root / 'artifacts/work/game'
+        self.directory = self.root / 'artifacts/work/project'
         self.directory.mkdir(parents=True)
         binaries = self.root / 'bin'
         binaries.mkdir()
@@ -113,7 +113,7 @@ class WorkerTests(unittest.TestCase):
         self.lock = self.stack.enter_context((self.directory / 'runner.lock').open('a'))
 
     def run_loop(self):
-        return work.run(self.game, self.directory, self.lock.fileno())
+        return work.run(self.project, self.directory, self.lock.fileno())
 
     def records(self):
         return [json.loads(line) for line in (self.cycle / 'work/attempts.jsonl').read_text().splitlines()]
@@ -139,8 +139,8 @@ class WorkerTests(unittest.TestCase):
     def test_persisted_cooldown_skips_provider_on_restart(self):
         (self.directory / 'cooldowns.json').write_text(json.dumps({'claude': 9999999999}))
         self.issue.write_text('**Status:** in progress\n')
-        (self.game / 'code.txt').write_text('unfinished tracked work\n')
-        (self.game / 'new.txt').write_text('unfinished untracked work\n')
+        (self.project / 'code.txt').write_text('unfinished tracked work\n')
+        (self.project / 'new.txt').write_text('unfinished untracked work\n')
         self.assertEqual(self.run_loop(), 0)
         self.assertEqual([r['provider'] for r in self.records()], ['codex'])
 
@@ -183,22 +183,22 @@ class WorkerTests(unittest.TestCase):
     def test_interrupt_snapshots_work(self):
         def interrupt(command, log, lock_fd):
             log.write_text('')
-            (self.game / 'code.txt').write_text('interrupted edit\n')
+            (self.project / 'code.txt').write_text('interrupted edit\n')
             raise KeyboardInterrupt
         with patch.object(work, 'run_worker', interrupt):
             self.assertEqual(self.run_loop(), 130)
         self.assertEqual(self.records()[0]['outcome'], 'interrupted')
-        self.assertEqual((self.game / 'code.txt').read_text(), 'interrupted edit\n')
+        self.assertEqual((self.project / 'code.txt').read_text(), 'interrupted edit\n')
 
     def test_dirty_unclaimed_repo_is_rejected(self):
-        (self.game / 'code.txt').write_text('user work\n')
+        (self.project / 'code.txt').write_text('user work\n')
         with self.assertRaisesRegex(ValueError, 'uncommitted changes'):
             self.run_loop()
         self.assertFalse((self.root / 'calls.jsonl').exists())
 
     def test_second_runner_is_rejected(self):
         fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        with patch.object(sys, 'argv', ['work.py', str(self.game)]):
+        with patch.object(sys, 'argv', ['work.py', str(self.project)]):
             with self.assertRaisesRegex(SystemExit, 'already owns'):
                 work.main()
 
@@ -216,7 +216,7 @@ class WorkerTests(unittest.TestCase):
                 time.sleep(0.05)
             return 0
         with patch.dict(os.environ, {'WORK_DASHBOARD': '1', 'WORK_DASHBOARD_PORT': str(port)}):
-            with patch.object(sys, 'argv', ['work.py', str(self.game)]), patch.object(work, 'run', run):
+            with patch.object(sys, 'argv', ['work.py', str(self.project)]), patch.object(work, 'run', run):
                 self.assertEqual(work.main(), 0)
         pid = int((self.root / 'dashboard.pid').read_text())
         with self.assertRaises(ProcessLookupError):
@@ -242,9 +242,9 @@ class WorkerTests(unittest.TestCase):
         with patch.dict(os.environ, {'WORK_CODEX_MODEL': 'test-codex',
                                      'WORK_CLAUDE_MODEL': 'override-claude',
                                      'WORK_CODEX_REVIEW_MODEL': 'codex-review'}):
-            codex = work.worker_command('codex', self.game, 'issue.md')
-            claude = work.worker_command('claude', self.game, 'issue.md')
-            review = work.worker_command('codex', self.game, 'issue.md', 'review', axis='spec')
+            codex = work.worker_command('codex', self.project, 'issue.md')
+            claude = work.worker_command('claude', self.project, 'issue.md')
+            review = work.worker_command('codex', self.project, 'issue.md', 'review', axis='spec')
         self.assertIn('test-codex', codex)
         self.assertIn('codex-review', codex[-1])
         self.assertIn('codex-review', review)

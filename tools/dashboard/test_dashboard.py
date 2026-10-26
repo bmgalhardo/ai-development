@@ -16,9 +16,9 @@ class DashboardTests(unittest.TestCase):
         self.temp = TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.cycle = self.root / ".scratch" / "game" / "2026-10-25-cycle"
+        self.cycle = self.root / ".scratch" / "project" / "2026-10-25-cycle"
         (self.cycle / "issues").mkdir(parents=True)
-        self.artifacts = self.root / "artifacts" / "work" / "game"
+        self.artifacts = self.root / "artifacts" / "work" / "project"
         self.artifacts.mkdir(parents=True)
         self.logs = self.cycle / "work"
         self.logs.mkdir()
@@ -32,7 +32,7 @@ class DashboardTests(unittest.TestCase):
         return str(path.relative_to(self.root))
 
     def board(self):
-        response = self.client.get("/api/board", params={"game": "game", "cycle": self.cycle.name})
+        response = self.client.get("/api/board", params={"project": "project", "cycle": self.cycle.name})
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
 
@@ -99,7 +99,7 @@ class DashboardTests(unittest.TestCase):
     def test_old_cycle_does_not_inherit_current_attempts(self):
         self.issue("01", "done")
         (self.artifacts / "current.json").write_text(json.dumps([
-            {"attempt": "new", "issue": ".scratch/game/new-cycle/issues/01-feature.md"}]))
+            {"attempt": "new", "issue": ".scratch/project/new-cycle/issues/01-feature.md"}]))
         with (self.artifacts / "runner.lock").open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             board = self.board()
@@ -108,18 +108,18 @@ class DashboardTests(unittest.TestCase):
             self.assertEqual(board["issues"][0]["attempts"], [])
 
     def test_catalog_empty_workspace_and_selection_validation(self):
-        self.assertEqual(self.client.get("/api/catalog").json(), [{"game": "game", "cycles": [self.cycle.name]}])
-        self.assertEqual(self.client.get("/api/board", params={"game": "../game", "cycle": ".."}).status_code, 404)
+        self.assertEqual(self.client.get("/api/catalog").json(), [{"project": "project", "cycles": [self.cycle.name]}])
+        self.assertEqual(self.client.get("/api/board", params={"project": "../project", "cycle": ".."}).status_code, 404)
         self.assertEqual(self.client.get("/api/board").status_code, 422)
         self.assertEqual(self.client.post("/api/board").status_code, 405)
         self.assertEqual(self.client.get("/").status_code, 200)
         self.assertEqual(self.client.get("/static/board.js").status_code, 200)
-        self.assertEqual(self.client.get("/artifacts/work/game/current.json").status_code, 404)
+        self.assertEqual(self.client.get("/artifacts/work/project/current.json").status_code, 404)
 
     def test_issue_mid_write_is_retryable(self):
         path = self.issue("01", "open")
         (self.root / path).write_text("# unfinished write")
-        response = self.client.get("/api/board", params={"game": "game", "cycle": self.cycle.name})
+        response = self.client.get("/api/board", params={"project": "project", "cycle": self.cycle.name})
         self.assertEqual(response.status_code, 503)
 
     def test_review_reports_match_issue_and_preserve_full_comments(self):

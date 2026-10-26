@@ -1,6 +1,6 @@
 # This machine: tools and gotchas
 
-What every game finds on this machine, and how to use it. A game's
+What every project finds on this machine, and how to use it. A project's
 engineering doc says which of these it uses, with its own paths and
 commands.
 
@@ -16,7 +16,7 @@ commands.
 
 ## Python
 
-- uv is at `~/.local/bin/uv`. A game's `tools/` may be a uv project:
+- uv is at `~/.local/bin/uv`. A project's `tools/` may be a uv project:
   `uv sync --project tools` once, then
   `uv run --project tools python tools/<script>.py`.
 - If a venv's Python fails to start ("No module named 'encodings'", after a
@@ -56,9 +56,9 @@ commands.
 ## Worktrees
 
 The Agent tool's `isolation: "worktree"` fails (`.claude` is a symlink).
-Use `git -C ../<game> worktree add <scratchpad>/wt-<slug> -b <branch>`.
-It has no `artifacts/` (not in git): link the game's `artifacts/` in and
-don't commit the link. Issues stay in this repo's `.scratch/<game>/`.
+Use `git -C ../<project> worktree add <scratchpad>/wt-<slug> -b <branch>`.
+It has no `artifacts/` (not in git): link the project's `artifacts/` in and
+don't commit the link. Issues stay in this repo's `.scratch/<project>/`.
 Merge the branch and `git worktree remove` it when done.
 
 ## Shell
