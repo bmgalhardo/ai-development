@@ -131,6 +131,16 @@ Today a blocked issue with a dependent chain leaves the build issue never ready,
 
 Done when a cycle with a blocked issue still deploys its finished work and its review names the block.
 
+## 8. Usage limits from the session files
+
+An idea from the 03-prototype retro (2026-10-27), not planned.
+The loop recognises usage limits by parsing each CLI's message, which broke once on a changed apostrophe.
+Both CLIs also write the limit to their session files: Claude's transcript has `rate_limit_info.resetsAt`; Codex's rollout has `rate_limits.primary` and `secondary`, with `used_percent` and `resets_at`, on every turn.
+Read the reset time from there first, and keep the message parsing as the fallback, since the formats are undocumented.
+Codex's `used_percent` would also let the loop skip Codex before starting when it is near its limit.
+
+Done when a quota stop waits until the reset time the session file gives, and a near-limit Codex is skipped before it starts.
+
 ## Evidence and evaluation
 
 The last retrospective reported two quota interruptions involving about 14% of the cycle's weighted usage.
