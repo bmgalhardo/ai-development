@@ -24,7 +24,8 @@ user names it (`AGENTS.md`).
 - `.agents/context/publishing.md`: the outputs and their prepared folders
   (once there is something to publish), as a table whose rows start
   `| game | \`<folder>/\`` or `| docs | \`<folder>/\``. The mocks are
-  published from outside the project; don't list them.
+  published from outside the project; don't list them. Without this doc
+  nothing of the project is deployed.
 - `docs/`: the user's docs; `docs/README.md` says what's where.
   `docs/review.md` is the current build's review (written by the build
   issue), second in the nav. `docs/direction/` holds what the review

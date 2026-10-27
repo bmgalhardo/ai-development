@@ -2,7 +2,6 @@ __pycache__/
 *.pyc
 .DS_Store
 *.swp
-artifacts/
 
 # The games' cycles and exploration, one folder per game (.agents/context/issue-tracker.md).
 .scratch/

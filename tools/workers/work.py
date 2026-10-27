@@ -22,6 +22,11 @@ AXES = ("standards", "spec")
 TIMED_OUT = 124  # the exit code of coreutils timeout
 
 
+def cooldowns_file():
+    """Provider reset times, shared by every project's runner: a provider's quota is per account."""
+    return next_issue.WORKFLOW / ".scratch" / "runner" / "cooldowns.json"
+
+
 def say(message):
     print(f"{datetime.now():%H:%M} {message}", flush=True)
 
@@ -138,6 +143,22 @@ def start_dashboard(directory):
     return child
 
 
+def publish_build(project):
+    """Publish the project's outputs once its build is done; 0 when there is nothing to publish."""
+    if os.environ.get("WORK_PUBLISH", "1") == "0":
+        say("Not publishing: WORK_PUBLISH=0")
+        return 0
+    if not (project / ".agents/context/publishing.md").is_file():
+        say("Nothing to publish: the project has no publishing doc")
+        return 0
+    say("Publishing the build")
+    code = subprocess.run([sys.executable, "-m", "tools.publish.publish", str(project)],
+                          cwd=next_issue.WORKFLOW, stdin=subprocess.DEVNULL).returncode
+    if code:
+        say(f"Publishing failed (exit {code}); fix it and run /publish")
+    return code
+
+
 def run_workers(jobs, lock_fd):
     """Run (command, log) jobs at once; return their exit codes."""
     outputs, children = [], []
@@ -232,7 +253,8 @@ def run(project, directory, lock_fd):
     logs.mkdir(exist_ok=True)
     if git(project, "status", "--porcelain").strip() and not any(i["status"] in ("in progress", "in review") for i in issues.values()):
         raise ValueError(f"{project} has uncommitted changes and no issue is in progress or in review: commit or stash them first")
-    state_file = directory / "cooldowns.json"
+    state_file = cooldowns_file()
+    state_file.parent.mkdir(exist_ok=True)
     cooldowns = json.loads(state_file.read_text()) if state_file.exists() else {}
     failures = {}
     failed = {}  # issue path -> providers that failed it this run; the retry prefers another
@@ -244,7 +266,8 @@ def run(project, directory, lock_fd):
             say("No issue is ready.")
             for item in issues.values():
                 print(f"{item['status']:12s} {item['path'].name}")
-            return 0
+            build = next_issue.build_issue(issues)
+            return publish_build(project) if build and build["status"] == "done" else 0
         path = issue["path"]
         reviews = [review_file(cycle, path, axis) for axis in AXES]
         missing = [axis for axis, review in zip(AXES, reviews) if not review.exists()]
@@ -351,7 +374,7 @@ def main():
     args = parser.parse_args()
     os.chdir(next_issue.WORKFLOW)
     project = next_issue.project_root(args.project)
-    directory = next_issue.WORKFLOW / "artifacts" / "work" / project.name
+    directory = next_issue.WORKFLOW / ".scratch" / project.name / "runner"
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / "runner.lock").open("a") as lock:
         try:

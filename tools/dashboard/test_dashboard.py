@@ -18,7 +18,7 @@ class DashboardTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.cycle = self.root / ".scratch" / "project" / "2026-10-25-cycle"
         (self.cycle / "issues").mkdir(parents=True)
-        self.artifacts = self.root / "artifacts" / "work" / "project"
+        self.artifacts = self.root / ".scratch" / "project" / "runner"
         self.artifacts.mkdir(parents=True)
         self.logs = self.cycle / "work"
         self.logs.mkdir()
@@ -114,7 +114,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(self.client.post("/api/board").status_code, 405)
         self.assertEqual(self.client.get("/").status_code, 200)
         self.assertEqual(self.client.get("/static/board.js").status_code, 200)
-        self.assertEqual(self.client.get("/artifacts/work/project/current.json").status_code, 404)
+        self.assertEqual(self.client.get("/.scratch/project/runner/current.json").status_code, 404)
 
     def test_issue_mid_write_is_retryable(self):
         path = self.issue("01", "open")

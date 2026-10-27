@@ -2,7 +2,7 @@
 
 Run `tools/work.sh ../<project>` from this repo.
 It also starts the dashboard (`tools/dashboard/`) on port 8765 unless something already listens there.
-The dashboard stops with the runner; its log is `artifacts/work/<project>/dashboard.log`.
+The dashboard stops with the runner; its log is `.scratch/<project>/runner/dashboard.log`.
 It starts one fresh session per attempt: implement, then two reviews in parallel, then fix.
 It pins the latest cycle at startup.
 It holds a per-project lock for the run, including quota waits.
@@ -24,6 +24,7 @@ The loop never launches parallel implementations.
 | `WORK_TIMEOUT` | `14400` | Seconds before an attempt is stopped; a stopped attempt whose issue isn't finished counts as a failure (`timeout`) |
 | `WORK_BUDGET_USD` | `15` | Claude CLI's per-attempt budget flag |
 | `WORK_DASHBOARD` | `1` | `0` skips starting the dashboard |
+| `WORK_PUBLISH` | `1` | `0` skips publishing the build when the loop ends |
 | `WORK_DASHBOARD_PORT` | `8765` | Dashboard port |
 
 Model names belong to their provider.
@@ -74,12 +75,13 @@ A cycle's attempts live with its issues, in `.scratch/<project>/<cycle>/work/`:
 - `<attempt>.log`: native Codex JSONL or Claude JSON result plus CLI diagnostics.
 - `<attempt>-recovery/`: HEAD, tracked binary patch, staged patch, untracked files and issue copy after an unfinished attempt.
 
-The runner's own state lives in `artifacts/work/<project>/`, ignored by Git:
+The runner's own state lives in `.scratch/<project>/runner/`:
 
 - `current.json`: the latest attempts (both reviewers when they run together), with outcomes when finished.
-- `cooldowns.json`: provider reset timestamps as Unix seconds.
 - `runner.lock`: held while a runner or its children are alive.
 - `dashboard.log`: the dashboard's output.
+
+`.scratch/runner/cooldowns.json` holds provider reset timestamps as Unix seconds, shared by every project's runner: a provider's quota is per account.
 
 The JSON records retain provider-reported usage in native units when available.
 Empty usage means the CLI did not report it; do not treat it as zero.
@@ -99,7 +101,7 @@ Check status without starting a worker:
 ```bash
 python3 tools/workers/next_issue.py ../<project> --status
 tail -n 5 .scratch/<project>/<cycle>/work/attempts.jsonl
-cat artifacts/work/<project>/current.json
+cat .scratch/<project>/runner/current.json
 ```
 
 ## Deferred code debt

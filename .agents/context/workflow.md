@@ -44,9 +44,10 @@ docs never run ahead of the build.
 Publishing updates the persistent, user-accessible version, verifies
 success, and returns its link. Generating local files is preparation.
 The project's publishing doc (`.agents/context/publishing.md`) lists its
-outputs (for a game: the game and a docs page) and their prepared folders. Every host
-publishes them, with the cycle's mocks, to the games server with
-`python3 tools/publish/publish.py ../<project>` (`games-server.md`).
+outputs (for a game: the game and a docs page) and their prepared folders.
+When the build is done, the worker loop publishes them to the games server
+(`games-server.md`). The review publishes its own mocks. A project with
+nothing to deploy has no publishing doc.
 
 ## 1. Review session (brainstorming or QA)
 
@@ -69,7 +70,8 @@ its real places, as flat stand-ins, so the mock shows what the change
 bumps into. A mock lives in
 the cycle's `mocks/<YYYY-MM-DD>-<slug>/` (its
 `index.html`, images, the scripts that made them, a README), labelled as a
-mockup. Publishing puts it on the project's Mocks page. The user
+mockup. Publish it with `python3 tools/publish/publish.py ../<project> mocks`:
+the Mocks page shows the cycle under review. The user
 lands the design on the mock, and the refinement starts from what they
 chose.
 
@@ -136,7 +138,7 @@ is no persisted file carrying the interview into `/to-spec`.
    repo and the docs it updates for what it builds. If ticketing exposes a missing product
    decision, return to `/grill-me`, settle it, update the spec and only then
    resume ticketing. The user approves the breakdown. The last issue is
-   always **Build and publish**, blocked by all the others.
+   always **Build**, blocked by all the others.
 
 ## 3. Implementation (without the user)
 
@@ -177,13 +179,13 @@ be stopped and started again. An issue left `in progress` is resumed: its
 commits and unfinished edits are preserved, including failing work
 (`implement`, step 1). A usage limit cools down that provider and tries the
 other; the loop waits when no configured provider is available. An issue
-that fails twice stops the loop. Authentication failures stop for repair.
-Each worker's log is in the cycle's `work/`; the runner's state is in this repo's
-`artifacts/work/<project>/`, ignored in git.
+that fails twice stops the loop. A failed login sets that provider aside.
+Each worker's log is in the cycle's `work/`; the runner's state is in
+`.scratch/<project>/runner/`.
 
 `/implement` also works alone, in a top-level session.
 
-## 4. Build and publish (the last issue, then automatic publication)
+## 4. Build (the last issue), then publication
 
 A worker does the build issue like any other:
 1. Run the checks, including the build (the engineering doc).
@@ -201,10 +203,13 @@ A worker does the build issue like any other:
 5. Update `.agents/context/status.md` (where things stand).
 6. Commit, and close the build issue.
 
-As soon as the worker loop finishes, the active host session runs
-`/publish` automatically. The cycle is complete only after every
-output is on the games server and its link returned. That published
-build is the next review.
+The build doesn't upload. When the worker loop ends with the build issue
+`done`, it publishes the build's outputs
+(`python3 tools/publish/publish.py ../<project>`) and prints their links.
+It skips this for a project without a publishing doc, or with
+`WORK_PUBLISH=0`. A failed upload is reported at the end of the run: fix it
+and run `/publish`. The cycle is complete once every output is on the
+server. That published build is the next review.
 
 ## 5. Retro
 

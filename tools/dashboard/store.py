@@ -40,10 +40,10 @@ class Store:
             cards = [self.card(number, issue, issues) for number, issue in issues.items()]
         except (OSError, SystemExit) as error:
             raise ValueError("Issue files are being updated or cannot be read; retry shortly") from error
-        directory = self.root / "artifacts" / "work" / project
+        directory = self.root / ".scratch" / project / "runner"
         current = read_json(directory / "current.json", [], warnings)
         history = read_history(path / "work" / "attempts.jsonl", warnings)
-        cooldowns = read_json(directory / "cooldowns.json", {}, warnings)
+        cooldowns = read_json(self.root / ".scratch" / "runner" / "cooldowns.json", {}, warnings)
         if not isinstance(current, list) or not all(isinstance(row, dict) for row in current):
             warnings.append("Invalid current attempt snapshot")
             current = []

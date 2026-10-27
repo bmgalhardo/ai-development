@@ -49,7 +49,7 @@ The provider's capture time is preserved; a successful poll does not imply a new
 
 ## Worker status
 
-The server reads `.scratch/<project>/<cycle>/issues/` and `work/` (the attempts), and `artifacts/work/<project>/` (the runner).
+The server reads `.scratch/<project>/<cycle>/issues/` and `work/` (the attempts), and `.scratch/<project>/runner/` (the runner).
 The existing runner lock indicates that a runner or its children are alive.
 Detection reads Linux's `/proc/locks` without acquiring the worker's lock.
 It does not prove that an agent is making progress. Last log output age is shown separately.
@@ -70,4 +70,4 @@ uv run --project tools/dashboard python -m unittest discover -s tools/dashboard 
 ```
 
 `tools/work.sh` starts this server when nothing listens on its port (`WORK_DASHBOARD=0`
-skips it) and stops it when the runner exits. Its log is `artifacts/work/<project>/dashboard.log`.
+skips it) and stops it when the runner exits. Its log is `.scratch/<project>/runner/dashboard.log`.

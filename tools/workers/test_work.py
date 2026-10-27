@@ -93,8 +93,10 @@ class WorkerTests(unittest.TestCase):
         (self.cycle / 'issues').mkdir(parents=True)
         self.issue = self.cycle / 'issues/01-feature.md'
         self.issue.write_text('**Status:** open\n**Blocked by:** None\n')
-        self.directory = self.root / 'artifacts/work/project'
+        self.directory = self.root / '.scratch/project/runner'
         self.directory.mkdir(parents=True)
+        self.cooldowns = self.root / '.scratch/runner/cooldowns.json'
+        self.cooldowns.parent.mkdir()
         binaries = self.root / 'bin'
         binaries.mkdir()
         for provider in ('claude', 'codex'):
@@ -134,10 +136,28 @@ class WorkerTests(unittest.TestCase):
         self.assertIn('unfinished tracked work', (recovery / 'changes.patch').read_text())
         with tarfile.open(recovery / 'untracked.tar') as archive:
             self.assertEqual(archive.extractfile('new.txt').read(), b'unfinished untracked work\n')
-        self.assertGreater(json.loads((self.directory / 'cooldowns.json').read_text())['claude'], 0)
+        self.assertGreater(json.loads(self.cooldowns.read_text())['claude'], 0)
+
+    def test_a_done_build_is_published(self):
+        with patch.object(work, 'publish_build', return_value=0) as published:
+            self.assertEqual(self.run_loop(), 0)
+        self.assertEqual(self.records()[-1]['outcome'], 'done')
+        published.assert_called_once_with(self.project)
+
+    def test_publishing_needs_a_publishing_doc_and_can_be_turned_off(self):
+        with patch.object(work.subprocess, 'run') as ran:
+            self.assertEqual(work.publish_build(self.project), 0)
+            (self.project / '.agents/context').mkdir(parents=True)
+            (self.project / '.agents/context/publishing.md').write_text('| docs | `site/` |\n')
+            with patch.dict(os.environ, {'WORK_PUBLISH': '0'}):
+                self.assertEqual(work.publish_build(self.project), 0)
+            ran.assert_not_called()
+            ran.return_value.returncode = 1
+            self.assertEqual(work.publish_build(self.project), 1)
+        self.assertEqual(ran.call_args.args[0][-2:], ['tools.publish.publish', str(self.project)])
 
     def test_persisted_cooldown_skips_provider_on_restart(self):
-        (self.directory / 'cooldowns.json').write_text(json.dumps({'claude': 9999999999}))
+        self.cooldowns.write_text(json.dumps({'claude': 9999999999}))
         self.issue.write_text('**Status:** in progress\n')
         (self.project / 'code.txt').write_text('unfinished tracked work\n')
         (self.project / 'new.txt').write_text('unfinished untracked work\n')
@@ -150,7 +170,7 @@ class WorkerTests(unittest.TestCase):
         records = self.records()
         self.assertEqual([r['outcome'] for r in records], ['authentication', 'done'])
         self.assertEqual([r['provider'] for r in records], ['claude', 'codex'])
-        self.assertFalse((self.directory / 'cooldowns.json').exists())
+        self.assertFalse(self.cooldowns.exists())
 
     def test_authentication_stops_when_no_provider_is_signed_in(self):
         with patch.dict(os.environ, {'TEST_SCENARIO': 'auth_both'}):
@@ -165,7 +185,7 @@ class WorkerTests(unittest.TestCase):
         records = self.records()
         self.assertEqual([r['outcome'] for r in records], ['failure', 'failure'])
         self.assertEqual([r['provider'] for r in records], ['claude', 'codex'])
-        self.assertFalse((self.directory / 'cooldowns.json').exists())
+        self.assertFalse(self.cooldowns.exists())
 
     def test_finished_worker_that_never_exits_is_stopped_and_counted_done(self):
         with patch.dict(os.environ, {'TEST_SCENARIO': 'hang', 'WORK_TIMEOUT': '1'}):

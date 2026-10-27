@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
-"""Publish a game's outputs to the games server: its menu page and the latest
-game, docs page and mocks.
+"""Publish a project's outputs to the games server, with its menu page.
 
-The game's .agents/context/publishing.md lists its outputs in a table whose
-first column is the output (`game` or `docs`) and whose second names the
-prepared folder in backticks, relative to the game's root:
+The project's .agents/context/publishing.md lists its outputs in a table
+whose first column is the output (`game` or `docs`) and whose second names
+the prepared folder in backticks, relative to the project's root:
 
     | game | `artifacts/artifact-site/` (`tools/package_artifact.py`) |
 
-The docs page includes the current review (docs/review.md). The mocks are the
-current cycle's (this repo's .scratch/<game>/<latest cycle>/mocks/), newest
-first, each as it was made. Each output is uploaded to <server>/<game>/.staging/<output>/ and then moved to
-<server>/<game>/<output>/, replacing the previous build. The server keeps
-games.json, the list of games the menu pages are built from.
+A project without that doc has no outputs. The docs page includes the
+current review (docs/review.md). The mocks are the review's: the current
+cycle's (this repo's .scratch/<project>/<latest cycle>/mocks/), newest first,
+each as it was made. Each output is uploaded to
+<server>/<project>/.staging/<output>/ and then moved to
+<server>/<project>/<output>/, replacing the previous one. The server keeps
+games.json, the list of projects the menu pages are built from.
 
-    python3 tools/publish/publish.py ../<game>
+    python3 tools/publish/publish.py ../<project>          the build: its outputs
+    python3 tools/publish/publish.py ../<project> mocks    the review: its mocks
+
+Only the named outputs change on the server. With nothing to publish it says
+so and never contacts the server.
 """
 
 import argparse
@@ -26,6 +31,7 @@ from pathlib import Path
 import re
 import shutil
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -33,6 +39,7 @@ import urllib.request
 WORKFLOW = Path(__file__).resolve().parents[2]
 SERVER = os.environ.get("GAMES_URL", "https://games.bgalhardo.internal")
 OUTPUTS = {"game": "Game", "docs": "Docs", "mocks": "Mocks"}
+BUILD = ("game", "docs")  # what the build publishes; the review publishes the mocks
 # What a mock folder keeps to itself: the scripts and notes that made it,
 # and kept/ (things set aside, such as a replaced model).
 MOCK_SOURCES = ("*.gd", "*.py", "*.md", "*.json", "*.uid", "*.template.html", "kept")
@@ -83,6 +90,8 @@ def outputs(game):
     """The game's prepared folders by output, from its publishing doc."""
     doc = game / ".agents/context/publishing.md"
     found = {}
+    if not doc.is_file():
+        return found
     for line in doc.read_text(encoding="utf-8").splitlines():
         match = ROW.match(line.strip())
         if match:
@@ -90,15 +99,12 @@ def outputs(game):
     return found
 
 
-def mocks(game):
-    """The mocks page, prepared in artifacts/mocks/<game>/; None if there are no mocks."""
+def mocks(game, out):
+    """The current cycle's mocks page, prepared in out; None if the cycle has no mocks."""
     cycles = sorted((WORKFLOW / ".scratch" / game.name).glob("[0-9]*-*/"))
     found = sorted(cycles[-1].glob("mocks/*/index.html"), reverse=True) if cycles else []
     if not found:
         return None
-    out = WORKFLOW / "artifacts/mocks" / game.name
-    if out.exists():
-        shutil.rmtree(out)
     links = []
     for index in found:
         folder = index.parent
@@ -151,29 +157,41 @@ class Server:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("game", help="the game's repo, relative to this one (../<game>)")
+    parser.add_argument("game", help="the project's repo, relative to this one (../<project>)")
+    parser.add_argument("only", nargs="*", choices=list(OUTPUTS), metavar="output",
+                        help="what to publish: mocks (the review), or by default the build's outputs")
     parser.add_argument("--server", default=SERVER, help=f"the games server (default {SERVER}, or GAMES_URL)")
     args = parser.parse_args()
     game = (WORKFLOW / args.game).resolve()
+    with tempfile.TemporaryDirectory() as staging:
+        return publish(game, args.only or list(BUILD), Server(args.server), Path(staging))
+
+
+def publish(game, names, server, staging):
+    """Upload the named outputs the project has; remove the named ones it no longer has."""
     slug = game.name
-    folders = outputs(game)
-    if mock_folder := mocks(game):
-        folders["mocks"] = mock_folder
+    available = outputs(game)
+    if "mocks" in names and (mock_folder := mocks(game, staging / "mocks")):
+        available["mocks"] = mock_folder
+    folders = {name: folder for name, folder in available.items() if name in names}
+    if not folders:
+        print(f"Nothing to publish for {slug} ({', '.join(names)})")
+        return 0
     for name, folder in folders.items():
         if not (folder / "index.html").is_file():
             print(f"Missing {folder}/index.html: prepare the {name} output first", file=sys.stderr)
             return 1
-    server = Server(args.server)
     for name, folder in folders.items():
         count = server.upload(folder, slug, name)
         print(f"uploaded {name}: {count} files")
     games = json.loads(server.request("GET", "/games.json", missing_ok=True) or b"{}")
     entry = games.get(slug, {"outputs": []})
-    for name in entry["outputs"]:
-        if name not in folders:
-            server.request("DELETE", f"/{slug}/{name}/", missing_ok=True)
+    gone = [name for name in entry["outputs"] if name in names and name not in folders]
+    for name in gone:
+        server.request("DELETE", f"/{slug}/{name}/", missing_ok=True)
     entry["title"] = title(game)
-    entry["outputs"] = [name for name in OUTPUTS if name in folders]
+    entry["outputs"] = [name for name in OUTPUTS if name in folders
+                        or (name in entry["outputs"] and name not in gone)]
     entry["published"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     games[slug] = entry
     server.put("/games.json", json.dumps(games, indent=2).encode())
