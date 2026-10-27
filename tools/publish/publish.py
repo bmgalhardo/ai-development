@@ -37,7 +37,7 @@ import urllib.parse
 import urllib.request
 
 WORKFLOW = Path(__file__).resolve().parents[2]
-SERVER = os.environ.get("PUBLISH_URL", "https://publish.bgalhardo.internal")
+SERVER = os.environ.get("PUBLISH_URL", "https://projects.bgalhardo.internal")
 OUTPUTS = {"game": "Game", "docs": "Docs", "mocks": "Mocks"}
 BUILD = ("game", "docs")  # what the build publishes; the review publishes the mocks
 # What a mock folder keeps to itself: the scripts and notes that made it,

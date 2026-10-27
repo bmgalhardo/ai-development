@@ -1,7 +1,7 @@
 # The publish server
 
 Every output is published to the publish server,
-https://publish.bgalhardo.internal: the same route for Claude and Codex.
+https://projects.bgalhardo.internal: the same route for Claude and Codex.
 It is on the LAN and the VPN only, and it has no auth. It keeps only the
 latest build of each output. Everything it serves can be rebuilt from the
 project's repo and this repo's `.scratch/`.
