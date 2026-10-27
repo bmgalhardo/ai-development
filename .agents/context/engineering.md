@@ -23,6 +23,18 @@ if it exists.
   server, a watcher. A headless session doesn't exit while one runs, and
   the worker loop waits for it.
 
+## Keeping the context small
+
+Everything a tool returns stays in the session's context, and every later
+turn re-reads it.
+
+- Read what you need: `grep -n` for the function, then `sed -n` its
+  lines, not a whole file or a long range.
+- Edit with the Edit tool. Don't rewrite a file through Bash (`cat >`, a
+  Python `replace`) to change a few lines.
+- Keep a long command's output short: write it to a file, then read its
+  tail or its failures (`| tail -n 30`, `grep -n FAIL`).
+
 ## Worktrees
 
 The Agent tool's `isolation: "worktree"` fails (`.claude` is a symlink).

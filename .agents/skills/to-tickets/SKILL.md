@@ -38,7 +38,7 @@ Break the work into **tracer bullet** tickets.
 
 - Each slice cuts a narrow but COMPLETE path through every layer (schema, API, UI, tests): vertical, NOT a horizontal slice of one layer
 - A completed slice is demoable or verifiable on its own
-- Each slice is sized to fit in a single fresh context window
+- Each slice is small enough to finish well inside one session: one or two modules and their tests. Split a slice that would change several systems at once or carries many acceptance boxes
 - Any prefactoring should be done first
 - A spec's performance target is measured in the first slice that builds the hot path, against the target, as an acceptance criterion. It extrapolates from a sample rather than timing a full worst-case run, and records the result in Comments
 - A risk the user raised in review or grilling gets a **Stop if** condition on the first ticket that can show it, when its failure would carry into later tickets. Name the condition so the implementer can check it (a threshold, an observable outcome). No other ticket gets one
