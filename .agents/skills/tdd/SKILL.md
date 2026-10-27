@@ -25,9 +25,9 @@ A **seam** is the public boundary you test at: the interface where you observe b
 
 **Logic gets a failing test first:** anything with an independent source of truth for the expected value, such as reference data, published values, or a rule written in the domain docs. What counts as a success, the order things happen in, what is visible or allowed when: write the test, watch it fail, then make it pass.
 
-**Look and feel doesn't:** light, colour, shaders, layout, motion and timing, models, how words sit on screen. There is no honest failing test to write first. Build it, then check it with the project's screenshot captures and look at them; the user's review is the final check. Where a visual change rests on logic (a position, a threshold, what is hidden), test that logic.
+**What can only be judged by looking doesn't:** look and feel (colour, layout, motion, how words sit on screen), and how an output reads to a person (a report's layout, a log's wording). There is no honest failing test to write first. Build it, then check it with the project's evidence (the engineering doc says what that is, such as screenshots or an example run) and look at it; the user's review is the final check. Where such a change rests on logic (a position, a threshold, what is hidden, which rows appear), test that logic.
 
-The engineering doc says which test files, fixtures and capture scripts exist.
+The engineering doc says which test files, fixtures and evidence tools exist, and how the project's tests are written.
 
 ## Anti-patterns
 

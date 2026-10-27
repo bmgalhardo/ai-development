@@ -1,38 +1,43 @@
 # Good and bad tests
 
-## Good: through the real scene
+The examples are in Python. The rules hold in any language; the project's
+engineering doc says how its own tests are written.
 
-Drive the game the way the player does, and check what they would see.
+## Good: through the public interface
 
-```gdscript
-# GOOD: a real click on the button starts the fight, and the HUD shows it
-func _test_pull_button_starts_the_fight() -> void:
-	_click(scene.hud.pull_button_center())
-	await process_frame
-	expect(scene.fight.is_running(), "a click on Pull starts the fight")
-	expect(scene.hud.pull_count() == 1, "the HUD counts the first pull")
+Drive the code the way its user or caller does, and check what they would
+see.
+
+```python
+# GOOD: loading a file through the pipeline's entry point, checking the result
+def test_rows_with_a_missing_id_are_rejected():
+    result = pipeline.ingest(fixture("orders_with_gaps.csv"))
+    assert result.accepted == 8
+    assert result.rejected == [Rejection(line=4, reason="missing order id")]
 ```
+
+For a program with a UI, the same holds: send a real click or key, then
+check what is shown.
 
 Characteristics:
 
-- Tests what the player or a caller cares about
-- Goes through public methods and real input events
+- Tests what the user or a caller cares about
+- Goes through public functions and real input
 - Survives internal refactors
 - The name says WHAT, not HOW
 - One logical check per test
 
 ## Bad: tied to the inside
 
-```gdscript
+```python
 # BAD: calls a private helper directly, so a refactor breaks it
-func _test_start() -> void:
-	scene._begin_fight()
-	expect(scene._state == 2, "running")
+def test_validate():
+    assert pipeline._check_row({"id": None})._state == 2
 ```
 
 Red flags:
 
-- Calling `_private` methods or reading `_private` fields
+- Calling `_private` functions or reading `_private` fields
 - Asserting on call counts or the order of internal calls
 - The test breaks when refactoring without any change in behaviour
 - The test name describes HOW, not WHAT
@@ -42,14 +47,14 @@ Red flags:
 The expected value is computed the way the code computes it, so the test
 passes by construction.
 
-```gdscript
-# BAD: the "truth" comes from the game's own formula
-var expected := Damage.after_armor(hit.amount, target.armor)
-expect(target.health == target.max_health - expected, "damage applied")
+```python
+# BAD: the "truth" comes from the code's own formula
+expected = pricing.after_discount(order.total, customer.discount)
+assert invoice.amount == expected
 
 # GOOD: the truth is a worked example from the spec
-# (a 100 hit on 20% armor deals 80)
-expect(target.health == 920, "a 100 hit on 20% armor leaves 920 of 1000")
+# (a 100 order with a 20% discount costs 80)
+assert invoice.amount == 80
 ```
 
 Expected values come from an independent source: a worked example, a rule
@@ -58,13 +63,14 @@ reference fixtures.
 
 ## No mocks
 
-Don't fake the game's own classes. Control the boundaries instead, and
+Don't fake the project's own classes. Control the boundaries instead, and
 list them in the project's engineering doc:
 
-- **Time:** pause the game's clock and step it by hand.
-- **Input:** synthesize input events (clicks, touches, keys).
+- **Time:** inject the clock and step it by hand.
+- **Input:** synthesize input (requests, files, clicks, keys).
 - **Randomness:** inject a seeded random number generator.
-- **Files and the network:** inject them so a test can control them.
+- **Files, the network and services:** inject them so a test can control
+  them.
 
 If a new feature brings a new boundary, inject it so a test can control
 it, and add it to that list.
