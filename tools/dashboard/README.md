@@ -6,13 +6,12 @@ A read-only FastAPI dashboard for every project's cycles. Run from the workflow 
 uv run --project tools/dashboard python -m tools.dashboard
 ```
 
-Open `http://<host-ip>:8765` from another device on the same network.
-On the server itself, http://127.0.0.1:8765 also works. The server is a separate process.
+Open http://127.0.0.1:8765 on the same machine. The server is a separate process.
 It never starts, stops or imports the worker runner, edits tickets, or writes worker artifacts.
 Stop it with Ctrl-C. Use `--port 8766` to choose another port.
-The default bind address is `0.0.0.0` (all interfaces), for headless hosts.
-Use `--host 127.0.0.1` to restrict access to the server itself.
-For access through SSH instead:
+It listens on this machine only by default. It has no login: to open it from another
+device on your network, set `WORK_DASHBOARD_HOST=0.0.0.0` (in the environment or `.env`)
+or pass `--host 0.0.0.0`, then open `http://<host-ip>:8765`. For access through SSH instead:
 
 ```bash
 ssh -L 8765:127.0.0.1:8765 <worker-host>

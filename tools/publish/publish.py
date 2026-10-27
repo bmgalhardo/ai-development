@@ -37,6 +37,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from tools.settings import load_env
+
 WORKFLOW = Path(__file__).resolve().parents[2]
 MOCKS = "mocks"  # the review's output; every other output is the build's
 # What a mock folder keeps to itself: the scripts and notes that made it,
@@ -67,13 +69,9 @@ a:hover { border-color: var(--accent); color: var(--accent); }
 
 
 def server_url():
-    """The publish server: PUBLISH_URL from the environment, else from this repo's .env; None if neither."""
-    if os.environ.get("PUBLISH_URL"):
-        return os.environ["PUBLISH_URL"]
-    env = WORKFLOW / ".env"
-    lines = env.read_text(encoding="utf-8").splitlines() if env.is_file() else []
-    values = dict(line.split("=", 1) for line in lines if "=" in line and not line.lstrip().startswith("#"))
-    return values.get("PUBLISH_URL", "").strip().strip('"') or None
+    """The publish server: PUBLISH_URL from the environment or this repo's .env; None if neither."""
+    load_env()
+    return os.environ.get("PUBLISH_URL") or None
 
 
 def page(title, subtitle, links):

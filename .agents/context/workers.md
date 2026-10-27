@@ -11,6 +11,8 @@ The loop never launches parallel implementations.
 
 ## Provider and model settings
 
+Each setting can also sit in this repo's `.env` (not in git), as `KEY=value`; the environment wins.
+
 | Variable | Default | Meaning |
 |---|---|---|
 | `WORK_AGENT` | `claude` | Preferred implementer: `codex` or `claude` |
@@ -26,6 +28,7 @@ The loop never launches parallel implementations.
 | `WORK_DASHBOARD` | `1` | `0` skips starting the dashboard |
 | `WORK_PUBLISH` | `1` | `0` skips publishing the build when the loop ends |
 | `WORK_DASHBOARD_PORT` | `8765` | Dashboard port |
+| `WORK_DASHBOARD_HOST` | `127.0.0.1` | Dashboard bind address; `0.0.0.0` opens it to the network (no login) |
 
 Model names belong to their provider.
 The generic model settings never carry a Claude alias into Codex or vice versa.

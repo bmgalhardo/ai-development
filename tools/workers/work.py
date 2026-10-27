@@ -17,6 +17,7 @@ from uuid import uuid4
 
 from . import next_issue
 from tools.publish.publish import server_url
+from tools.settings import load_env
 from .work_attempt import failure_kind, final_message, git, read_result, retry_at, snapshot
 
 AXES = ("standards", "spec")
@@ -137,7 +138,7 @@ def start_dashboard(directory):
         return None
     with (directory / "dashboard.log").open("w") as log:
         child = subprocess.Popen(["uv", "run", "--project", "tools/dashboard", "python", "-m", "tools.dashboard",
-                                  "--port", str(port)],
+                                  "--host", os.environ.get("WORK_DASHBOARD_HOST", "127.0.0.1"), "--port", str(port)],
                                  stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
                                  start_new_session=True)
     say(f"Dashboard on port {port}; it stops with this runner")
@@ -376,6 +377,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("project", help="project repo, relative to this workflow repo")
     args = parser.parse_args()
+    load_env()
     os.chdir(next_issue.WORKFLOW)
     project = next_issue.project_root(args.project)
     directory = next_issue.WORKFLOW / ".scratch" / project.name / "runner"

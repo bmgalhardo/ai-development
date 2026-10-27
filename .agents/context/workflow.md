@@ -9,7 +9,8 @@ to change over time, mostly through `/retro`.
 This repo holds what every project shares: this cycle, the issue tracker
 (`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`), the
 publisher (`tools/publish/publish.py`), the machine's tools
-(`machine.md`) and how to publish (`publish-server.md`). It also holds each project's cycles and
+(`engineering.md`, and this machine's `machine.local.md`) and how to
+publish (`publish-server.md`). It also holds each project's cycles and
 explorations, in `.scratch/<project>/` (not in git). Every session and
 worker runs here. Each project is an independent repo beside this one
 (`../<project>/`) with its own `AGENTS.md` and context (`project-setup.md`);

@@ -10,7 +10,7 @@ user names it (`AGENTS.md`).
 `python3 tools/project/check_contract.py ../<project>` checks it. The
 workflow names each item below and the project says how. Only what is
 true of the project goes in its files: the machine's tools and how to
-publish are the workflow's (`machine.md`, `publish-server.md`).
+publish are the workflow's (`engineering.md`, `machine.local.md`, `publish-server.md`).
 
 ## Required
 

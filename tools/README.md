@@ -10,7 +10,7 @@ Keep the root `work.sh` as the stable worker entry point.
 | `project/` | Check a project repo against the contract (`project-setup.md`) | `python3 tools/project/check_contract.py ../<project>` |
 | `dashboard/` | Read-only Kanban board and worker activity | `uv run --project tools/dashboard python -m tools.dashboard` |
 
-The dashboard runs independently of workers at `http://<host-ip>:8765`.
+The dashboard runs independently of workers at http://127.0.0.1:8765.
 `work.sh` starts it for the run when it isn't already running.
 See `dashboard/README.md` for setup, status semantics and remote access.
 

@@ -26,9 +26,10 @@ that project. Paths in a project's files are relative to that project's root.
   Markdown in this repo's `.scratch/<project>/`. Every ticket names its repo.
 - `.agents/context/project-setup.md`: what a project repo provides;
   `/new-project` sets one up.
-- `.agents/context/machine.md`: the tools on this machine (uv, the shell,
-  worktrees, display) and their gotchas. A project's own toolchain is in
-  its engineering doc.
+- `.agents/context/engineering.md`: the engineering defaults (uv, the
+  shell, worktrees). A project's engineering doc adds its stack and wins.
+  This machine's tools are in `.agents/context/machine.local.md` (not in
+  git), when it exists.
 - `.agents/context/publish-server.md`: how to publish (the same for Claude
   and Codex). A project lists only its outputs and their prepared folders.
 - `.agents/skills/`: the skills, adapted from Matt Pocock's
