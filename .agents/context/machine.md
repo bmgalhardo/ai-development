@@ -2,7 +2,7 @@
 
 What every project finds on this machine, and how to use it. A project's
 engineering doc says which of these it uses, with its own paths and
-commands. The general tools come first, then those for Godot projects.
+commands.
 
 ## Python
 
@@ -58,19 +58,7 @@ Merge the branch and `git worktree remove` it when done.
   `~/.cache/pw-venv/bin/python -m playwright install
   chromium-headless-shell`.
 
-## For Godot projects
-
-### Godot
-
-- Use the standard (non-.NET) Linux build that each game keeps in its own
-  `artifacts/godot/`. Its engineering doc names the version.
-- `/snap/bin/godot-4` is the .NET build. It runs projects but **cannot
-  export Web**.
-- Headless Firefox has no WebGL2 here. Check a Web build in Playwright's
-  headless Chromium (below), which renders with software WebGL. It is
-  slow: report its times as this machine's, not the phone's.
-
-### Blender (remote, on hephaestus)
+## Blender (remote, on hephaestus)
 
 The user authorizes routine Blender runs and their script and image
 transfers on hephaestus (12 Oct 2026). Do not ask for permission for each
@@ -94,6 +82,6 @@ there.
   ssh hephaestus 'blender -b --python work/<script>.py -- out/'
   scp 'hephaestus:out/<model>.glb' <project asset folder>/
   ```
-  Check the result in the game (a Godot capture) before using it.
+  Check the result in the project (its evidence) before using it.
 - **Memory:** low-poly exports and test renders need well under 1 GB. A
   high-to-low-poly bake can use several GB. Above 16 GB Blender is killed.

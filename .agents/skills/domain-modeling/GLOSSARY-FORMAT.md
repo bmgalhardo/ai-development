@@ -9,9 +9,9 @@
 One source file's rows, ingested together and accepted or rejected as a whole.
 _Avoid_: job, load, import
 
-**Wipe**:
-A fight that ends with the whole party dead.
-_Avoid_: loss, fail
+**Rejection**:
+A row the pipeline refuses, with its line and reason; the rest of the batch goes on.
+_Avoid_: error, failure
 ```
 
 ## Rules
