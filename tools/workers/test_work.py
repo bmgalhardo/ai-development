@@ -107,6 +107,7 @@ class WorkerTests(unittest.TestCase):
             'PATH': f"{binaries}:{os.environ['PATH']}", 'WORK_AGENT': 'claude',
             'WORK_FALLBACK_AGENT': 'codex', 'WORK_REVIEW_AGENT': 'none', 'WORK_MODEL': 'test-claude',
             'WORK_REVIEW_MODEL': 'test-review', 'WORK_WAIT': '60', 'WORK_DASHBOARD': '0',
+            'PUBLISH_URL': 'https://publish.test',
         }))
         self.stack.enter_context(patch.object(next_issue, 'WORKFLOW', self.root))
         previous = Path.cwd()

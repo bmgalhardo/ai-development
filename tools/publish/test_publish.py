@@ -121,6 +121,18 @@ class PublishRunTests(unittest.TestCase):
                          ['docs', 'examples', 'mocks'])
         self.assertIn('<a href="examples/">Examples</a>', project_menu('project', server.projects['project']))
 
+    def test_without_a_server_it_stops_before_uploading(self):
+        self.prepare('docs')
+        self.assertEqual(publish(self.project, None, None, self.staging), 1)
+
+    def test_the_server_comes_from_the_environment_or_dotenv(self):
+        with patch.dict('os.environ', {}, clear=True):
+            self.assertIsNone(publisher.server_url())
+            (self.root / '.env').write_text('# local\nPUBLISH_URL="https://from.env"\n')
+            self.assertEqual(publisher.server_url(), 'https://from.env')
+        with patch.dict('os.environ', {'PUBLISH_URL': 'https://from.environment'}):
+            self.assertEqual(publisher.server_url(), 'https://from.environment')
+
     def test_a_project_without_mocks_publishes_none(self):
         self.prepare('docs')
         (self.root / '.scratch/project/2026-10-27-next').mkdir(parents=True)

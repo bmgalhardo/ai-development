@@ -16,6 +16,7 @@ import time
 from uuid import uuid4
 
 from . import next_issue
+from tools.publish.publish import server_url
 from .work_attempt import failure_kind, final_message, git, read_result, retry_at, snapshot
 
 AXES = ("standards", "spec")
@@ -150,6 +151,9 @@ def publish_build(project):
         return 0
     if not (project / ".agents/context/publishing.md").is_file():
         say("Nothing to publish: the project has no publishing doc")
+        return 0
+    if not server_url():
+        say("Not publishing: no publish server (PUBLISH_URL)")
         return 0
     say("Publishing the build")
     code = subprocess.run([sys.executable, "-m", "tools.publish.publish", str(project)],

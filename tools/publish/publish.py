@@ -38,7 +38,6 @@ import urllib.parse
 import urllib.request
 
 WORKFLOW = Path(__file__).resolve().parents[2]
-SERVER = os.environ.get("PUBLISH_URL", "https://projects.bgalhardo.internal")
 MOCKS = "mocks"  # the review's output; every other output is the build's
 # What a mock folder keeps to itself: the scripts and notes that made it,
 # and kept/ (things set aside, such as a replaced model).
@@ -65,6 +64,16 @@ a { display: block; padding: 1rem 1.25rem; border: 1px solid var(--line);
   text-decoration: none; font-weight: 600; }
 a:hover { border-color: var(--accent); color: var(--accent); }
 """
+
+
+def server_url():
+    """The publish server: PUBLISH_URL from the environment, else from this repo's .env; None if neither."""
+    if os.environ.get("PUBLISH_URL"):
+        return os.environ["PUBLISH_URL"]
+    env = WORKFLOW / ".env"
+    lines = env.read_text(encoding="utf-8").splitlines() if env.is_file() else []
+    values = dict(line.split("=", 1) for line in lines if "=" in line and not line.lstrip().startswith("#"))
+    return values.get("PUBLISH_URL", "").strip().strip('"') or None
 
 
 def page(title, subtitle, links):
@@ -148,7 +157,7 @@ class Server:
         files = sorted(p for p in folder.rglob("*") if p.is_file())
         for file in files:
             self.put(staging + file.relative_to(folder).as_posix(), file.read_bytes())
-        # nginx accepts an https Destination only on its own TLS; the gateway terminates it.
+        # Behind a gateway that terminates TLS, the server accepts only an http Destination.
         host = urllib.parse.urlsplit(self.url).netloc
         destination = f"http://{host}" + urllib.parse.quote(f"/{slug}/{name}/")
         self.request("MOVE", staging, headers={"Destination": destination, "Overwrite": "T"})
@@ -160,11 +169,12 @@ def main():
     parser.add_argument("project", help="the project's repo, relative to this one (../<project>)")
     parser.add_argument("only", nargs="*", metavar="output",
                         help="what to publish: mocks (the review), or by default every output of the build")
-    parser.add_argument("--server", default=SERVER, help=f"the publish server (default {SERVER}, or PUBLISH_URL)")
+    parser.add_argument("--server", help="the publish server (default: PUBLISH_URL, from the environment or .env)")
     args = parser.parse_args()
     project = (WORKFLOW / args.project).resolve()
     with tempfile.TemporaryDirectory() as staging:
-        return publish(project, args.only or None, Server(args.server), Path(staging))
+        url = args.server or server_url()
+        return publish(project, args.only or None, Server(url) if url else None, Path(staging))
 
 
 def publish(project, names, server, staging):
@@ -178,6 +188,9 @@ def publish(project, names, server, staging):
     if not folders:
         print(f"Nothing to publish for {slug} ({', '.join(names or ['the build'])})")
         return 0
+    if server is None:
+        print("No publish server: set PUBLISH_URL in the environment or in this repo's .env", file=sys.stderr)
+        return 1
     for name, folder in folders.items():
         if not (folder / "index.html").is_file():
             print(f"Missing {folder}/index.html: prepare the {name} output first", file=sys.stderr)

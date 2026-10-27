@@ -27,7 +27,7 @@ Waiting and Ready use the worker selector's dependency rules, including the fina
 Reviewing includes reviews and fixes; the active attempt gives the exact phase.
 Stage colors fill column and card headers. Agent icons identify providers in the cards,
 attempts and worker strip. Implementing and Reviewing headers show the active providers.
-Codex uses the white OpenAI knot on green, matching the user's Moshi convention.
+Codex uses the white OpenAI knot on green.
 The knot comes from Devicons (`vorillaz/devicons`, `packages/core/export-files/icons/openai-icon.svg`);
 its license is in `static/icons/DEVICONS-LICENSE.txt`.
 Issue details scroll beneath a fixed header, keeping Close visible.
@@ -35,7 +35,7 @@ Opening issue details focuses the title. Tab moves to Close with a visible keybo
 
 ## Account quotas
 
-When `moshi-hook` is installed, the separate `/api/quotas` endpoint runs
+Quotas are optional. When the Moshi helper `moshi-hook` is installed, the separate `/api/quotas` endpoint runs
 `moshi-hook usage` at most once per minute. It never uses `--sync` or reads credentials.
 The helper provides the same type of account quota snapshots Moshi uses.
 Only provider, quota windows, percentages and capture/reset times are served.

@@ -1,10 +1,19 @@
 # The publish server
 
-Every output is published to the publish server,
-https://projects.bgalhardo.internal: the same route for Claude and Codex.
-It is on the LAN and the VPN only, and it has no auth. It keeps only the
-latest build of each output. Everything it serves can be rebuilt from the
-project's repo and this repo's `.scratch/`.
+Outputs are published to a publish server, the same route for Claude and
+Codex. A server is optional: without one, nothing is published and the
+user reads the review in the project's repo and the mocks in `.scratch/`.
+
+The server is any web server that accepts WebDAV `PUT`, `DELETE` and
+`MOVE` and serves the same files back. Its URL is `PUBLISH_URL`, set in
+the environment or in this repo's `.env` (not in git):
+
+```
+PUBLISH_URL=https://<your server>
+```
+
+It keeps only the latest build of each output. Everything it serves can
+be rebuilt from the project's repo and this repo's `.scratch/`.
 
 ```
 /                    the menu of projects
@@ -28,6 +37,8 @@ python3 tools/publish/publish.py ../<project> mocks    # the review's mocks
 - The mocks are the current cycle's `mocks/` (`.scratch/<project>/<cycle>/`),
   newest first.
 - With nothing to publish it says so and never contacts the server.
+- Without `PUBLISH_URL`, the worker loop skips publishing; the script
+  stops with a message.
 - A build output the project no longer has is removed from the server.
 - It uploads each output to a staging folder and then moves it into
   place, so the previous build stays up until the new one is complete.
@@ -36,6 +47,3 @@ python3 tools/publish/publish.py ../<project> mocks    # the review's mocks
   script stops if an output's `index.html` is missing.
 - A failed upload stops the script with the HTTP error. Report it as the
   blocker; local files alone are not a publication.
-
-The server is a WebDAV nginx in the homelab's k8s cluster (`publish` in the
-`system` namespace). `PUBLISH_URL` points the script at another server.

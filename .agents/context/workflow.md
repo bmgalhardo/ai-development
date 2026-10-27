@@ -44,8 +44,8 @@ Publishing updates the persistent, user-accessible version, verifies
 success, and returns its link. Generating local files is preparation.
 The project's publishing doc (`.agents/context/publishing.md`) lists its
 outputs (for a game: the game and a docs page) and their prepared folders.
-When the build is done, the worker loop publishes them to the publish server
-(`publish-server.md`). The review publishes its own mocks. A project with
+When the build is done, the worker loop publishes them to the publish
+server, if one is set up (`publish-server.md`). The review publishes its own mocks. A project with
 nothing to deploy has no publishing doc.
 
 ## 1. Review session (brainstorming or QA)
@@ -71,8 +71,9 @@ its real places, as flat stand-ins, so the mock shows what the change
 bumps into. A mock lives in
 the cycle's `mocks/<YYYY-MM-DD>-<slug>/` (its
 `index.html`, images, the scripts that made them, a README), labelled as a
-mockup. Publish it with `python3 tools/publish/publish.py ../<project> mocks`:
-the Mocks page shows the cycle under review. The user
+mockup. With a publish server, publish it with
+`python3 tools/publish/publish.py ../<project> mocks`: the Mocks page shows
+the cycle under review. Without one, give the user the mock's path. The user
 lands the design on the mock, and the refinement starts from what they
 chose.
 
@@ -212,8 +213,8 @@ project's contract (`project-setup.md`), and its engineering doc says how:
 The build doesn't upload. When the worker loop ends with the build issue
 `done`, it publishes the build's outputs
 (`python3 tools/publish/publish.py ../<project>`) and prints their links.
-It skips this for a project without a publishing doc, or with
-`WORK_PUBLISH=0`. A failed upload is reported at the end of the run: fix it
+It skips this without a publish server, for a project without a
+publishing doc, or with `WORK_PUBLISH=0`. A failed upload is reported at the end of the run: fix it
 and run `/publish`. The cycle is complete once every output is on the
 server. That published build is the next review.
 

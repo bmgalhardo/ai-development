@@ -2,7 +2,7 @@
 
 Specs and issues for each project live as Markdown files in this repo's
 `.scratch/<project>/`, one folder per cycle, named by the project's folder
-(`.scratch/02-prototype/` for `../02-prototype`). `.scratch/` is not in
+(`.scratch/my-app/` for `../my-app`). `.scratch/` is not in
 git. Written for the
 skills in `.agents/skills/`; the cycle itself is in `workflow.md`. The
 project is the session's project (`AGENTS.md`).

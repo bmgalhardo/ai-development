@@ -1,6 +1,6 @@
 # Development workflow: agent notes
 
-The user's workspace for their projects (Godot games so far). Every session starts
+The user's workspace for their projects. Every session starts
 here. This repo holds the shared workflow (the cycle, the skills, the
 worker loop); each project is its own independent repo beside it
 (`../<project>/`), with its own `AGENTS.md` and context.

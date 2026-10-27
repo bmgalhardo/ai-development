@@ -48,7 +48,7 @@ Usage records are not estimates of remaining subscription quota.
 
 ## 1. Container workers
 
-Package the coding CLIs, Godot and required tools.
+Package the coding CLIs and each project's toolchain.
 Retain the existing worker command.
 Start with one active implementation per project.
 Inject credentials at runtime and preserve authentication state outside images.
