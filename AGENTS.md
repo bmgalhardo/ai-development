@@ -27,7 +27,7 @@ that project. Paths in a project's files are relative to that project's root.
 - `.agents/context/project-setup.md`: what a project repo provides.
 - `.agents/context/machine.md`: the tools on this machine (Godot, uv,
   display, Blender on hephaestus) and their gotchas.
-- `.agents/context/games-server.md`: how to publish (the same for Claude
+- `.agents/context/publish-server.md`: how to publish (the same for Claude
   and Codex). A project lists only its outputs and their prepared folders.
 - `.agents/skills/`: the skills, adapted from Matt Pocock's
   (https://github.com/mattpocock/skills).

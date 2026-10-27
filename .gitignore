@@ -3,5 +3,5 @@ __pycache__/
 .DS_Store
 *.swp
 
-# The games' cycles and exploration, one folder per game (.agents/context/issue-tracker.md).
+# The projects' cycles and exploration, one folder per project (.agents/context/issue-tracker.md).
 .scratch/

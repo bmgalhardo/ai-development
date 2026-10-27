@@ -7,15 +7,15 @@ import unittest
 from unittest.mock import patch
 
 from tools.publish import publish as publisher
-from tools.publish.publish import game_menu, index, outputs, publish, title
+from tools.publish.publish import project_menu, index, outputs, publish, title
 
 
 class FakeServer:
-    """Records uploads and deletions; holds games.json."""
+    """Records uploads and deletions; holds projects.json."""
     url = "https://server"
 
-    def __init__(self, games=None):
-        self.games = games or {}
+    def __init__(self, projects=None):
+        self.projects = projects or {}
         self.uploaded, self.deleted, self.calls = [], [], 0
 
     def upload(self, folder, slug, name):
@@ -25,16 +25,16 @@ class FakeServer:
 
     def request(self, method, path, data=None, headers=None, missing_ok=False):
         self.calls += 1
-        if method == "GET" and path == "/games.json":
-            return json.dumps(self.games).encode()
+        if method == "GET" and path == "/projects.json":
+            return json.dumps(self.projects).encode()
         if method == "DELETE":
             self.deleted.append(path)
         return b""
 
     def put(self, path, data):
         self.calls += 1
-        if path == "/games.json":
-            self.games = json.loads(data)
+        if path == "/projects.json":
+            self.projects = json.loads(data)
 
 
 class PublishTests(unittest.TestCase):
@@ -54,7 +54,7 @@ class PublishTests(unittest.TestCase):
 
     def test_menus_link_each_output_and_game(self):
         entry = {'title': 'Sky & Time', 'outputs': ['game', 'mocks'], 'published': '2026-10-22 16:00'}
-        menu = game_menu('sky', entry)
+        menu = project_menu('sky', entry)
         self.assertIn('<a href="game/">Game</a>', menu)
         self.assertIn('<a href="mocks/">Mocks</a>', menu)
         self.assertNotIn('docs/', menu)
@@ -102,7 +102,7 @@ class PublishRunTests(unittest.TestCase):
         self.assertEqual(publish(self.project, ['mocks'], server, self.staging), 0)
         self.assertEqual(server.uploaded, ['mocks'])
         self.assertEqual(server.deleted, [])
-        self.assertEqual(server.games['project']['outputs'], ['game', 'docs', 'mocks'])
+        self.assertEqual(server.projects['project']['outputs'], ['game', 'docs', 'mocks'])
 
     def test_the_build_publishes_its_outputs_and_keeps_the_mocks(self):
         self.prepare('docs')
@@ -110,7 +110,7 @@ class PublishRunTests(unittest.TestCase):
         self.assertEqual(publish(self.project, ['game', 'docs'], server, self.staging), 0)
         self.assertEqual(server.uploaded, ['docs'])
         self.assertEqual(server.deleted, ['/project/game/'])
-        self.assertEqual(server.games['project']['outputs'], ['docs', 'mocks'])
+        self.assertEqual(server.projects['project']['outputs'], ['docs', 'mocks'])
 
     def test_a_project_without_mocks_publishes_none(self):
         self.prepare('docs')

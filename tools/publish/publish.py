@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish a project's outputs to the games server, with its menu page.
+"""Publish a project's outputs to the publish server, with its menu page.
 
 The project's .agents/context/publishing.md lists its outputs in a table
 whose first column is the output (`game` or `docs`) and whose second names
@@ -13,7 +13,7 @@ cycle's (this repo's .scratch/<project>/<latest cycle>/mocks/), newest first,
 each as it was made. Each output is uploaded to
 <server>/<project>/.staging/<output>/ and then moved to
 <server>/<project>/<output>/, replacing the previous one. The server keeps
-games.json, the list of projects the menu pages are built from.
+projects.json, the list of projects the menu pages are built from.
 
     python3 tools/publish/publish.py ../<project>          the build: its outputs
     python3 tools/publish/publish.py ../<project> mocks    the review: its mocks
@@ -37,7 +37,7 @@ import urllib.parse
 import urllib.request
 
 WORKFLOW = Path(__file__).resolve().parents[2]
-SERVER = os.environ.get("GAMES_URL", "https://games.bgalhardo.internal")
+SERVER = os.environ.get("PUBLISH_URL", "https://publish.bgalhardo.internal")
 OUTPUTS = {"game": "Game", "docs": "Docs", "mocks": "Mocks"}
 BUILD = ("game", "docs")  # what the build publishes; the review publishes the mocks
 # What a mock folder keeps to itself: the scripts and notes that made it,
@@ -76,32 +76,32 @@ def page(title, subtitle, links):
             f'<nav>\n{items}\n</nav></main></body></html>\n')
 
 
-def game_menu(slug, entry):
+def project_menu(slug, entry):
     links = [(OUTPUTS[name], f"{name}/") for name in OUTPUTS if name in entry["outputs"]]
     return page(entry["title"], f"Latest build, published {entry['published']}.", links)
 
 
-def index(games):
-    links = [(games[slug]["title"], f"{slug}/") for slug in sorted(games)]
-    return page("Games", "Pick a game.", links)
+def index(projects):
+    links = [(projects[slug]["title"], f"{slug}/") for slug in sorted(projects)]
+    return page("Projects", "Pick a project.", links)
 
 
-def outputs(game):
-    """The game's prepared folders by output, from its publishing doc."""
-    doc = game / ".agents/context/publishing.md"
+def outputs(project):
+    """The project's prepared folders by output, from its publishing doc."""
+    doc = project / ".agents/context/publishing.md"
     found = {}
     if not doc.is_file():
         return found
     for line in doc.read_text(encoding="utf-8").splitlines():
         match = ROW.match(line.strip())
         if match:
-            found[match.group(1).lower()] = game / match.group(2)
+            found[match.group(1).lower()] = project / match.group(2)
     return found
 
 
-def mocks(game, out):
+def mocks(project, out):
     """The current cycle's mocks page, prepared in out; None if the cycle has no mocks."""
-    cycles = sorted((WORKFLOW / ".scratch" / game.name).glob("[0-9]*-*/"))
+    cycles = sorted((WORKFLOW / ".scratch" / project.name).glob("[0-9]*-*/"))
     found = sorted(cycles[-1].glob("mocks/*/index.html"), reverse=True) if cycles else []
     if not found:
         return None
@@ -114,13 +114,13 @@ def mocks(game, out):
         readme = folder / "README.md"
         match = HEADING.search(readme.read_text(encoding="utf-8")) if readme.exists() else None
         links.append((match.group(1) if match else folder.name, f"{folder.name}/"))
-    (out / "index.html").write_text(page(f"{title(game)}: mocks", "Newest first.", links), encoding="utf-8")
+    (out / "index.html").write_text(page(f"{title(project)}: mocks", "Newest first.", links), encoding="utf-8")
     return out
 
 
-def title(game):
-    first = (game / "AGENTS.md").read_text(encoding="utf-8").splitlines()[0]
-    return re.sub(r":\s*agent notes$", "", first.lstrip("# ").strip()) or game.name
+def title(project):
+    first = (project / "AGENTS.md").read_text(encoding="utf-8").splitlines()[0]
+    return re.sub(r":\s*agent notes$", "", first.lstrip("# ").strip()) or project.name
 
 
 class Server:
@@ -157,21 +157,21 @@ class Server:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("game", help="the project's repo, relative to this one (../<project>)")
+    parser.add_argument("project", help="the project's repo, relative to this one (../<project>)")
     parser.add_argument("only", nargs="*", choices=list(OUTPUTS), metavar="output",
                         help="what to publish: mocks (the review), or by default the build's outputs")
-    parser.add_argument("--server", default=SERVER, help=f"the games server (default {SERVER}, or GAMES_URL)")
+    parser.add_argument("--server", default=SERVER, help=f"the publish server (default {SERVER}, or PUBLISH_URL)")
     args = parser.parse_args()
-    game = (WORKFLOW / args.game).resolve()
+    project = (WORKFLOW / args.project).resolve()
     with tempfile.TemporaryDirectory() as staging:
-        return publish(game, args.only or list(BUILD), Server(args.server), Path(staging))
+        return publish(project, args.only or list(BUILD), Server(args.server), Path(staging))
 
 
-def publish(game, names, server, staging):
+def publish(project, names, server, staging):
     """Upload the named outputs the project has; remove the named ones it no longer has."""
-    slug = game.name
-    available = outputs(game)
-    if "mocks" in names and (mock_folder := mocks(game, staging / "mocks")):
+    slug = project.name
+    available = outputs(project)
+    if "mocks" in names and (mock_folder := mocks(project, staging / "mocks")):
         available["mocks"] = mock_folder
     folders = {name: folder for name, folder in available.items() if name in names}
     if not folders:
@@ -184,19 +184,19 @@ def publish(game, names, server, staging):
     for name, folder in folders.items():
         count = server.upload(folder, slug, name)
         print(f"uploaded {name}: {count} files")
-    games = json.loads(server.request("GET", "/games.json", missing_ok=True) or b"{}")
-    entry = games.get(slug, {"outputs": []})
+    projects = json.loads(server.request("GET", "/projects.json", missing_ok=True) or b"{}")
+    entry = projects.get(slug, {"outputs": []})
     gone = [name for name in entry["outputs"] if name in names and name not in folders]
     for name in gone:
         server.request("DELETE", f"/{slug}/{name}/", missing_ok=True)
-    entry["title"] = title(game)
+    entry["title"] = title(project)
     entry["outputs"] = [name for name in OUTPUTS if name in folders
                         or (name in entry["outputs"] and name not in gone)]
     entry["published"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-    games[slug] = entry
-    server.put("/games.json", json.dumps(games, indent=2).encode())
-    server.put(f"/{slug}/index.html", game_menu(slug, entry).encode())
-    server.put("/index.html", index(games).encode())
+    projects[slug] = entry
+    server.put("/projects.json", json.dumps(projects, indent=2).encode())
+    server.put(f"/{slug}/index.html", project_menu(slug, entry).encode())
+    server.put("/index.html", index(projects).encode())
     for path in [f"/{slug}/"] + [f"/{slug}/{name}/" for name in folders]:
         server.request("GET", path)
         print(f"{server.url}{path}")

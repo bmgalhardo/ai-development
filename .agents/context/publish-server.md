@@ -1,13 +1,13 @@
-# The games server
+# The publish server
 
-Every output is published to the games server,
-https://games.bgalhardo.internal: the same route for Claude and Codex.
+Every output is published to the publish server,
+https://publish.bgalhardo.internal: the same route for Claude and Codex.
 It is on the LAN and the VPN only, and it has no auth. It keeps only the
 latest build of each output. Everything it serves can be rebuilt from the
 project's repo and this repo's `.scratch/`.
 
 ```
-/                    the menu of games
+/                    the menu of projects
 /<project>/             the project's menu: Game, Docs, Mocks
 /<project>/game/        /<project>/docs/        /<project>/mocks/
 ```
@@ -37,5 +37,5 @@ python3 tools/publish/publish.py ../<project> mocks    # the review's mocks
 - A failed upload stops the script with the HTTP error. Report it as the
   blocker; local files alone are not a publication.
 
-The server is a WebDAV nginx in the homelab's k8s cluster (`games` in the
-`system` namespace). `GAMES_URL` points the script at another server.
+The server is a WebDAV nginx in the homelab's k8s cluster (`publish` in the
+`system` namespace). `PUBLISH_URL` points the script at another server.

@@ -9,7 +9,7 @@ to change over time, mostly through `/retro`.
 This repo holds what every project shares: this cycle, the issue tracker
 (`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`), the
 publisher (`tools/publish/publish.py`), the machine's tools
-(`machine.md`) and how to publish (`games-server.md`). It also holds each project's cycles and
+(`machine.md`) and how to publish (`publish-server.md`). It also holds each project's cycles and
 explorations, in `.scratch/<project>/` (not in git). Every session and
 worker runs here. Each project is an independent repo beside this one
 (`../<project>/`) with its own `AGENTS.md` and context (`project-setup.md`);
@@ -44,8 +44,8 @@ Publishing updates the persistent, user-accessible version, verifies
 success, and returns its link. Generating local files is preparation.
 The project's publishing doc (`.agents/context/publishing.md`) lists its
 outputs (for a game: the game and a docs page) and their prepared folders.
-When the build is done, the worker loop publishes them to the games server
-(`games-server.md`). The review publishes its own mocks. A project with
+When the build is done, the worker loop publishes them to the publish server
+(`publish-server.md`). The review publishes its own mocks. A project with
 nothing to deploy has no publishing doc.
 
 ## 1. Review session (brainstorming or QA)
