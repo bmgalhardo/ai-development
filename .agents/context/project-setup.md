@@ -31,6 +31,9 @@ publish are the workflow's (`machine.md`, `games-server.md`).
     copied to `docs/img/`; for a library, an example run's output or
     timings. The build gathers it into the review.
   - Its toolchain and gotchas.
+- **Coding standards:** `CODING_STANDARDS.md`, how the project's code is
+  written. Read by the code review, which falls back to a smell baseline
+  and says so when the file is missing.
 - **Review page:** `docs/review.md`, the current build's review, written
   by the build issue and read by the next review. `docs/README.md` says
   what's where in `docs/`.
@@ -56,7 +59,5 @@ publish are the workflow's (`machine.md`, `games-server.md`).
 - **Direction:** `docs/direction/` holds what a review agrees beyond a
   cycle: art direction, type, references, research (direction, not built;
   `README.md` first, images in `img/`).
-- **Coding standards:** `CODING_STANDARDS.md` when the project departs
-  from this repo's.
 - **Build folder:** a project that builds keeps its prepared files in an
   ignored folder (for example `artifacts/`, in `.gitignore`).

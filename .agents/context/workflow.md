@@ -9,8 +9,7 @@ to change over time, mostly through `/retro`.
 This repo holds what every project shares: this cycle, the issue tracker
 (`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`), the
 publisher (`tools/publish/publish.py`), the machine's tools
-(`machine.md`), how to publish (`games-server.md`) and the
-default coding standards. It also holds each project's cycles and
+(`machine.md`) and how to publish (`games-server.md`). It also holds each project's cycles and
 explorations, in `.scratch/<project>/` (not in git). Every session and
 worker runs here. Each project is an independent repo beside this one
 (`../<project>/`) with its own `AGENTS.md` and context (`project-setup.md`);

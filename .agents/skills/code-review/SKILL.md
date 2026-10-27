@@ -1,11 +1,11 @@
 ---
 name: code-review
-description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
+description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow the project's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
 ---
 
 Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
-- **Standards**: does the code conform to this repo's documented coding standards?
+- **Standards**: does the code conform to the project's documented coding standards?
 - **Spec**: does the code faithfully implement the originating issue / spec?
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
@@ -37,7 +37,7 @@ The issue, the cycle's spec and the mock the issue names together are the spec. 
 
 ### 3. Identify the standards sources
 
-The project's `CODING_STANDARDS.md` if it has one, else the workflow repo's `CODING_STANDARDS.md` (Clean Code for Godot), plus the project's `AGENTS.md` standing rules and anything else in the repo that documents how code should be written.
+The project's `CODING_STANDARDS.md` (if it has none, say so in the report and rely on the baseline below), plus the project's `AGENTS.md` standing rules and anything else in the repo that documents how code should be written.
 
 On top of whatever the repo documents, the Standards axis always carries the **smell baseline** below: a fixed set of Fowler code smells (_Refactoring_, ch.3) that applies even when a repo documents nothing. Two rules bind it:
 

@@ -35,8 +35,6 @@ that project. Paths in a project's files are relative to that project's root.
   ready issue. Both take the project as an argument (`../<project>`).
 - `tools/README.md`: tool folders, entry points and focused test commands.
 - `.agents/context/roadmap.md`: worker improvements, completed steps and next increments.
-- `CODING_STANDARDS.md`: the default standards (Clean Code for Godot),
-  for a project without its own.
 
 ## Standing rules
 

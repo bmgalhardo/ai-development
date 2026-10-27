@@ -37,7 +37,7 @@ All work goes through two stages: implementation and review. The implementation 
 - `AGENTS.md` (and `CLAUDE.md`, a link to it), here and in each project: loaded into every agent's context. Use it sparingly, mostly for **navigation pointers** to other files.
 - Skills (this repo's `.agents/skills/`): their descriptions are always in context, their bodies only when used. Keep each one to the steps of its stage; project details belong in the docs they point to.
 - Docs: reference files, pointed to by other files. Look for an existing doc before writing a new one.
-- `CODING_STANDARDS.md`, if it exists: read during review, not implementation.
+- The project's `CODING_STANDARDS.md`: read during review, not implementation.
 
 ### Writing for agents
 
