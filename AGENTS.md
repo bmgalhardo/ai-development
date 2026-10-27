@@ -24,10 +24,11 @@ that project. Paths in a project's files are relative to that project's root.
   Read it before any of those.
 - `.agents/context/issue-tracker.md`: cycles, specs and issues as local
   Markdown in this repo's `.scratch/<project>/`. Every ticket names its repo.
-- `.agents/context/project-setup.md`: what a project repo provides.
+- `.agents/context/project-setup.md`: what a project repo provides;
+  `/new-project` sets one up.
 - `.agents/context/machine.md`: the tools on this machine (uv, the shell,
-  worktrees, display, Blender on hephaestus) and their gotchas. A project's
-  own toolchain (such as Godot) is in its engineering doc.
+  worktrees, display) and their gotchas. A project's own toolchain is in
+  its engineering doc.
 - `.agents/context/publish-server.md`: how to publish (the same for Claude
   and Codex). A project lists only its outputs and their prepared folders.
 - `.agents/skills/`: the skills, adapted from Matt Pocock's

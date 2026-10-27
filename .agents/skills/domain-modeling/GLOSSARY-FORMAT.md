@@ -5,13 +5,9 @@
 ```md
 ## Terms
 
-**Batch**:
-One source file's rows, ingested together and accepted or rejected as a whole.
-_Avoid_: job, load, import
-
-**Rejection**:
-A row the pipeline refuses, with its line and reason; the rest of the batch goes on.
-_Avoid_: error, failure
+**<Term>**:
+<What it is, in one or two sentences.>
+_Avoid_: <other words for the same thing>
 ```
 
 ## Rules

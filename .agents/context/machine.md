@@ -57,31 +57,3 @@ Merge the branch and `git worktree remove` it when done.
   ~/.cache/pw-venv/bin/python playwright`, then
   `~/.cache/pw-venv/bin/python -m playwright install
   chromium-headless-shell`.
-
-## Blender (remote, on hephaestus)
-
-The user authorizes routine Blender runs and their script and image
-transfers on hephaestus (12 Oct 2026). Do not ask for permission for each
-run.
-
-This machine is too small for Blender. It runs headless on another machine,
-reached with `ssh hephaestus`: Blender 4.5 LTS, 12 CPU cores, 16 GB RAM,
-**no GPU**. Cycles renders on the CPU. EEVEE and viewport renders don't work
-there.
-
-- **Off by default:** if `ssh hephaestus` doesn't answer, ask the user to
-  start it.
-- **Scripts, not `.blend` files:** each model is a Blender Python script in
-  the project's tools that builds the scene from scratch
-  (`bpy.ops.wm.read_factory_settings(use_empty=True)` first) and writes its
-  output to the folder given after `--`. The script is the source.
-  `.blend` files stay out of git.
-- **Round trip:**
-  ```sh
-  scp <script>.py hephaestus:work/
-  ssh hephaestus 'blender -b --python work/<script>.py -- out/'
-  scp 'hephaestus:out/<model>.glb' <project asset folder>/
-  ```
-  Check the result in the project (its evidence) before using it.
-- **Memory:** low-poly exports and test renders need well under 1 GB. A
-  high-to-low-poly bake can use several GB. Above 16 GB Blender is killed.
