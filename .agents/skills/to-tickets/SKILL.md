@@ -93,6 +93,8 @@ Work the **frontier**: any ticket whose blockers are all done. For a purely line
 
 **Assets:** each agreed asset this ticket brings into the project, by its path in `.scratch/<project>/<cycle>/assets/` (made in the review; the implementer copies it in, never remakes it).
 
+**Direction:** each agreed direction page this ticket brings into the project's `docs/direction/` (and its nav), by its path in `.scratch/<project>/<cycle>/direction/`. The build ticket takes any the others don't.
+
 **Docs to write:** each doc file this ticket updates, with the agreed text to put there, written as built. The implementer copies it in with the code.
 
 **Stop if:** only on a ticket that carries a raised risk: the condition that blocks it for the user's decision. Omit the line otherwise.

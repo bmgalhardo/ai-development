@@ -8,9 +8,9 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 
 ## Steps
 
-1. **Gather the cycle.** Default to the session's project's latest cycle unless the user names another cycle. Read its spec, every issue (with its `## Comments`: the implementer's choices and open questions), its `feedback.md`, the project's `docs/review.md`, and the commits made for it in the project's repo (`git -C <repo> log` over the cycle's dates).
+1. **Gather the cycle.** The user names the project and the cycle (`/retro <project> <cycle>`). If either is missing, list the project's cycles whose build issue is `done` and ask which. Read its spec, every issue (with its `## Comments`: the implementer's choices and open questions), its `feedback.md`, the project's `docs/review.md`, and the commits made for it in the project's repo (`git -C <repo> log` over the cycle's dates).
 
-2. **Read the sessions.** A cycle spans several sessions: the refinement, then one per issue. Run `python3 .agents/skills/retro/digest.py --since <first day of the cycle>` for a compact digest of each one: the user's messages, the skills invoked, and the denied or failed tool calls. Read the full log of a session (its path is in the digest's header) only where the digest shows something worth a closer look. Logs are deleted after about 30 days, so a retro belongs soon after the build.
+2. **Read the sessions.** A cycle spans several sessions: the refinement, then one per issue. Run `python3 .agents/skills/retro/digest.py --since <the cycle folder's date> --until <the day after its build closed>` for a compact digest of each one: the user's messages, the skills invoked, and the denied or failed tool calls. The window can include other projects' sessions and a parallel review's: skip those. Read the full log of a session (its path is in the digest's header) only where the digest shows something worth a closer look. Logs are deleted after about 30 days, so a retro belongs soon after the build.
 
 3. **Look for candidates** in these categories.
 

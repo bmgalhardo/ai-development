@@ -57,7 +57,7 @@ publish are the workflow's (`engineering.md`, `machine.local.md`, `publish-serve
   mkdocs-material==9.7.7 mkdocs build --strict`, so a broken link or a doc
   missing from the nav fails the check.
 - **Direction:** `docs/direction/` holds what a review agrees beyond a
-  cycle: references, research, a game's art direction and type (direction, not built;
+  cycle, brought in by an issue from the cycle's `direction/`: references, research, a game's art direction and type (direction, not built;
   `README.md` first, images in `img/`).
 - **Coding standards:** `CODING_STANDARDS.md`, how the project's code is
   written, with its stack's idioms. Read by the code review; without it the

@@ -24,16 +24,16 @@ project's work on the project itself, commits included, happens in its repo.
 | The user's docs | the project's `docs/` | Each issue (grilling's glossary terms: to-spec) |
 | The build's evidence (for a game, screenshots in `docs/img/`) | the project's `docs/` | The build issue |
 | The current build's review | the project's `docs/review.md` | The build issue |
-| Direction: references, research, a game's art direction | the project's `docs/direction/` | Review |
-| A cycle: feedback, mocks, assets, spec, issues | `.scratch/<project>/<YYYY-MM-DD>-<slug>/` here | See below |
+| Direction: references, research, a game's art direction | the project's `docs/direction/` | Drafted in review, brought in by an issue |
+| A cycle: feedback, mocks, assets, direction, research, spec, issues | `.scratch/<project>/<YYYY-MM-DD>-<slug>/` here | See below |
 | The project | the project's code folders (its engineering doc) | Implementation |
 | The project's agent context | the project's `.agents/context/` | See `project-setup.md` |
 
 So `docs/` describes what's built, the cycle's spec holds the design
 choices agreed and not built yet, and the published outputs are the build.
 Three things in `docs/` aren't built, by design: the glossary (terms
-settled in grilling go in at `/to-spec`), `docs/direction/` (written in
-review) and the user's direction and ideas elsewhere, labelled as such
+settled in grilling go in at `/to-spec`), `docs/direction/` (drafted in
+review, brought in by an issue) and the user's direction and ideas elsewhere, labelled as such
 ("direction, not built", "liked, not built", "parked").
 An agreed design choice is never written there as "(agreed, not built)".
 Each issue writes the docs for what it builds, in the same commit, so the
@@ -86,15 +86,18 @@ They live in the cycle's `assets/`, with their source
 scripts, for the user to iterate on. What the user agrees is what the
 implementation brings into the project; the spec names each asset.
 
-Never change the project or the docs in a review: points that change them go
-into the Feedback, for the refinement and the implementation. The one
-exception is `docs/direction/`: what lasts beyond the cycle (the
-direction, such as a game's art direction and type, references,
-research) goes there as the user agrees
-it, labelled direction, and is committed in the project's repo. Keep its
-pages in the docs nav. A mock or an asset in the making stays in the
-cycle; the direction page links nothing in `.scratch/`, so copy any image
-it shows into `docs/direction/img/`.
+A review never changes a committed file, in the project or here: all it
+writes stays in its cycle's folder. Points that change the project go
+into the Feedback, for the refinement and the implementation. What lasts
+beyond the cycle (the direction, such as a game's art direction and type,
+references, research) is drafted in the cycle's `direction/` as the user
+agrees it, labelled direction, with its images beside it; the spec names
+each page and an issue copies it into the project's `docs/direction/` (and
+its nav). Research code and data stay in the cycle's `research/`.
+
+So a review can run while another cycle is being implemented. Then it
+also reads that cycle's `spec.md`, so it doesn't ask for what is already
+coming.
 
 Each review starts the next cycle: create its folder in
 `.scratch/<project>/` (dated today, the slug naming the change) as soon as
@@ -222,7 +225,7 @@ server. That published build is the next review.
 ## 5. Retro
 
 Soon after the build (the session logs are kept about 30 days), run
-`/retro` in a new session here. It reads the cycle (spec,
+`/retro <project> <cycle>` in a new session here. It reads that cycle (spec,
 issues and their comments, `feedback.md`, the project's `docs/review.md` and commits) and a digest
 of the cycle's sessions, and suggests changes to the skills, this
 workflow, the project's context and its checks. The user picks which to
@@ -234,7 +237,7 @@ context, committed in its repo.
 
 - The project's standing rules (its `AGENTS.md`) hold in every step.
 - A project's repo never links to or names this one.
-- Assets are made in the review and only brought in by the
+- Assets and direction are made in the review and only brought in by the
   implementation. Nothing in `.scratch/` is referenced from the project: an
   agreed asset is copied into the project (its script into the tools), and
   nothing the project builds or checks reads `.scratch/`.

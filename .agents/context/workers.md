@@ -4,7 +4,8 @@ Run `tools/work.sh ../<project>` from this repo.
 It also starts the dashboard (`tools/dashboard/`) on port 8765 unless something already listens there.
 The dashboard stops with the runner; its log is `.scratch/<project>/runner/dashboard.log`.
 It starts one fresh session per attempt: implement, then two reviews in parallel, then fix.
-It pins the latest cycle at startup.
+At startup it pins the current cycle: the oldest with an issue ready or under way, else the newest with issues.
+A cycle ticketed while another is still being built waits for it.
 It holds a per-project lock for the run, including quota waits.
 Do not run standalone implementation sessions against that checkout while the loop owns it.
 The loop never launches parallel implementations.

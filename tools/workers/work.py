@@ -251,7 +251,7 @@ def run(project, directory, lock_fd):
         raise ValueError("WORK_WAIT must be positive")
     if int(os.environ.get("WORK_TIMEOUT", "14400")) < 1:
         raise ValueError("WORK_TIMEOUT must be positive")
-    cycle = next_issue.latest_cycle(project)
+    cycle = next_issue.current_cycle(project)
     issues = next_issue.read_issues(cycle)
     # The runner's state stays in directory; the cycle's attempts are kept with its issues.
     logs = cycle / "work"

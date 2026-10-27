@@ -11,10 +11,12 @@ project is the session's project (`AGENTS.md`).
 
 - One cycle per folder: `.scratch/<project>/<YYYY-MM-DD>-<slug>/`, dated
   the day it starts, the slug naming the change. Folders sort by date, and
-  the latest is the current cycle.
+  the latest is the one under review. The worker loop works on the
+  oldest cycle with an issue ready or under way.
 - A cycle runs from the review that starts it to its build. The review
-  session creates the folder and writes `feedback.md`, `mocks/` and
-  `assets/` in it; the refinement adds `spec.md` and `issues/`.
+  session creates the folder and writes `feedback.md`, `mocks/`,
+  `assets/`, `direction/` (pages for `docs/direction/`) and `research/`
+  (research code and data) in it, and nothing outside it; the refinement adds `spec.md` and `issues/`.
 - `/to-spec` publishes the spec to `<cycle>/spec.md` from the live
   conversation. This filename is our local tracker's convention, not a
   prerequisite or a filename imposed by the skill. Review records feedback

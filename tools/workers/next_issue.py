@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Print the next issue a worker should take in the latest cycle, or nothing.
+"""Print the next issue a worker should take in the current cycle (the oldest with work left), or nothing.
 
 An issue left `in progress` comes first (its worker died), then one
 `in review` (implemented, waiting for its review session). Otherwise the
@@ -30,12 +30,14 @@ def project_root(name):
     return root
 
 
-def latest_cycle(root):
+def current_cycle(root):
+    """The oldest cycle with an issue ready or under way, so a newer cycle ticketed meanwhile
+    waits for it; else the newest cycle with issues."""
     scratch = WORKFLOW / ".scratch" / root.name
     cycles = sorted(p for p in scratch.iterdir() if (p / "issues").is_dir()) if scratch.is_dir() else []
     if not cycles:
         sys.exit(f"No cycle with issues in {scratch}")
-    return cycles[-1]
+    return next((cycle for cycle in cycles if next_issue(read_issues(cycle))), cycles[-1])
 
 
 def read_issues(cycle):
@@ -88,7 +90,7 @@ def main():
     if args.project_root:
         print(os.path.relpath(root, WORKFLOW))
         return
-    issues = read_issues(latest_cycle(root))
+    issues = read_issues(current_cycle(root))
     if args.status:
         for number, issue in issues.items():
             print(f"{number}  {issue['status']:12s} {issue['path'].name}")
