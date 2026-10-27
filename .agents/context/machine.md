@@ -2,17 +2,7 @@
 
 What every project finds on this machine, and how to use it. A project's
 engineering doc says which of these it uses, with its own paths and
-commands.
-
-## Godot
-
-- Use the standard (non-.NET) Linux build that each game keeps in its own
-  `artifacts/godot/`. Its engineering doc names the version.
-- `/snap/bin/godot-4` is the .NET build. It runs projects but **cannot
-  export Web**.
-- Headless Firefox has no WebGL2 here. Check a Web build in Playwright's
-  headless Chromium (below), which renders with software WebGL. It is
-  slow: report its times as this machine's, not the phone's.
+commands. The general tools come first, then those for Godot projects.
 
 ## Python
 
@@ -27,10 +17,25 @@ commands.
 - `/tmp` is small. Put venvs and downloads under `~/.cache/` or the
   scratchpad.
 
+## Shell
+
+- Wait for a long run with `run_in_background`, not `sleep`: a chained
+  `sleep` is blocked. Give the run a `timeout` above its expected time.
+- `pkill -f <pattern>` kills the shell itself if the pattern appears in
+  the command line.
+
+## Worktrees
+
+The Agent tool's `isolation: "worktree"` fails (`.claude` is a symlink).
+Use `git -C ../<project> worktree add <scratchpad>/wt-<slug> -b <branch>`.
+It has no `artifacts/` (not in git): link the project's `artifacts/` in and
+don't commit the link. Issues stay in this repo's `.scratch/<project>/`.
+Merge the branch and `git worktree remove` it when done.
+
 ## Screenshots and display
 
 - Use `DISPLAY=:0`. If it isn't there, use the private Xvfb on `:77`
-  (below). Mesa's software GL is enough for Godot captures.
+  (below). Mesa's software GL is enough for OpenGL captures, such as Godot's.
 - **No display (desktop session off, `/tmp/.X11-unix` empty):** run a
   private Xvfb without root. `apt-get download xvfb libunwind8 libxfont2
   libfontenc1 xkb-data x11-xkb-utils xserver-common libxkbfile1`, `dpkg -x`
@@ -53,22 +58,19 @@ commands.
   `~/.cache/pw-venv/bin/python -m playwright install
   chromium-headless-shell`.
 
-## Worktrees
+## For Godot projects
 
-The Agent tool's `isolation: "worktree"` fails (`.claude` is a symlink).
-Use `git -C ../<project> worktree add <scratchpad>/wt-<slug> -b <branch>`.
-It has no `artifacts/` (not in git): link the project's `artifacts/` in and
-don't commit the link. Issues stay in this repo's `.scratch/<project>/`.
-Merge the branch and `git worktree remove` it when done.
+### Godot
 
-## Shell
+- Use the standard (non-.NET) Linux build that each game keeps in its own
+  `artifacts/godot/`. Its engineering doc names the version.
+- `/snap/bin/godot-4` is the .NET build. It runs projects but **cannot
+  export Web**.
+- Headless Firefox has no WebGL2 here. Check a Web build in Playwright's
+  headless Chromium (below), which renders with software WebGL. It is
+  slow: report its times as this machine's, not the phone's.
 
-- Wait for a long run with `run_in_background`, not `sleep`: a chained
-  `sleep` is blocked. Give the run a `timeout` above its expected time.
-- `pkill -f <pattern>` kills the shell itself if the pattern appears in
-  the command line.
-
-## Blender (remote, on hephaestus)
+### Blender (remote, on hephaestus)
 
 The user authorizes routine Blender runs and their script and image
 transfers on hephaestus (12 Oct 2026). Do not ask for permission for each
@@ -82,7 +84,7 @@ there.
 - **Off by default:** if `ssh hephaestus` doesn't answer, ask the user to
   start it.
 - **Scripts, not `.blend` files:** each model is a Blender Python script in
-  the game's tools that builds the scene from scratch
+  the project's tools that builds the scene from scratch
   (`bpy.ops.wm.read_factory_settings(use_empty=True)` first) and writes its
   output to the folder given after `--`. The script is the source.
   `.blend` files stay out of git.
@@ -90,7 +92,7 @@ there.
   ```sh
   scp <script>.py hephaestus:work/
   ssh hephaestus 'blender -b --python work/<script>.py -- out/'
-  scp 'hephaestus:out/<model>.glb' <game asset folder>/
+  scp 'hephaestus:out/<model>.glb' <project asset folder>/
   ```
   Check the result in the game (a Godot capture) before using it.
 - **Memory:** low-poly exports and test renders need well under 1 GB. A

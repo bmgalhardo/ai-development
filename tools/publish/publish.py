@@ -2,8 +2,9 @@
 """Publish a project's outputs to the publish server, with its menu page.
 
 The project's .agents/context/publishing.md lists its outputs in a table
-whose first column is the output (`game` or `docs`) and whose second names
-the prepared folder in backticks, relative to the project's root:
+whose first column names the output (`game`, `docs`, or any other name) and
+whose second names the prepared folder in backticks, relative to the
+project's root:
 
     | game | `artifacts/artifact-site/` (`tools/package_artifact.py`) |
 
@@ -38,15 +39,14 @@ import urllib.request
 
 WORKFLOW = Path(__file__).resolve().parents[2]
 SERVER = os.environ.get("PUBLISH_URL", "https://projects.bgalhardo.internal")
-OUTPUTS = {"game": "Game", "docs": "Docs", "mocks": "Mocks"}
-BUILD = ("game", "docs")  # what the build publishes; the review publishes the mocks
+MOCKS = "mocks"  # the review's output; every other output is the build's
 # What a mock folder keeps to itself: the scripts and notes that made it,
 # and kept/ (things set aside, such as a replaced model).
 MOCK_SOURCES = ("*.gd", "*.py", "*.md", "*.json", "*.uid", "*.template.html", "kept")
 # A mock made for the old review board links back to its page there.
 BACK_LINK = re.compile(r'(?:\.\./)+index\.html#mocks/[\w.-]+')
 HEADING = re.compile(r"^#\s+(.+)$", re.M)
-ROW = re.compile(r"^\|\s*(game|docs)\s*\|\s*`([^`]+)`", re.IGNORECASE)
+ROW = re.compile(r"^\|\s*([a-z][\w-]*)\s*\|\s*`([^`]+)`", re.IGNORECASE)
 
 STYLE = """
 :root { color-scheme: light dark; --bg: #f6f5f2; --fg: #1d1d1b; --muted: #6b6a66;
@@ -77,7 +77,7 @@ def page(title, subtitle, links):
 
 
 def project_menu(slug, entry):
-    links = [(OUTPUTS[name], f"{name}/") for name in OUTPUTS if name in entry["outputs"]]
+    links = [(name.replace("-", " ").capitalize(), f"{name}/") for name in entry["outputs"]]
     return page(entry["title"], f"Latest build, published {entry['published']}.", links)
 
 
@@ -94,7 +94,7 @@ def outputs(project):
         return found
     for line in doc.read_text(encoding="utf-8").splitlines():
         match = ROW.match(line.strip())
-        if match:
+        if match and match.group(1).lower() != MOCKS:
             found[match.group(1).lower()] = project / match.group(2)
     return found
 
@@ -158,24 +158,25 @@ class Server:
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("project", help="the project's repo, relative to this one (../<project>)")
-    parser.add_argument("only", nargs="*", choices=list(OUTPUTS), metavar="output",
-                        help="what to publish: mocks (the review), or by default the build's outputs")
+    parser.add_argument("only", nargs="*", metavar="output",
+                        help="what to publish: mocks (the review), or by default every output of the build")
     parser.add_argument("--server", default=SERVER, help=f"the publish server (default {SERVER}, or PUBLISH_URL)")
     args = parser.parse_args()
     project = (WORKFLOW / args.project).resolve()
     with tempfile.TemporaryDirectory() as staging:
-        return publish(project, args.only or list(BUILD), Server(args.server), Path(staging))
+        return publish(project, args.only or None, Server(args.server), Path(staging))
 
 
 def publish(project, names, server, staging):
-    """Upload the named outputs the project has; remove the named ones it no longer has."""
+    """Upload the named outputs the project has, or with no names the build's (every output
+    in its publishing doc); remove those in scope it no longer has."""
     slug = project.name
     available = outputs(project)
-    if "mocks" in names and (mock_folder := mocks(project, staging / "mocks")):
-        available["mocks"] = mock_folder
-    folders = {name: folder for name, folder in available.items() if name in names}
+    if names and MOCKS in names and (mock_folder := mocks(project, staging / MOCKS)):
+        available[MOCKS] = mock_folder
+    folders = {name: folder for name, folder in available.items() if names is None or name in names}
     if not folders:
-        print(f"Nothing to publish for {slug} ({', '.join(names)})")
+        print(f"Nothing to publish for {slug} ({', '.join(names or ['the build'])})")
         return 0
     for name, folder in folders.items():
         if not (folder / "index.html").is_file():
@@ -186,12 +187,14 @@ def publish(project, names, server, staging):
         print(f"uploaded {name}: {count} files")
     projects = json.loads(server.request("GET", "/projects.json", missing_ok=True) or b"{}")
     entry = projects.get(slug, {"outputs": []})
-    gone = [name for name in entry["outputs"] if name in names and name not in folders]
+    in_scope = (lambda name: name != MOCKS) if names is None else (lambda name: name in names)
+    gone = [name for name in entry["outputs"] if in_scope(name) and name not in folders]
     for name in gone:
         server.request("DELETE", f"/{slug}/{name}/", missing_ok=True)
     entry["title"] = title(project)
-    entry["outputs"] = [name for name in OUTPUTS if name in folders
-                        or (name in entry["outputs"] and name not in gone)]
+    kept = [name for name in entry["outputs"] if name not in gone]
+    listed = kept + [name for name in folders if name not in kept]
+    entry["outputs"] = [name for name in listed if name != MOCKS] + [MOCKS] * (MOCKS in listed)
     entry["published"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     projects[slug] = entry
     server.put("/projects.json", json.dumps(projects, indent=2).encode())

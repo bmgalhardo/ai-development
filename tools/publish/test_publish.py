@@ -91,7 +91,7 @@ class PublishRunTests(unittest.TestCase):
 
     def test_nothing_to_publish_never_contacts_the_server(self):
         server = FakeServer()
-        self.assertEqual(publish(self.project, ['game', 'docs'], server, self.staging), 0)
+        self.assertEqual(publish(self.project, None, server, self.staging), 0)
         self.assertEqual(publish(self.project, ['mocks'], server, self.staging), 0)
         self.assertEqual(server.calls, 0)
 
@@ -107,10 +107,19 @@ class PublishRunTests(unittest.TestCase):
     def test_the_build_publishes_its_outputs_and_keeps_the_mocks(self):
         self.prepare('docs')
         server = FakeServer({'project': {'outputs': ['game', 'docs', 'mocks'], 'title': 'Project'}})
-        self.assertEqual(publish(self.project, ['game', 'docs'], server, self.staging), 0)
+        self.assertEqual(publish(self.project, None, server, self.staging), 0)
         self.assertEqual(server.uploaded, ['docs'])
         self.assertEqual(server.deleted, ['/project/game/'])
         self.assertEqual(server.projects['project']['outputs'], ['docs', 'mocks'])
+
+    def test_any_output_name_is_published_and_listed(self):
+        self.prepare('docs', 'examples')
+        server = FakeServer({'project': {'outputs': ['docs', 'mocks'], 'title': 'Project'}})
+        self.assertEqual(publish(self.project, None, server, self.staging), 0)
+        self.assertEqual(server.uploaded, ['docs', 'examples'])
+        self.assertEqual(server.projects['project']['outputs'],
+                         ['docs', 'examples', 'mocks'])
+        self.assertIn('<a href="examples/">Examples</a>', project_menu('project', server.projects['project']))
 
     def test_a_project_without_mocks_publishes_none(self):
         self.prepare('docs')

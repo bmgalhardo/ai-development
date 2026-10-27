@@ -23,7 +23,7 @@ project's work on the project itself, commits included, happens in its repo.
 | The user's docs | the project's `docs/` | Each issue (grilling's glossary terms: to-spec) |
 | The build's evidence (for a game, screenshots in `docs/img/`) | the project's `docs/` | The build issue |
 | The current build's review | the project's `docs/review.md` | The build issue |
-| Direction: art direction, references, research | the project's `docs/direction/` | Review |
+| Direction: references, research, a game's art direction | the project's `docs/direction/` | Review |
 | A cycle: feedback, mocks, assets, spec, issues | `.scratch/<project>/<YYYY-MM-DD>-<slug>/` here | See below |
 | The project | the project's code folders (its engineering doc) | Implementation |
 | The project's agent context | the project's `.agents/context/` | See `project-setup.md` |
@@ -56,15 +56,17 @@ skill.
 - **Brainstorming:** a new project, or a new direction. Research the
   competition, interview the user in rounds of a few multiple-choice
   questions, recommend rather than survey, and let ideas be dropped.
-- **QA:** the user plays the published build and reads the Review page
+- **QA:** the user uses the published build (plays a game, runs a tool)
+  and reads the Review page
   of its docs (`docs/review.md`), which says what changed and lists open
   questions. They
   say what they saw, what to change, and new features.
 
 Build mocks for the user to see while the feedback is fresh: when a
-point changes how something looks or behaves, make a simple UI mock of
+point changes how something looks or behaves, make a simple mock of
 just that part, without the build, with the open choices as variants to
-switch between. When there is a build, show its current UI around it at
+switch between: a UI, or for a library an API or config sketch with
+example output. When there is a build, show its current UI around it at
 its real places, as flat stand-ins, so the mock shows what the change
 bumps into. A mock lives in
 the cycle's `mocks/<YYYY-MM-DD>-<slug>/` (its
@@ -75,15 +77,18 @@ lands the design on the mock, and the refinement starts from what they
 chose.
 
 Make the assets in the review too, with the user, so each round is
-minutes, not a cycle: textures, sprites, icons, sounds and other art.
+minutes, not a cycle: anything the build brings in that is made rather
+than coded, such as art, icons and sounds for a game, or sample data and
+fixtures for a library.
 They live in the cycle's `assets/`, with their source
 scripts, for the user to iterate on. What the user agrees is what the
 implementation brings into the project; the spec names each asset.
 
 Never change the project or the docs in a review: points that change them go
 into the Feedback, for the refinement and the implementation. The one
-exception is `docs/direction/`: what lasts beyond the cycle (the art
-direction, the type, references, research) goes there as the user agrees
+exception is `docs/direction/`: what lasts beyond the cycle (the
+direction, such as a game's art direction and type, references,
+research) goes there as the user agrees
 it, labelled direction, and is committed in the project's repo. Keep its
 pages in the docs nav. A mock or an asset in the making stays in the
 cycle; the direction page links nothing in `.scratch/`, so copy any image

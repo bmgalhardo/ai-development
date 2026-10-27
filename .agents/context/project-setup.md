@@ -41,7 +41,8 @@ publish are the workflow's (`machine.md`, `publish-server.md`).
   issue (an export, a long simulation). The build runs them.
 - **Outputs:** `.agents/context/publishing.md` lists what the project
   deploys and their prepared folders, as a table whose rows start
-  `| game | \`<folder>/\`` or `| docs | \`<folder>/\``. The engineering doc
+  `| <output> | \`<folder>/\``: any name, such as `game`, `docs` or
+  `examples`, each served at `<project>/<output>/`. The engineering doc
   says how to prepare each. The build prepares them and the worker loop
   publishes them. Without this doc nothing of the project is deployed.
   The review's mocks are published from outside the project; don't list
@@ -54,7 +55,7 @@ publish are the workflow's (`machine.md`, `publish-server.md`).
   mkdocs-material==9.7.7 mkdocs build --strict`, so a broken link or a doc
   missing from the nav fails the check.
 - **Direction:** `docs/direction/` holds what a review agrees beyond a
-  cycle: art direction, type, references, research (direction, not built;
+  cycle: references, research, a game's art direction and type (direction, not built;
   `README.md` first, images in `img/`).
 - **Coding standards:** `CODING_STANDARDS.md`, how the project's code is
   written, with its stack's idioms. Read by the code review; without it the

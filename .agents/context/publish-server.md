@@ -8,8 +8,8 @@ project's repo and this repo's `.scratch/`.
 
 ```
 /                    the menu of projects
-/<project>/             the project's menu: Game, Docs, Mocks
-/<project>/game/        /<project>/docs/        /<project>/mocks/
+/<project>/             the project's menu: each output, then Mocks
+/<project>/<output>/    e.g. game/, docs/       /<project>/mocks/
 ```
 
 Publish with:
@@ -22,8 +22,8 @@ python3 tools/publish/publish.py ../<project> mocks    # the review's mocks
 - The worker loop runs the first when the build is done; the review runs
   the second. Each changes only what it names on the server.
 - The build's outputs and their prepared folders come from the project's
-  `.agents/context/publishing.md` (the `game` and `docs` rows). A project
-  without that doc has none.
+  `.agents/context/publishing.md`: every row naming an output and its
+  folder. A project without that doc has none.
 - The docs carry the current review (`docs/review.md`).
 - The mocks are the current cycle's `mocks/` (`.scratch/<project>/<cycle>/`),
   newest first.
