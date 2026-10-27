@@ -1,42 +1,62 @@
 # Setting up a project repo
 
-What a project provides so the cycle in `workflow.md` runs on it. Each project
-is an independent git repo beside this one (`../<project>/`): no symlinks to
+What a project provides so the cycle in `workflow.md` runs on it: the
+contract between the workflow and the project. Each project is an
+independent git repo beside this one (`../<project>/`): no symlinks to
 this repo and no mention of it. A session here works on a project once the
 user names it (`AGENTS.md`).
 
-## Files
+The workflow names each item below and the project says how. Only what is
+true of the project goes in its files: the machine's tools and how to
+publish are the workflow's (`machine.md`, `games-server.md`).
 
-- `AGENTS.md`, with `CLAUDE.md` as a symlink to it: what the project is,
-  pointers to its own docs and `.agents/context/` files, publishing, and
-  its standing rules. Its cycles are kept outside the repo; it says so
-  without naming where. Short: mostly
-  navigation pointers. The workflow's session reads it first.
-- `.agents/context/domain.md`: where the domain model lives (the docs,
-  the glossary) and where decisions go.
-- `.agents/context/engineering.md`: Godot version, code map, the check
-  command, tests and captures, test boundaries, build and packaging,
-  gotchas. Only what is true of this project: the machine's tools and how to
-  publish are the workflow's (`machine.md`, `games-server.md`).
-- `.agents/context/decisions.md`: the iteration log of what the user
+## Required
+
+- **What it is:** `AGENTS.md`, with `CLAUDE.md` as a symlink to it. What
+  the project is, its standing rules, and pointers to its docs and
+  `.agents/context/` files. Its cycles are kept outside the repo; it says
+  so without naming where. Short: mostly navigation pointers. Every
+  session reads it first.
+- **Domain:** `.agents/context/domain.md` says where the domain model
+  lives (the docs, the glossary) and where decisions go.
+  `.agents/context/decisions.md` is the iteration log of what the user
   asked for, liked and rejected, newest first.
-- `.agents/context/status.md`: what's built, agreed and next.
-- `.agents/context/publishing.md`: the outputs and their prepared folders
-  (once there is something to publish), as a table whose rows start
-  `| game | \`<folder>/\`` or `| docs | \`<folder>/\``. The mocks are
-  published from outside the project; don't list them. Without this doc
-  nothing of the project is deployed.
-- `docs/`: the user's docs; `docs/README.md` says what's where.
-  `docs/review.md` is the current build's review (written by the build
-  issue), second in the nav. `docs/direction/` holds what the review
-  agrees beyond a cycle: art direction, type, references, research
-  (direction, not built; `README.md` first, images in `img/`).
-- `mkdocs.yml`: the docs page, built with MkDocs and the Material theme
-  into `artifacts/docs-site/`, the `docs` output. It names the site, sets
-  `site_dir: artifacts/docs-site`, lists every doc in `nav` and turns on
-  `validation` (omitted files, links, anchors) as warnings. The check
-  command builds it with `uvx --from mkdocs==1.6.1 --with
+  `.agents/context/status.md` says what's built, agreed and next. Read by
+  grilling, the spec and every issue.
+- **Engineering:** `.agents/context/engineering.md`, with these parts:
+  - **Check command:** the fast check every issue runs and must pass.
+  - **Code map, tests and seams:** where the code is, the test suites, and
+    the seams tests drive. Read by the spec, implementation and `/tdd`.
+  - **Evidence:** how a build shows what changed: for a game, captures
+    copied to `docs/img/`; for a library, an example run's output or
+    timings. The build gathers it into the review.
+  - Its toolchain and gotchas.
+- **Review page:** `docs/review.md`, the current build's review, written
+  by the build issue and read by the next review. `docs/README.md` says
+  what's where in `docs/`.
+
+## Optional
+
+- **Slow checks:** in the engineering doc, checks too slow for every
+  issue (an export, a long simulation). The build runs them.
+- **Outputs:** `.agents/context/publishing.md` lists what the project
+  deploys and their prepared folders, as a table whose rows start
+  `| game | \`<folder>/\`` or `| docs | \`<folder>/\``. The engineering doc
+  says how to prepare each. The build prepares them and the worker loop
+  publishes them. Without this doc nothing of the project is deployed.
+  The review's mocks are published from outside the project; don't list
+  them.
+- **Docs site:** `mkdocs.yml` builds `docs/` with MkDocs and the Material
+  theme into a prepared folder (the `docs` output). It names the site,
+  sets `site_dir`, lists every doc in `nav` with `review.md` second, and
+  turns on `validation` (omitted files, links, anchors) as warnings. The
+  check command builds it with `uvx --from mkdocs==1.6.1 --with
   mkdocs-material==9.7.7 mkdocs build --strict`, so a broken link or a doc
   missing from the nav fails the check.
-- `CODING_STANDARDS.md` only when the project departs from this repo's.
-- `.gitignore` covering `artifacts/`.
+- **Direction:** `docs/direction/` holds what a review agrees beyond a
+  cycle: art direction, type, references, research (direction, not built;
+  `README.md` first, images in `img/`).
+- **Coding standards:** `CODING_STANDARDS.md` when the project departs
+  from this repo's.
+- **Build folder:** a project that builds keeps its prepared files in an
+  ignored folder (for example `artifacts/`, in `.gitignore`).

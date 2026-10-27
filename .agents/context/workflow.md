@@ -22,7 +22,7 @@ project's work on the project itself, commits included, happens in its repo.
 | What | Where | Owner |
 |---|---|---|
 | The user's docs | the project's `docs/` | Each issue (grilling's glossary terms: to-spec) |
-| Screenshots the docs show | the project's `docs/img/` | The build issue |
+| The build's evidence (for a game, screenshots in `docs/img/`) | the project's `docs/` | The build issue |
 | The current build's review | the project's `docs/review.md` | The build issue |
 | Direction: art direction, references, research | the project's `docs/direction/` | Review |
 | A cycle: feedback, mocks, assets, spec, issues | `.scratch/<project>/<YYYY-MM-DD>-<slug>/` here | See below |
@@ -127,7 +127,7 @@ is no persisted file carrying the interview into `/to-spec`.
    conversation. Preserve agreed choices and words and remove superseded
    choices. Make scope, implementation boundaries, affected docs and
    testing seams explicit (the project's engineering doc lists its tests
-   and captures). Check the testing seams with the user as the skill
+   and evidence). Check the testing seams with the user as the skill
    requires. This is synthesis, not another design round: unresolved
    choices stay explicit and are not silently approved. At publication,
    record settled glossary terms and the refinement's decision-log entry
@@ -187,13 +187,15 @@ Each worker's log is in the cycle's `work/`; the runner's state is in
 
 ## 4. Build (the last issue), then publication
 
-A worker does the build issue like any other:
-1. Run the checks, including the build (the engineering doc).
-2. Render the project's captures into the scratchpad and look at the
-   screenshots. Copy the ones that show the change to `docs/img/` as JPEGs.
-3. Package the project's outputs for publishing (the engineering doc).
+A worker does the build issue like any other. The terms are the
+project's contract (`project-setup.md`), and its engineering doc says how:
+1. Run the check command and the slow checks.
+2. Gather the evidence of what changed. For a game: render the captures
+   into the scratchpad, look at them, and copy the ones that show the
+   change to `docs/img/` as JPEGs.
+3. Prepare the outputs, if the project has a publishing doc.
 4. Write the project's `docs/review.md`, replacing the last cycle's: the project version and date (the title), `[TOC]` on its own line before the first section, what changed
-   to try (with the screenshots), the implementer's choices, open
+   to try (with the evidence), the implementer's choices, open
    questions, and **Code debt**: files beyond the coding standards'
    size warnings, with their size, and the review findings deferred as a later
    refactor. Read every issue's Comments and the cycle's `debt.md`, including
