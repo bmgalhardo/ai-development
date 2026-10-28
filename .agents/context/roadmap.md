@@ -59,6 +59,16 @@ Verify current provider authentication guidance before implementation.
 
 Done when recreating a worker preserves login and unfinished work, and it can complete an issue through the existing command.
 
+Progress (2026-10-28):
+
+- Done: the base image and `tools/container/run.sh` (`tools/container/README.md`).
+  One provider and one role per container; each gets only its own login file, from `~/.config/ai-workers/`.
+  A reviewer gets the project read-only: Codex's own sandbox can't start in a container.
+- Next: a project image (`.agents/container/Dockerfile` in the project) with its toolchain, tried by hand on 03-prototype.
+- Then: `WORK_CONTAINER=1` in the runner; removing a stopped attempt's container; Claude's `stream-json` output in the worker logs, so the retro digest keeps its tool calls.
+- Then: the host never follows symlinks in outputs, nor runs the project's code or git hooks.
+- Open: whether a Codex token renewal reaches `.codex.login` through the single-file mount; check after 2026-11-07.
+
 ## 2. Isolated attempts and durable checkpoints
 
 Give each issue attempt an isolated checkout and its own branch.
