@@ -2,11 +2,11 @@
 """Publish a project's outputs to the publish server, with its menu page.
 
 The project's .agents/context/publishing.md lists its outputs in a table
-whose first column names the output (`game`, `docs`, or any other name) and
+whose first column names the output (`app`, `docs`, or any other name) and
 whose second names the prepared folder in backticks, relative to the
 project's root:
 
-    | game | `artifacts/artifact-site/` (`tools/package_artifact.py`) |
+    | app | `artifacts/artifact-site/` (`tools/package_artifact.py`) |
 
 A project without that doc has no outputs. The docs page includes the
 current review (docs/review.md). The mocks are the review's: the current

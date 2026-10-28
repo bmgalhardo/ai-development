@@ -1,6 +1,6 @@
 ---
 name: publish
-description: "Publish the cycle's build (its outputs, such as the game and the docs page with its review) to the publish server by hand, when the worker loop's own publication failed or was skipped."
+description: "Publish the cycle's build (its outputs, such as an app and the docs page with its review) to the publish server by hand, when the worker loop's own publication failed or was skipped."
 disable-model-invocation: true
 ---
 

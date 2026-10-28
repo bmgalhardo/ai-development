@@ -1,4 +1,4 @@
-"""Verify the publisher reads a game's outputs and builds its menu pages."""
+"""Verify the publisher reads a project's outputs and builds its menu pages."""
 
 import json
 from pathlib import Path
@@ -39,28 +39,28 @@ class FakeServer:
 
 
 class PublishTests(unittest.TestCase):
-    def test_outputs_and_title_come_from_the_game_repo(self):
+    def test_outputs_and_title_come_from_the_project_repo(self):
         with tempfile.TemporaryDirectory() as directory:
-            game = Path(directory)
-            (game / '.agents/context').mkdir(parents=True)
-            (game / '.agents/context/publishing.md').write_text(
+            app = Path(directory)
+            (app / '.agents/context').mkdir(parents=True)
+            (app / '.agents/context/publishing.md').write_text(
                 '| Output | Prepared files |\n|---|---|\n'
-                '| game | `artifacts/artifact-site/` (`tools/package_artifact.py`) |\n'
+                '| app | `artifacts/artifact-site/` (`tools/package_artifact.py`) |\n'
                 '| Docs | `artifacts/docs-site/` |\n'
                 '| review | built elsewhere |\n')
-            (game / 'AGENTS.md').write_text('# A Little Sky Time: agent notes\n')
-            self.assertEqual(outputs(game), {'game': game / 'artifacts/artifact-site/',
-                                             'docs': game / 'artifacts/docs-site/'})
-            self.assertEqual(title(game), 'A Little Sky Time')
+            (app / 'AGENTS.md').write_text('# A Little App: agent notes\n')
+            self.assertEqual(outputs(app), {'app': app / 'artifacts/artifact-site/',
+                                            'docs': app / 'artifacts/docs-site/'})
+            self.assertEqual(title(app), 'A Little App')
 
-    def test_menus_link_each_output_and_game(self):
-        entry = {'title': 'Sky & Time', 'outputs': ['game', 'mocks'], 'published': '2026-10-22 16:00'}
-        menu = project_menu('sky', entry)
-        self.assertIn('<a href="game/">Game</a>', menu)
+    def test_menus_link_each_output_and_mocks(self):
+        entry = {'title': 'Notes & Tasks', 'outputs': ['app', 'mocks'], 'published': '2026-10-22 16:00'}
+        menu = project_menu('notes', entry)
+        self.assertIn('<a href="app/">App</a>', menu)
         self.assertIn('<a href="mocks/">Mocks</a>', menu)
         self.assertNotIn('docs/', menu)
-        self.assertIn('Sky &amp; Time', menu)
-        self.assertIn('<a href="sky/">Sky &amp; Time</a>', index({'sky': entry}))
+        self.assertIn('Notes &amp; Tasks', menu)
+        self.assertIn('<a href="notes/">Notes &amp; Tasks</a>', index({'notes': entry}))
 
 
 
@@ -97,20 +97,20 @@ class PublishRunTests(unittest.TestCase):
         self.assertEqual(server.calls, 0)
 
     def test_the_review_publishes_mocks_and_keeps_the_build(self):
-        self.prepare('game', 'docs')
+        self.prepare('app', 'docs')
         self.mock()
-        server = FakeServer({'project': {'outputs': ['game', 'docs'], 'title': 'Project'}})
+        server = FakeServer({'project': {'outputs': ['app', 'docs'], 'title': 'Project'}})
         self.assertEqual(publish(self.project, ['mocks'], server, self.staging), 0)
         self.assertEqual(server.uploaded, ['mocks'])
         self.assertEqual(server.deleted, [])
-        self.assertEqual(server.projects['project']['outputs'], ['game', 'docs', 'mocks'])
+        self.assertEqual(server.projects['project']['outputs'], ['app', 'docs', 'mocks'])
 
     def test_the_build_publishes_its_outputs_and_keeps_the_mocks(self):
         self.prepare('docs')
-        server = FakeServer({'project': {'outputs': ['game', 'docs', 'mocks'], 'title': 'Project'}})
+        server = FakeServer({'project': {'outputs': ['app', 'docs', 'mocks'], 'title': 'Project'}})
         self.assertEqual(publish(self.project, None, server, self.staging), 0)
         self.assertEqual(server.uploaded, ['docs'])
-        self.assertEqual(server.deleted, ['/project/game/'])
+        self.assertEqual(server.deleted, ['/project/app/'])
         self.assertEqual(server.projects['project']['outputs'], ['docs', 'mocks'])
 
     def test_any_output_name_is_published_and_listed(self):

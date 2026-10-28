@@ -18,7 +18,7 @@ be rebuilt from the project's repo and this repo's `.scratch/`.
 ```
 /                    the menu of projects
 /<project>/             the project's menu: each output, then Mocks
-/<project>/<output>/    e.g. game/, docs/       /<project>/mocks/
+/<project>/<output>/    e.g. app/, docs/        /<project>/mocks/
 ```
 
 Publish with:

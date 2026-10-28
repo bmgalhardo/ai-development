@@ -22,9 +22,9 @@ project's work on the project itself, commits included, happens in its repo.
 | What | Where | Owner |
 |---|---|---|
 | The user's docs | the project's `docs/` | Each issue (grilling's glossary terms: to-spec) |
-| The build's evidence (for a game, screenshots in `docs/img/`) | the project's `docs/` | The build issue |
+| The build's evidence (such as screenshots in `docs/img/`) | the project's `docs/` | The build issue |
 | The current build's review | the project's `docs/review.md` | The build issue |
-| Direction: references, research, a game's art direction | the project's `docs/direction/` | Drafted in review, brought in by an issue |
+| Direction: references, research, a visual direction | the project's `docs/direction/` | Drafted in review, brought in by an issue |
 | A cycle: feedback, mocks, assets, direction, research, spec, issues | `.scratch/<project>/<YYYY-MM-DD>-<slug>/` here | See below |
 | The project | the project's code folders (its engineering doc) | Implementation |
 | The project's agent context | the project's `.agents/context/` | See `project-setup.md` |
@@ -44,7 +44,7 @@ docs never run ahead of the build.
 Publishing updates the persistent, user-accessible version, verifies
 success, and returns its link. Generating local files is preparation.
 The project's publishing doc (`.agents/context/publishing.md`) lists its
-outputs (for a game: the game and a docs page) and their prepared folders.
+outputs (for example an app and a docs page) and their prepared folders.
 When the build is done, the worker loop publishes them to the publish
 server, if one is set up (`publish-server.md`). The review publishes its own mocks. A project with
 nothing to deploy has no publishing doc.
@@ -57,7 +57,7 @@ skill.
 - **Brainstorming:** a new project, or a new direction. Research the
   competition, interview the user in rounds of a few multiple-choice
   questions, recommend rather than survey, and let ideas be dropped.
-- **QA:** the user uses the published build (plays a game, runs a tool)
+- **QA:** the user uses the published build (opens an app, runs a tool)
   and reads the Review page
   of its docs (`docs/review.md`), which says what changed and lists open
   questions. They
@@ -80,7 +80,7 @@ chose.
 
 Make the assets in the review too, with the user, so each round is
 minutes, not a cycle: anything the build brings in that is made rather
-than coded, such as art, icons and sounds for a game, or sample data and
+than coded, such as images, icons and sounds for an app, or sample data and
 fixtures for a library.
 They live in the cycle's `assets/`, with their source
 scripts, for the user to iterate on. What the user agrees is what the
@@ -89,7 +89,7 @@ implementation brings into the project; the spec names each asset.
 A review never changes a committed file, in the project or here: all it
 writes stays in its cycle's folder. Points that change the project go
 into the Feedback, for the refinement and the implementation. What lasts
-beyond the cycle (the direction, such as a game's art direction and type,
+beyond the cycle (the direction, such as a visual style and type,
 references, research) is drafted in the cycle's `direction/` as the user
 agrees it, labelled direction, with its images beside it; the spec names
 each page and an issue copies it into the project's `docs/direction/` (and
@@ -199,9 +199,9 @@ Each worker's log is in the cycle's `work/`; the runner's state is in
 A worker does the build issue like any other. The terms are the
 project's contract (`project-setup.md`), and its engineering doc says how:
 1. Run the check command and the slow checks.
-2. Gather the evidence of what changed. For a game: render the captures
-   into the scratchpad, look at them, and copy the ones that show the
-   change to `docs/img/` as JPEGs.
+2. Gather the evidence of what changed, as the engineering doc's
+   Evidence says. For screenshots: render them into the scratchpad, look
+   at them, and copy the ones that show the change to `docs/img/` as JPEGs.
 3. Prepare the outputs, if the project has a publishing doc.
 4. Write the project's `docs/review.md`, replacing the last cycle's: the project version and date (the title), `[TOC]` on its own line before the first section, what changed
    to try (with the evidence), the implementer's choices, open

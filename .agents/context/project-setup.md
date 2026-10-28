@@ -29,7 +29,7 @@ publish are the workflow's (`engineering.md`, `machine.local.md`, `publish-serve
   - **Check command:** the fast check every issue runs and must pass.
   - **Code map, tests and seams:** where the code is, the test suites, and
     the seams tests drive. Read by the spec, implementation and `/tdd`.
-  - **Evidence:** how a build shows what changed: for a game, captures
+  - **Evidence:** how a build shows what changed: for an app, screenshots
     copied to `docs/img/`; for a library, an example run's output or
     timings. The build gathers it into the review.
   - Its toolchain and gotchas.
@@ -43,7 +43,7 @@ publish are the workflow's (`engineering.md`, `machine.local.md`, `publish-serve
   issue (an export, a long simulation). The build runs them.
 - **Outputs:** `.agents/context/publishing.md` lists what the project
   deploys and their prepared folders, as a table whose rows start
-  `| <output> | \`<folder>/\``: any name, such as `game`, `docs` or
+  `| <output> | \`<folder>/\``: any name, such as `app`, `docs` or
   `examples`, each served at `<project>/<output>/`. The engineering doc
   says how to prepare each. The build prepares them and the worker loop
   publishes them. Without this doc nothing of the project is deployed.
@@ -57,7 +57,7 @@ publish are the workflow's (`engineering.md`, `machine.local.md`, `publish-serve
   mkdocs-material==9.7.7 mkdocs build --strict`, so a broken link or a doc
   missing from the nav fails the check.
 - **Direction:** `docs/direction/` holds what a review agrees beyond a
-  cycle, brought in by an issue from the cycle's `direction/`: references, research, a game's art direction and type (direction, not built;
+  cycle, brought in by an issue from the cycle's `direction/`: references, research, a visual style and type (direction, not built;
   `README.md` first, images in `img/`).
 - **Coding standards:** `CODING_STANDARDS.md`, how the project's code is
   written, with its stack's idioms. Read by the code review; without it the
