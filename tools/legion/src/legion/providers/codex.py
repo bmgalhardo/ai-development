@@ -2,7 +2,7 @@
 
 import json
 
-from .base import Provider, Result
+from .base import Provider, QuotaWindow, Result
 
 FULL_ACCESS = ("--sandbox", "danger-full-access")
 
@@ -11,7 +11,6 @@ class Codex(Provider):
     name = "codex"
     executable = "codex"
     rank = 2
-    moshi_agent = "codex"  # its name in Moshi's quota snapshots
     efforts = ("minimal", "low", "medium", "high", "xhigh")
     effort_flag = ("-c", 'model_reasoning_effort="{}"')
     base_flags = ("exec", "-c", 'approval_policy="never"', "--color", "never", "--json")
@@ -20,6 +19,8 @@ class Codex(Provider):
     # The container has no .git for the workflow folder, and no host config that trusts it.
     container_role_flags = {"review": FULL_ACCESS}
     container_flags = ("--skip-git-repo-check",)
+    usage_url = "https://chatgpt.com/backend-api/wham/usage"
+    login_file = ".codex.login"  # the workers' first login, in the logins folder
 
     def read_event(self, event):
         kind = event.get("type")
@@ -31,3 +32,12 @@ class Codex(Provider):
         if kind == "turn.completed" and "usage" in event:
             return Result(usage=[event["usage"]])
         return None
+
+    def read_quota(self, fetch):
+        tokens = self.read_login(self.settings.logins_folder / self.login_file)["tokens"]
+        usage = fetch(self.usage_url, {"Authorization": f"Bearer {tokens['access_token']}",
+                                       "ChatGPT-Account-Id": tokens["account_id"], "User-Agent": "codex-cli"})
+        limits = usage.get("rate_limit") or {}
+        return [QuotaWindow(label=QuotaWindow.span(window["limit_window_seconds"]),
+                            used_percent=window["used_percent"], resets_at=QuotaWindow.iso(window["reset_at"]))
+                for key in ("primary_window", "secondary_window") if (window := limits.get(key))]

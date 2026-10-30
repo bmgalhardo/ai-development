@@ -1,80 +1,160 @@
-"""Validate quota normalization, privacy, caching and failure behavior."""
+"""Quota readings from the usage endpoints, with a faked HTTP call: readings, refusals, logins, caching, privacy."""
 
+from datetime import datetime, timedelta, timezone
 import json
-import subprocess
+import os
+from pathlib import Path
+import tempfile
+import time
 import unittest
 from unittest.mock import Mock, patch
+from urllib.error import HTTPError
 
 from fastapi.testclient import TestClient
 
 from legion.dashboard.app import create_app
-from legion.dashboard.quotas import Quotas, normalize
+from legion.dashboard.quotas import Quotas
+from legion.providers import registry
+from legion.providers.base import QuotaUnavailable
+from legion.settings import Settings
+
+CLAUDE_USAGE = {"five_hour": {"utilization": 24.0, "resets_at": "2026-10-29T14:59:59+00:00"},
+                "seven_day": {"utilization": 11.0, "resets_at": "2026-11-03T23:59:59+00:00"},
+                "seven_day_opus": None, "extra_usage": {"is_enabled": False}}
+CODEX_USAGE = {"user_id": "private-user", "account_id": "private-account", "email": "private@example.com",
+               "rate_limit": {"primary_window": {"used_percent": 44, "limit_window_seconds": 18000,
+                                                 "reset_after_seconds": 4401, "reset_at": 1793286923},
+                              "secondary_window": {"used_percent": 9, "limit_window_seconds": 604800,
+                                                   "reset_after_seconds": 503821, "reset_at": 1793786344}}}
 
 
-SNAPSHOTS = [
-    {"agent": "codex", "accountId": "private-account", "accountLabel": "private@example.com",
-     "hostName": "private-host", "capturedAt": "2026-01-01T00:00:00Z",
-     "windows": [{"label": "5h", "usedPercentage": 11, "resetsAt": "2026-10-26T01:38:00Z"}]},
-    {"agent": "claude-code", "windows": [{"label": "7d", "usedPercentage": 68}]},
-]
+class Fetch:
+    """A fake usage endpoint: each URL answers from a table; records what was asked."""
+
+    def __init__(self, **answers):
+        self.answers = answers
+        self.calls = []
+
+    def __call__(self, url, headers):
+        self.calls.append((url, headers))
+        answer = self.answers["claude" if "anthropic" in url else "codex"]
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
 
 
 class QuotaTests(unittest.TestCase):
-    def test_serves_quota_windows_without_account_identity(self):
-        accounts = normalize(SNAPSHOTS)
-        self.assertEqual(accounts[0]["windows"], [{"label": "5h", "used_percent": 11,
-                                                  "resets_at": "2026-10-26T01:38:00Z"}])
-        self.assertEqual(accounts[1]["provider"], "claude")
-        self.assertTrue(accounts[0]["stale"])
-        self.assertTrue(accounts[1]["stale"])
-        self.assertNotIn("private", json.dumps(accounts))
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.folder = Path(temp.name)
+        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("WORK_")}
+        with patch.dict(os.environ, clean, clear=True):
+            self.settings = Settings(_env_file=None, logins=self.folder, preference=["claude", "codex"])
+        self.claude = registry.provider("claude", self.settings)
+        self.claude.credentials = self.folder / "credentials.json"
+        self.codex = registry.provider("codex", self.settings)
+        self.login("claude", expires_in=3600)
+        self.login("codex")
 
-    @patch("legion.dashboard.quotas.subprocess.run")
-    def test_polls_at_most_once_per_minute_and_never_syncs(self, run):
-        run.return_value = Mock(stdout=json.dumps(SNAPSHOTS))
-        reader = Quotas()
-        first = reader.read()
-        self.assertEqual(reader.read(), first)
-        run.assert_called_once_with(["moshi-hook", "usage"], capture_output=True,
-                                    text=True, timeout=30, check=True)
+    def login(self, name, expires_in=3600):
+        if name == "claude":
+            self.claude.credentials.write_text(json.dumps({"claudeAiOauth": {
+                "accessToken": "claude-token", "expiresAt": (time.time() + expires_in) * 1000}}))
+        else:
+            (self.folder / ".codex.login").write_text(json.dumps({"tokens": {
+                "access_token": "codex-token", "refresh_token": "codex-refresh", "account_id": "private-account"}}))
 
-    @patch("legion.dashboard.quotas.subprocess.run")
-    def test_retains_last_snapshot_as_stale_after_poll_failure(self, run):
-        run.return_value = Mock(stdout=json.dumps(SNAPSHOTS))
-        reader = Quotas()
-        reader.read()
-        reader.checked_at = None
-        run.side_effect = subprocess.TimeoutExpired("moshi-hook", 30)
-        failed = reader.read()
-        self.assertEqual(failed["accounts"][0]["windows"][0]["used_percent"], 11)
-        self.assertTrue(failed["accounts"][0]["stale"])
-        self.assertIn("unavailable", failed["error"])
+    def test_claude_reads_its_usage_endpoint_with_the_host_login(self):
+        fetch = Fetch(claude=CLAUDE_USAGE)
+        windows = self.claude.quota(fetch)
+        self.assertEqual([(w.label, w.used_percent, w.resets_at) for w in windows],
+                         [("5h", 24.0, "2026-10-29T14:59:59+00:00"), ("7d", 11.0, "2026-11-03T23:59:59+00:00")])
+        url, headers = fetch.calls[0]
+        self.assertEqual(url, "https://api.anthropic.com/api/oauth/usage")
+        self.assertEqual(headers, {"Authorization": "Bearer claude-token", "anthropic-beta": "oauth-2025-04-20"})
 
-    @patch("legion.dashboard.quotas.subprocess.run", side_effect=FileNotFoundError)
-    def test_missing_helper_reports_unavailable_without_inventing_usage(self, run):
-        result = Quotas().read()
-        self.assertEqual(result["accounts"], [])
-        self.assertIn("not installed", result["error"])
+    def test_codex_reads_its_usage_endpoint_with_the_workers_login(self):
+        fetch = Fetch(codex=CODEX_USAGE)
+        windows = self.codex.quota(fetch)
+        self.assertEqual([(w.label, w.used_percent) for w in windows], [("5h", 44), ("7d", 9)])
+        self.assertEqual(datetime.fromisoformat(windows[0].resets_at),
+                         datetime.fromtimestamp(1793286923, timezone.utc))
+        url, headers = fetch.calls[0]
+        self.assertEqual(url, "https://chatgpt.com/backend-api/wham/usage")
+        self.assertEqual(headers["Authorization"], "Bearer codex-token")
+        self.assertEqual(headers["ChatGPT-Account-Id"], "private-account")
 
-    @patch("legion.dashboard.quotas.subprocess.run")
-    def test_malformed_output_does_not_expose_raw_output(self, run):
-        run.return_value = Mock(stdout="secret-provider-diagnostic")
-        result = Quotas().read()
-        self.assertEqual(result["accounts"], [])
-        self.assertNotIn("secret", json.dumps(result))
+    def test_an_expired_claude_login_is_unavailable_without_calling(self):
+        self.login("claude", expires_in=-60)
+        fetch = Fetch(claude=CLAUDE_USAGE)
+        with self.assertRaisesRegex(QuotaUnavailable, "login expired"):
+            self.claude.quota(fetch)
+        self.assertEqual(fetch.calls, [])
 
-    def test_unknown_providers_and_non_numeric_percentages_are_not_quotas(self):
-        self.assertEqual(normalize([{"agent": "other"}]), [])
-        self.assertEqual(normalize([{"agent": name} for name in ("claude", "claude-desktop", "codex-cli")]), [])
-        accounts = normalize([{"agent": "codex", "windows": [{"usedPercentage": None},
-                              {"usedPercentage": float("nan")}, {"usedPercentage": True}]}])
-        self.assertEqual(accounts[0]["windows"], [])
+    def test_a_missing_login_is_unavailable(self):
+        (self.folder / ".codex.login").unlink()
+        with self.assertRaisesRegex(QuotaUnavailable, "no login"):
+            self.codex.quota(Fetch(codex=CODEX_USAGE))
+
+    def test_a_refusal_is_unavailable_with_its_status_only(self):
+        refusal = HTTPError("https://chatgpt.com/backend-api/wham/usage", 401, "token expired", {}, None)
+        with self.assertRaisesRegex(QuotaUnavailable, r"^usage endpoint refused \(401\)$"):
+            self.codex.quota(Fetch(codex=refusal))
+
+    def test_an_unexpected_answer_is_unavailable(self):
+        for answer in ({"five_hour": {"utilization": "a lot"}}, {"five_hour": {"resets_at": "soon"}}, ["list"]):
+            with self.subTest(answer=answer):
+                with self.assertRaisesRegex(QuotaUnavailable, "unexpected"):
+                    self.claude.quota(Fetch(claude=answer))
+
+    def test_percentages_stay_within_range(self):
+        windows = self.claude.quota(Fetch(claude={"five_hour": {"utilization": 130, "resets_at": None}}))
+        self.assertEqual(windows[0].used_percent, 100)
+
+    def test_reads_at_most_once_a_minute_and_serves_no_identity(self):
+        fetch = Fetch(claude=CLAUDE_USAGE, codex=CODEX_USAGE)
+        quotas = Quotas([self.claude, self.codex], fetch)
+        first = quotas.read()
+        self.assertEqual(quotas.read(), first)
+        self.assertEqual(len(fetch.calls), 2)
+        self.assertEqual([account["provider"] for account in first["accounts"]], ["claude", "codex"])
+        self.assertFalse(first["accounts"][0]["stale"])
+        served = json.dumps(first)
+        for secret in ("private", "token", "refresh"):
+            self.assertNotIn(secret, served)
+
+    def test_a_failure_keeps_the_last_reading_and_says_why(self):
+        fetch = Fetch(claude=CLAUDE_USAGE, codex=CODEX_USAGE)
+        quotas = Quotas([self.claude], fetch)
+        quotas.read()
+        quotas.checked_at = None
+        fetch.answers["claude"] = OSError("network down")
+        account = quotas.read()["accounts"][0]
+        self.assertEqual(account["error"], "usage endpoint unreachable")
+        self.assertEqual(account["windows"][0]["used_percent"], 24.0)
+
+    def test_an_old_reading_is_stale_and_no_reading_is_unavailable(self):
+        quotas = Quotas([self.claude, self.codex], Fetch(claude=CLAUDE_USAGE, codex=QuotaUnavailable("no login")))
+        accounts = quotas.read()["accounts"]
+        self.assertEqual((accounts[1]["captured_at"], accounts[1]["stale"], accounts[1]["error"]),
+                         (None, True, "no login"))
+        quotas.accounts["claude"].captured_at = datetime.now(timezone.utc) - timedelta(minutes=4)
+        self.assertTrue(quotas.accounts["claude"].public()["stale"])
+
+    def test_panels_follow_the_preference(self):
+        quotas = Quotas.for_settings(self.settings.model_copy(update={"preference": ["claude"]}))
+        self.assertEqual([provider.name for provider in quotas.providers], ["claude"])
 
     def test_quota_endpoint_is_independent_of_board_and_not_cached_by_browser(self):
         reader = Mock()
-        reader.read.return_value = {"accounts": normalize(SNAPSHOTS), "error": None}
-        with TestClient(create_app(quotas=reader)) as client:
+        reader.read.return_value = {"accounts": [{"provider": "codex", "windows": []}], "error": None}
+        with TestClient(create_app(self.folder, quotas=reader)) as client:
             response = client.get("/api/quotas")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers["cache-control"], "no-store")
         self.assertEqual(response.json()["accounts"][0]["provider"], "codex")
+
+
+if __name__ == "__main__":
+    unittest.main()

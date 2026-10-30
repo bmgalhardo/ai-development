@@ -41,6 +41,7 @@ A provider defines:
 - its flags per role and in a container;
 - how model and effort are passed;
 - how to read its log events: messages, usage (in the CLI's own units) and the final report.
+- how to read its quota from its usage endpoint.
 
 The base class holds what both CLIs share: the quota and login patterns, and the reset-time formats.
 A provider may add its own.
@@ -81,17 +82,12 @@ Opening issue details focuses the title. Tab moves to Close with a visible keybo
 
 ### Account quotas
 
-Quotas are optional. When the Moshi helper `moshi-hook` is installed, the separate `/api/quotas` endpoint runs
-`moshi-hook usage` at most once per minute. It never uses `--sync` or reads credentials.
-The helper provides the same type of account quota snapshots Moshi uses.
-Only provider, quota windows, percentages and capture/reset times are served.
-Account IDs, account labels and host identity are excluded.
-Quota collection runs independently of issue refreshes and never invokes a model.
-These quotas apply to the signed-in accounts across projects, not just the selected project.
-Missing data is shown as unavailable. Each panel shows the time of the last quota reading.
-Readings older than three minutes explain that Moshi has no newer reading available.
-If collection fails, the last successful snapshot remains visible as stale.
-The provider's capture time is preserved; a successful poll does not imply a new measurement.
+The quota panel reads each provider's usage endpoint at most once a minute: Claude with the host's Claude Code login, Codex with the worker's first login file.
+It reads the tokens only: it never renews them and never serves them.
+When an endpoint refuses or a login is missing, the panel says unavailable.
+Each panel shows when its reading was taken, marked stale after three minutes.
+Only provider, windows, percentages and reset times are served.
+The runner doesn't use these readings.
 
 ### Worker status
 

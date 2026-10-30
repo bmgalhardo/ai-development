@@ -1,17 +1,18 @@
-"""What every provider shares: building a command, reading its log, and reading failures and reset times.
+"""What every provider shares: building a command, reading its log, failures and reset times, and its quota.
 
 A provider is a subclass of `Provider` in its own file. Its data are class
 attributes; it reads its own log events.
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import re
 from typing import ClassVar
+from urllib.error import HTTPError
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError, field_validator
 
 RESET_MARGIN = 30  # seconds after a reset before trying again
 
@@ -22,6 +23,35 @@ class Result(BaseModel):
     messages: str = ""
     usage: list[dict] = []
     report: str = ""
+
+
+class QuotaUnavailable(Exception):
+    """No quota reading, with a reason safe to show: never a token or a raw response."""
+
+
+class QuotaWindow(BaseModel):
+    """One usage window of a provider's quota: its label (5h, 7d), percent used and reset time (ISO)."""
+
+    label: str
+    used_percent: float
+    resets_at: str | None = None
+
+    @field_validator("used_percent")
+    @classmethod
+    def within_range(cls, value):
+        if value != value:  # NaN
+            raise ValueError("not a percentage")
+        return max(0, min(100, value))
+
+    @staticmethod
+    def span(seconds):
+        """A window's length as a label: 5h, 7d."""
+        return f"{seconds // 86400}d" if seconds >= 86400 else f"{seconds // 3600}h"
+
+    @staticmethod
+    def iso(timestamp):
+        """Unix seconds as an ISO time in UTC."""
+        return datetime.fromtimestamp(timestamp, timezone.utc).isoformat()
 
 
 class Reset:
@@ -84,11 +114,11 @@ class Provider(ABC):
     container_role_flags: ClassVar[dict[str, tuple[str, ...]]] = {}  # replace role_flags in a container
     model_flag: ClassVar[str] = "--model"
     # Limit and login wording both CLIs use; a provider may add its own.
-    authentication: ClassVar[tuple[str, ...]] = (
+    authentication_patterns: ClassVar[tuple[str, ...]] = (
         r"invalid_api_key", r"authentication[_ ](?:failed|required|error)", r"not logged in",
         r"failed to authenticate", r"(?:refresh|access|oauth)[_ ](?:token|session).*(?:expired|revoked)",
         r"401 Unauthorized")
-    quota: ClassVar[tuple[str, ...]] = (
+    quota_patterns: ClassVar[tuple[str, ...]] = (
         r"usage_limit_reached", r"rate_limit_exceeded", r"rate_limit_error",
         r"you(?:['’]ve| have) (?:hit|reached) your (?:(?:usage|session|weekly) )?limit",
         r"(?:usage|session|weekly) limit (?:reached|exceeded)", r"rate limit (?:reached|exceeded)",
@@ -118,9 +148,9 @@ class Provider(ABC):
 
     def classify(self, message):
         """A failure's kind from the session's messages: authentication, quota or failure."""
-        if re.search("|".join(self.authentication), message, re.I):
+        if re.search("|".join(self.authentication_patterns), message, re.I):
             return "authentication"
-        if re.search("|".join(self.quota), message, re.I):
+        if re.search("|".join(self.quota_patterns), message, re.I):
             return "quota"
         return "failure"
 
@@ -148,9 +178,31 @@ class Provider(ABC):
     def read_event(self, event):
         """A log event's part of the Result, or None for an event that doesn't matter."""
 
-    def read_quota(self):
-        """The provider's quota reading. Filled by the quota ticket."""
-        raise NotImplementedError
+    def quota(self, fetch):
+        """The provider's quota windows, or QuotaUnavailable with a reason safe to show.
+
+        `fetch(url, headers)` returns the endpoint's JSON. Logins are only read, never renewed.
+        """
+        try:
+            return self.read_quota(fetch)
+        except HTTPError as error:
+            raise QuotaUnavailable(f"usage endpoint refused ({error.code})") from None
+        except OSError:
+            raise QuotaUnavailable("usage endpoint unreachable") from None
+        except (KeyError, TypeError, AttributeError, ValidationError, ValueError):
+            raise QuotaUnavailable("unexpected login or usage format") from None
+
+    @abstractmethod
+    def read_quota(self, fetch):
+        """The provider's quota windows from its usage endpoint."""
+
+    @staticmethod
+    def read_login(path):
+        """A login file's JSON; QuotaUnavailable when it is missing."""
+        try:
+            return json.loads(path.read_text())
+        except FileNotFoundError:
+            raise QuotaUnavailable("no login") from None
 
     def container_login(self):
         """The login and session folder a container needs. Filled by the containers ticket."""

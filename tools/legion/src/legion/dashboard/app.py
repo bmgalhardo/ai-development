@@ -14,9 +14,11 @@ STATIC = Path(__file__).parent / "static"
 
 
 def create_app(root=None, quotas=None):
-    """The board's app over the workflow root (default: the settings' root)."""
+    """The board's app over the workflow root, and the quotas of the preferred providers (default: from the settings)."""
     app = FastAPI(title="Dev workflow", docs_url=None, redoc_url=None)
-    store = Store(root or Settings.load().root)
+    settings = Settings.load() if root is None or quotas is None else None
+    store = Store(root or settings.root)
+    quota_reader = quotas or Quotas.for_settings(settings)
 
     @app.middleware("http")
     async def no_store(request, call_next):
@@ -25,7 +27,6 @@ def create_app(root=None, quotas=None):
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
         return response
-    quota_reader = quotas if quotas is not None else Quotas()
 
     @app.get("/api/quotas")
     def quota_status():

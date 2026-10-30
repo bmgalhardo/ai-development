@@ -142,40 +142,39 @@ async function refreshQuotas() {
   try {
     const quotas = await get('/api/quotas', 35000);
     const panels = [];
-    for (const provider of ['claude', 'codex']) {
-      const accounts = quotas.accounts.filter(account => account.provider === provider);
-      for (const account of accounts.length ? accounts : [{windows: [], captured_at: null}]) {
-        const panel = node('div', 'quota-panel');
-        const heading = node('div', 'quota-heading');
-        heading.append(agentIcon(provider), node('strong', '', 'Account quota'));
-        const age = account.captured_at ? (Date.now() - Date.parse(account.captured_at)) / 1000 : null;
-        const captured = node('span', 'quota-captured', age == null ? 'Unavailable' : `Last reading · ${duration(age)} ago`);
-        const stale = account.stale || age > 180;
-        captured.classList.toggle('stale', !!stale);
-        captured.title = 'Time Moshi last obtained this quota reading. The dashboard checks for a newer reading every minute.';
-        heading.append(captured);
-        panel.append(heading);
-        for (const window of account.windows) {
-          const row = node('div', 'quota-window');
-          const label = node('div', 'quota-label');
-          label.append(node('span', '', window.label), node('strong', '', `${window.used_percent}% used`));
-          const bar = node('progress');
-          bar.max = 100; bar.value = window.used_percent;
-          bar.setAttribute('aria-label', `${provider} ${window.label} quota used`);
-          const reset = Date.parse(window.resets_at);
-          row.append(label, bar, node('span', 'quota-reset', Number.isFinite(reset) ? `${reset > Date.now() ? 'Resets in ' + duration((reset - Date.now()) / 1000) : 'Reset time passed · awaiting new snapshot'} · ${new Date(reset).toLocaleString()}` : 'Reset time unavailable'));
-          panel.append(row);
-        }
-        if (!account.windows.length) panel.append(node('p', 'quota-note', 'No quota snapshot available.'));
-        else if (stale) panel.append(node('p', 'quota-note', 'Moshi has no newer reading available. These percentages may have changed.'));
-        panels.push(panel);
+    for (const account of quotas.accounts) {
+      const provider = account.provider;
+      const panel = node('div', 'quota-panel');
+      const heading = node('div', 'quota-heading');
+      heading.append(agentIcon(provider), node('strong', '', 'Account quota'));
+      const age = account.captured_at ? (Date.now() - Date.parse(account.captured_at)) / 1000 : null;
+      const captured = node('span', 'quota-captured', age == null ? 'Unavailable' : `Last reading · ${duration(age)} ago`);
+      const stale = account.stale || age > 180;
+      captured.classList.toggle('stale', !!stale);
+      captured.title = 'Time of the last successful reading. The dashboard reads the usage endpoint at most once a minute.';
+      heading.append(captured);
+      panel.append(heading);
+      for (const window of account.windows) {
+        const row = node('div', 'quota-window');
+        const label = node('div', 'quota-label');
+        label.append(node('span', '', window.label), node('strong', '', `${window.used_percent}% used`));
+        const bar = node('progress');
+        bar.max = 100; bar.value = window.used_percent;
+        bar.setAttribute('aria-label', `${provider} ${window.label} quota used`);
+        const reset = Date.parse(window.resets_at);
+        row.append(label, bar, node('span', 'quota-reset', Number.isFinite(reset) ? `${reset > Date.now() ? 'Resets in ' + duration((reset - Date.now()) / 1000) : 'Reset time passed · awaiting a new reading'} · ${new Date(reset).toLocaleString()}` : 'Reset time unavailable'));
+        panel.append(row);
       }
+      if (account.error) panel.append(node('p', 'quota-note', `Unavailable: ${account.error}.`));
+      if (!account.windows.length) panel.append(node('p', 'quota-note', 'No quota reading available.'));
+      else if (stale) panel.append(node('p', 'quota-note', 'No newer reading available. These percentages may have changed.'));
+      panels.push(panel);
     }
-    panels.push(node('p', 'quota-note quota-source', quotas.error || 'Moshi account snapshots · checked every minute · shared across projects'));
+    panels.push(node('p', 'quota-note quota-source', quotas.error || 'Usage endpoints · read at most once a minute · shared across projects'));
     $('quotas').replaceChildren(...panels);
   } catch (error) {
     const note = $('quotas').querySelector('.quota-source') || node('p', 'quota-note quota-source');
-    note.textContent = 'Quota refresh unavailable · retrying in one minute. Any displayed snapshot may be out of date.';
+    note.textContent = 'Quota refresh unavailable · retrying in one minute. Any displayed reading may be out of date.';
     $('quotas').append(note);
   }
 }

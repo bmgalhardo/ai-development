@@ -1,17 +1,23 @@
 """Claude Code: `claude -p`, with one JSON result in its log."""
 
-from .base import Provider, Result
+from pathlib import Path
+import time
+
+from .base import Provider, QuotaUnavailable, QuotaWindow, Result
 
 
 class Claude(Provider):
     name = "claude"
     executable = "claude"
     rank = 1
-    moshi_agent = "claude-code"  # its name in Moshi's quota snapshots
     efforts = ("low", "medium", "high", "xhigh", "max")
     effort_flag = ("--effort", "{}")
     base_flags = ("-p", "--permission-mode", "auto", "--output-format", "json")
     role_flags = {"review": ("--disallowedTools=Edit,Write,NotebookEdit",)}
+    usage_url = "https://api.anthropic.com/api/oauth/usage"
+    # The host's Claude Code login: the workers' setup token can't read usage.
+    credentials = Path.home() / ".claude" / ".credentials.json"
+    windows = {"five_hour": "5h", "seven_day": "7d"}
 
     def session_flags(self, project):
         return ["--add-dir", str(project), "--max-budget-usd", f"{self.settings.budget_usd:g}"]
@@ -24,3 +30,12 @@ class Claude(Provider):
         usage = {key: event[key] for key in ("usage", "modelUsage", "total_cost_usd", "num_turns") if key in event}
         return Result(messages="\n".join([result, *errors, *map(str, event.get("errors", []))]),
                       usage=[usage], report="" if event.get("is_error") else result)
+
+    def read_quota(self, fetch):
+        login = self.read_login(self.credentials)["claudeAiOauth"]
+        if login.get("expiresAt", 0) / 1000 <= time.time():
+            raise QuotaUnavailable("login expired; using Claude Code on this host renews it")
+        usage = fetch(self.usage_url, {"Authorization": f"Bearer {login['accessToken']}",
+                                       "anthropic-beta": "oauth-2025-04-20"})
+        return [QuotaWindow(label=label, used_percent=usage[key]["utilization"], resets_at=usage[key]["resets_at"])
+                for key, label in self.windows.items() if usage.get(key)]
