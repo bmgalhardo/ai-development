@@ -13,16 +13,20 @@ class SettingsTests(unittest.TestCase):
     def setUp(self):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
-        self.env_file = Path(temp.name) / ".env"
+        self.root = Path(temp.name)
         clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("WORK_")}
-        patcher = patch.dict(os.environ, clean, clear=True)
+        patcher = patch.dict(os.environ, clean | {"WORK_ROOT": str(self.root)}, clear=True)
         patcher.start()
         self.addCleanup(patcher.stop)
 
     def load(self, env_file="", **environment):
-        self.env_file.write_text(env_file)
+        (self.root / ".env").write_text(env_file)
         with patch.dict(os.environ, environment):
-            return Settings.load(env_file=self.env_file)
+            return Settings.load()
+
+    def test_the_env_file_is_the_workflow_roots(self):
+        settings = self.load("WORK_WAIT=60\n")
+        self.assertEqual((settings.root, settings.wait), (self.root, 60))
 
     def test_defaults(self):
         settings = self.load()
@@ -46,9 +50,9 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(self.load(WORK_PREFERENCE="claude").preference, ["claude"])
 
     def test_an_unset_preference_is_every_installed_provider_claude_first(self):
-        with patch("legion.settings.shutil.which", side_effect=lambda name: f"/bin/{name}"):
+        with patch("legion.providers.shutil.which", side_effect=lambda name: f"/bin/{name}"):
             self.assertEqual(self.load().preference, ["claude", "codex"])
-        with patch("legion.settings.shutil.which", side_effect=lambda name: "/bin/codex" if name == "codex" else None):
+        with patch("legion.providers.shutil.which", side_effect=lambda name: "/bin/codex" if name == "codex" else None):
             self.assertEqual(self.load().preference, ["codex"])
 
     def test_invalid_values_fail_with_the_setting_named(self):
@@ -60,11 +64,9 @@ class SettingsTests(unittest.TestCase):
                 with self.assertRaisesRegex(SettingsError, f"{name}: .*{message}"):
                     self.load(**{name: value})
 
-    def test_a_misspelled_role_setting_is_named(self):
-        with self.assertRaisesRegex(SettingsError, "WORK_CLAUDE__IMPLEMENT__MODLE: Extra inputs"):
-            self.load(WORK_CLAUDE__IMPLEMENT__MODLE="opus")
-        with self.assertRaisesRegex(SettingsError, "WORK_CODEX__REWIEW: Extra inputs"):
-            self.load("WORK_CODEX__REWIEW__MODEL=gpt\n")
+    def test_unknown_nested_keys_in_the_env_file_are_ignored(self):
+        settings = self.load("WORK_CODEX__REWIEW__MODEL=gpt\nWORK_CLAUDE__IMPLEMENT__MODLE=opus\n")
+        self.assertIsNone(settings.roles("claude").role("implement").model)
 
     def test_an_unparsable_nested_value_is_an_error(self):
         with self.assertRaisesRegex(SettingsError, "Invalid settings"):

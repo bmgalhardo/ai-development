@@ -4,17 +4,16 @@ Every setting is a `WORK_` variable. The environment wins over `.env`, unknown
 `WORK_` keys in `.env` are ignored, and invalid values fail when loading.
 """
 
+import os
 from pathlib import Path
-import shutil
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, PositiveFloat, PositiveInt, ValidationError, create_model, field_validator
+from pydantic import BaseModel, Field, PositiveFloat, PositiveInt, ValidationError, create_model, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from pydantic_settings import SettingsError as SourceError
 
-from .providers import registered
+from .providers import installed, registered
 
-ROLES = ("implement", "review", "fix")
 DEFAULT_EFFORT = "medium"
 
 
@@ -25,16 +24,12 @@ class SettingsError(Exception):
 class Role(BaseModel):
     """A provider's model and effort for one role; an unset model keeps the CLI's default."""
 
-    model_config = ConfigDict(extra="forbid")
-
     model: str | None = None
     effort: str | None = None
 
 
 class ProviderRoles(BaseModel):
     """A provider's settings per role, from `WORK_<PROVIDER>__<ROLE>__MODEL` and `__EFFORT`."""
-
-    model_config = ConfigDict(extra="forbid")
 
     implement: Role = Field(default_factory=Role)
     review: Role = Field(default_factory=Role)
@@ -46,11 +41,6 @@ class ProviderRoles(BaseModel):
         fallback = self.implement if name == "fix" else Role()
         return Role(model=role.model or fallback.model,
                     effort=role.effort or fallback.effort or DEFAULT_EFFORT)
-
-
-def installed():
-    """Every registered provider whose CLI is on PATH, Claude first."""
-    return [name for name in registered() if shutil.which(name)]
 
 
 class BaseLegionSettings(BaseSettings):
@@ -90,10 +80,6 @@ class BaseLegionSettings(BaseSettings):
         return names
 
     @property
-    def scratch(self):
-        return self.root / ".scratch"
-
-    @property
     def logins_folder(self):
         return self.logins or self.root / ".logins"
 
@@ -102,20 +88,24 @@ class BaseLegionSettings(BaseSettings):
         return getattr(self, provider)
 
     @classmethod
-    def load(cls, env_file=".env"):
-        """The settings, or a SettingsError naming each invalid variable."""
+    def load(cls):
+        """The settings, or a SettingsError naming each invalid variable.
+
+        `.env` is the workflow root's: `WORK_ROOT` from the environment, else the current folder.
+        """
+        root = Path(os.environ.get("WORK_ROOT") or Path.cwd())
         try:
-            return cls(_env_file=env_file)
+            return cls(_env_file=root / ".env")
         except ValidationError as error:
-            lines = [f"{variable(problem['loc'])}: {problem['msg']}" for problem in error.errors()]
+            lines = [f"{cls.variable(problem['loc'])}: {problem['msg']}" for problem in error.errors()]
             raise SettingsError("Invalid settings:\n" + "\n".join(lines)) from None
         except SourceError as error:
             raise SettingsError(f"Invalid settings: {error}") from None
 
-
-def variable(location):
-    """The environment variable for a validation error's location."""
-    return "WORK_" + "__".join(str(part) for part in location if not isinstance(part, int)).upper()
+    @staticmethod
+    def variable(location):
+        """The environment variable for a validation error's location."""
+        return "WORK_" + "__".join(str(part) for part in location if not isinstance(part, int)).upper()
 
 
 # One nested field per registered provider, so no setting names a provider here.

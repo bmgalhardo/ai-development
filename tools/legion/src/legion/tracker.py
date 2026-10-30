@@ -68,10 +68,8 @@ class Cycle(BaseModel):
 class Tracker:
     """A project's cycles, in the scratch folder under the project's folder name."""
 
-    def __init__(self, root, project):
-        self.root = root
-        self.project = project
-        self.folder = root / ".scratch" / project.name
+    def __init__(self, folder):
+        self.folder = folder
 
     @classmethod
     def for_project(cls, root, name):
@@ -79,7 +77,7 @@ class Tracker:
         project = (root / name).resolve()
         if not (project / ".git").exists():
             raise TrackerError(f"{project} is not a git repo")
-        return cls(root, project)
+        return cls(root / ".scratch" / project.name)
 
     def cycle_paths(self):
         if not self.folder.is_dir():

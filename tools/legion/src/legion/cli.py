@@ -14,18 +14,18 @@ class Commands:
     def __init__(self, settings):
         self.settings = settings
 
-    def cycle(self, project):
+    def _cycle(self, project):
         return Tracker.for_project(self.settings.root, project).current_cycle()
 
     def next(self, project):
         """Print the next issue a worker should take in the current cycle, or nothing."""
-        issue = self.cycle(project).next_issue()
+        issue = self._cycle(project).next_issue()
         if issue:
             print(os.path.relpath(issue.path, self.settings.root))
 
     def status(self, project):
         """List every issue's status in the current cycle."""
-        for number, issue in self.cycle(project).issues.items():
+        for number, issue in self._cycle(project).issues.items():
             print(f"{number}  {issue.status:12s} {issue.path.name}")
 
 
