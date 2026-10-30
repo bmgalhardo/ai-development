@@ -60,6 +60,10 @@ class RouterTests(unittest.TestCase):
             with self.subTest(name):
                 self.assertEqual(self.choose(preference, role, **situation), expected)
 
+    def test_an_unknown_role_is_an_error(self):
+        with self.assertRaisesRegex(ValueError, "unknown role reviews"):
+            self.choose(["claude"], "reviews")
+
 
 if __name__ == "__main__":
     unittest.main()

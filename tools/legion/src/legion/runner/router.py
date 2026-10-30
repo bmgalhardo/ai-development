@@ -13,10 +13,14 @@ class Situation(BaseModel):
 
 
 class Use(BaseModel):
+    """This provider takes the step."""
+
     provider: str
 
 
 class Wait(BaseModel):
+    """Nobody is ready: wait until this reset (Unix seconds)."""
+
     until: float
 
 
@@ -24,6 +28,9 @@ class Stop(BaseModel):
     """Every provider in the preference is signed out."""
 
     signed_out: list[str]
+
+
+ROLES = ("implement", "review", "fix")
 
 
 class Router:
@@ -39,9 +46,11 @@ class Router:
         self.preference = list(preference)
 
     def choose(self, role, situation, now):
+        if role not in ROLES:
+            raise ValueError(f"unknown role {role}; known: {', '.join(ROLES)}")
         available = [name for name in self.preference if name not in situation.signed_out]
         if not available:
-            return Stop(signed_out=sorted(situation.signed_out & set(self.preference)))
+            return Stop(signed_out=self.preference)
         ready = [name for name in available if situation.cooldowns.get(name, 0) <= now]
         if not ready:
             return Wait(until=min(situation.cooldowns[name] for name in available))
