@@ -40,6 +40,10 @@ class Container:
 
     def __exit__(self, *_):
         self.login.release()
+        self.remove()
+
+    def remove(self):
+        """Remove the container: a stopped docker client leaves it running, holding its mounts and login."""
         self.docker("rm", "-f", self.name)
 
     def command(self, command):
@@ -108,8 +112,9 @@ class Container:
     def git_identity(self):
         """The host's git author (its environment, else its config), as author and committer."""
         try:
-            ident = subprocess.run(["git", "var", "GIT_AUTHOR_IDENT"], cwd=self.root, capture_output=True,
-                                   text=True).stdout
+            # useConfigOnly: no identity guessed from the user and host names.
+            ident = subprocess.run(["git", "-c", "user.useConfigOnly=true", "var", "GIT_AUTHOR_IDENT"], cwd=self.root,
+                                   capture_output=True, text=True).stdout
         except OSError:
             return {}
         match = re.match(r"(.*) <(.*)> \d+ [+-]\d{4}$", ident.strip())

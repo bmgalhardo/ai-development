@@ -194,7 +194,8 @@ class Runner:
             return Session(command=job.command, log=job.attempt.log_path)
         container = containers.enter_context(Container(self.settings, self.project, provider, job.attempt.role))
         return Session(command=container.command(job.command), log=job.attempt.log_path,
-                       environment=container.environment(), keep=container.keep(), started=container.started)
+                       environment=container.environment(), keep=container.keep(), started=container.started,
+                       stopped=container.remove)
 
     def record(self, cycle, issue, provider, attempt, code):
         """Read the session's result, save a review, snapshot unfinished work, and append the attempt."""

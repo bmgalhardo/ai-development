@@ -15,7 +15,8 @@ TIMED_OUT = 124  # the exit code of coreutils timeout
 class Session(BaseModel):
     """A session's command and log, with variables to add to its environment and file descriptors it holds.
 
-    `started` runs once the session's process holds them, so the runner can let go of its own copies.
+    `started` runs once the session's process holds them, so the runner can let go of its own copies;
+    `stopped` runs right after the session is stopped (a timeout or Ctrl-C), before the others end.
     """
 
     command: list[str]
@@ -23,6 +24,7 @@ class Session(BaseModel):
     environment: dict[str, str] = {}
     keep: list[int] = []
     started: Callable[[], None] | None = None
+    stopped: Callable[[], None] | None = None
 
 
 class Sessions:
@@ -44,16 +46,17 @@ class Sessions:
                                                  env=os.environ | session.environment))
                 if session.started:
                     session.started()
-            return self.wait(children, outputs)
+            return self.wait(sessions, children, outputs)
         except KeyboardInterrupt:
-            for child in children:
+            for session, child in zip(sessions, children):
                 self.stop(child)
+                self.stopped(session)
             raise
         finally:
             for output in outputs:
                 output.close()
 
-    def wait(self, children, outputs):
+    def wait(self, sessions, children, outputs):
         """Wait for every child; one still running at the time limit is stopped and gets TIMED_OUT.
 
         A session can finish its work yet never exit, e.g. waiting on a display server it started.
@@ -61,10 +64,11 @@ class Sessions:
         expired = []
 
         def expire():
-            for child in children:
+            for session, child in zip(sessions, children):
                 if child.poll() is None:
                     expired.append(child)
                     self.stop(child)
+                    self.stopped(session)
         timer = threading.Timer(self.timeout, expire)
         timer.daemon = True
         timer.start()
@@ -72,11 +76,17 @@ class Sessions:
             codes = [child.wait() for child in children]
         finally:
             timer.cancel()
+            timer.join()  # a stopped session's cleanup finishes before the codes return
         for index, child in enumerate(children):
             if child in expired:
                 outputs[index].write(f"\nWorker timed out after {self.timeout}s and was stopped.\n")
                 codes[index] = TIMED_OUT
         return codes
+
+    @staticmethod
+    def stopped(session):
+        if session.stopped:
+            session.stopped()
 
     @staticmethod
     def stop(child):

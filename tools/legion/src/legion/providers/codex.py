@@ -54,19 +54,23 @@ class Codex(Provider):
         first = folder / self.login_file
         if not first.is_file():
             raise FileNotFoundError(f"No {first}")
-        held = wait_for = None
-        for path in [first, *sorted(folder.glob(".codex-*.login"))]:
+        login, held = self.free_login([first, *sorted(folder.glob(".codex-*.login"))])
+        return ContainerLogin(mounts=[Mount(host=login or first, target=CONTAINER_HOME / ".codex" / "auth.json",
+                                            writable=True)],
+                              sessions=CONTAINER_HOME / ".codex" / "sessions", held=held,
+                              wait_for=None if login else first)
+
+    @staticmethod
+    def free_login(paths):
+        """The first login no other session holds, with its open, locked file; (None, None) if all are taken."""
+        for path in paths:
             held = path.open()
             try:
                 fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
+                return path, held
             except BlockingIOError:
                 held.close()
-                held = None
-        if held is None:
-            path = wait_for = first
-        return ContainerLogin(mounts=[Mount(host=path, target=CONTAINER_HOME / ".codex" / "auth.json", writable=True)],
-                              sessions=CONTAINER_HOME / ".codex" / "sessions", held=held, wait_for=wait_for)
+        return None, None
 
     @staticmethod
     def span(seconds):

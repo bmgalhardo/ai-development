@@ -197,6 +197,18 @@ class RunnerTests(unittest.TestCase):
                 self.run_loop(WORK_PREFERENCE="claude")
         self.assertEqual([r["provider"] for r in self.records()], ["claude"])
 
+    def test_only_a_stopped_session_is_cleaned_up_right_after_it_stops(self):
+        stopped = []
+        sleeper = [sys.executable, "-c", "import time; time.sleep(30)"]
+        start = time.monotonic()
+        codes = Sessions(self.lock.fileno(), 1, self.root).run([
+            Session(command=sleeper, log=self.directory / "one.log",
+                    stopped=lambda: stopped.append(time.monotonic() - start)),
+            Session(command=["true"], log=self.directory / "two.log", stopped=lambda: stopped.append("sibling"))])
+        self.assertEqual(codes, [TIMED_OUT, 0])
+        self.assertEqual(len(stopped), 1)
+        self.assertLess(stopped[0], 5)
+
     def test_interrupt_stops_real_worker_before_returning(self):
         log = self.directory / "sleeping.log"
 
