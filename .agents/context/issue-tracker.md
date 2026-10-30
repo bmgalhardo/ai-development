@@ -16,7 +16,7 @@ project is the session's project (`AGENTS.md`).
 - A cycle runs from the review that starts it to its build. The review
   session creates the folder and writes `feedback.md`, `mocks/`,
   `assets/`, `direction/` (pages for `docs/direction/`) and `research/`
-  (research code and data) in it, and nothing outside it; the refinement adds `spec.md`, `issues/` and, when there are steps with no code, `after.md`.
+  (research code and data) in it, and nothing outside it; the refinement adds `spec.md` and `issues/`.
 - `/to-spec` publishes the spec to `<cycle>/spec.md` from the live
   conversation. This filename is our local tracker's convention, not a
   prerequisite or a filename imposed by the skill. Review records feedback

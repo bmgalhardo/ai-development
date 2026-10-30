@@ -43,7 +43,6 @@ Break the work into **tracer bullet** tickets.
 - A spec's performance target is measured in the first slice that builds the hot path, against the target, as an acceptance criterion. It extrapolates from a sample rather than timing a full worst-case run, and records the result in Comments
 - A risk the user raised in review or grilling gets a **Stop if** condition on the first ticket that can show it, when its failure would carry into later tickets. Name the condition so the implementer can check it (a threshold, an observable outcome). No other ticket gets one
 - A shared artefact that several tickets would each have to keep passing (a reference, a baseline, a fixture) is a dependency, not a per-ticket chore. Either the first ticket that can set it does, and later tickets don't change it, or no ticket touches it this cycle and its check only reports. Choose by whether the artefact depends on what the cycle builds, and show the choice in the breakdown the user approves
-- Work with no code to write or review (a merge, a settings change, rebuilding images, a run checked with the user) is not a ticket. List it in the cycle's `after.md`, a checklist the user works through with an agent once the loop ends, and show it in the breakdown the user approves
 - A slice includes the docs for what it builds: it copies its part of the spec's agreed text into the docs in the same commit, so the docs never run ahead of the build
 
 </vertical-slice-rules>

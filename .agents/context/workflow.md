@@ -224,10 +224,6 @@ The command's exit code becomes the loop's: without a publish server, it fails. 
 and run `/publish`. The cycle is complete once every output is on the
 server. That published build is the next review.
 
-Then, if the cycle has an `after.md`, work through it with the user: the
-steps with no code to review, such as a merge or a settings change
-(`/to-tickets`).
-
 ## 5. Retro
 
 Soon after the build (the session logs are kept about 30 days), run
