@@ -9,6 +9,7 @@ FULL_ACCESS = ("--sandbox", "danger-full-access")
 
 class Codex(Provider):
     name = "codex"
+    executable = "codex"
     rank = 2
     efforts = ("minimal", "low", "medium", "high", "xhigh")
     effort_flag = ("-c", 'model_reasoning_effort="{}"')
@@ -18,18 +19,14 @@ class Codex(Provider):
     # The container has no .git for the workflow folder, and no host config that trusts it.
     container_role_flags = {"review": FULL_ACCESS}
     container_flags = ("--skip-git-repo-check",)
-    resets = ("dated", "clock")
 
-    def parse_log(self, log):
-        messages, usage, report = [], [], ""
-        for line in self.lines(log):
-            if isinstance(line, str):
-                messages.append(line)
-            elif line.get("type") in ("error", "turn.failed"):
-                messages.append(json.dumps(line, ensure_ascii=False))
-            elif line.get("type") == "item.completed" and line.get("item", {}).get("type") == "agent_message":
-                report = line["item"].get("text", "")
-                messages.append(report)
-            elif line.get("type") == "turn.completed" and "usage" in line:
-                usage.append(line["usage"])
-        return Result(messages="\n".join(messages), usage=usage, report=report.strip())
+    def read_event(self, event):
+        kind = event.get("type")
+        if kind in ("error", "turn.failed"):
+            return Result(messages=json.dumps(event, ensure_ascii=False))
+        if kind == "item.completed" and event.get("item", {}).get("type") == "agent_message":
+            text = event["item"].get("text", "")
+            return Result(messages=text, report=text)
+        if kind == "turn.completed" and "usage" in event:
+            return Result(usage=[event["usage"]])
+        return None

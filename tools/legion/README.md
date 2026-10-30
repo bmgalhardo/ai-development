@@ -25,18 +25,25 @@ Unknown `WORK_` keys in `.env` are ignored. An invalid value stops the command, 
 
 `WORK_PREFERENCE` lists the providers to use, in order (default: every installed provider, in the registry's order).
 Each provider has a model and an effort per role: `WORK_<PROVIDER>__<ROLE>__MODEL` and `__EFFORT`, for the roles `implement`, `review` and `fix`.
-An unset model keeps the CLI's default; effort defaults to `medium`; `fix` falls back to `implement` for each unset value.
+An unset model keeps the CLI's default.
+Effort defaults to `medium`.
+`fix` falls back to `implement` for each unset value.
 Effort must be one of the provider's own values.
 
 ## Providers
 
 Each provider is one file in `src/legion/providers/`: a subclass of `Provider`.
-The registry is the subclasses present: deleting a provider's file removes it, and no other code names a provider.
+The registry is the subclasses present: deleting a provider's file removes it.
+No other code names a provider.
 A provider defines:
 
-- its command: the CLI, its flags, its flags per role and in a container, and how model and effort are passed;
-- how to parse its session log into messages, usage (in the CLI's own units) and the final report;
-- extra failure patterns (quota or authentication) and the reset-time formats its limit messages use, on top of the shared ones.
+- its CLI and its flags;
+- its flags per role and in a container;
+- how model and effort are passed;
+- how to read its log events: messages, usage (in the CLI's own units) and the final report.
+
+The base class holds what both CLIs share: the quota and login patterns, and the reset-time formats.
+A provider may add its own.
 
 Run the tests from the workflow root:
 

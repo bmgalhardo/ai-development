@@ -28,7 +28,7 @@ class Registry:
 
     def installed(self):
         """Every registered provider whose CLI is on PATH, in the default preference order."""
-        return [name for name, cls in self.classes.items() if shutil.which(cls.name)]
+        return [name for name, cls in self.classes.items() if shutil.which(cls.executable)]
 
     def efforts(self, name):
         return self.classes[name].efforts

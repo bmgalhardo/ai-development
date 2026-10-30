@@ -179,11 +179,15 @@ class ResetTests(unittest.TestCase):
                 self.assertEqual(datetime.fromtimestamp(reset, timezone.utc),
                                  datetime(2026, 10, 26, 2, 0, 30, tzinfo=timezone.utc))
 
-    def test_codex_dated_reset(self):
+    def test_every_provider_reads_every_reset_format(self):
         now = datetime(2026, 10, 25, 3, 6, tzinfo=timezone.utc)
-        reset = provider("codex").reset_at("Try again at Oct 31st, 2026 4:52 PM.", 60, now)
-        self.assertEqual(datetime.fromtimestamp(reset, timezone.utc),
-                         datetime(2026, 10, 31, 16, 52, 30, tzinfo=timezone.utc))
+        for name in registry.names():
+            for message, expected in (("Try again at Oct 31st, 2026 4:52 PM.", datetime(2026, 10, 31, 16, 52, 30)),
+                                      ("resets 9pm (UTC)", datetime(2026, 10, 25, 21, 0, 30))):
+                with self.subTest(provider=name, message=message):
+                    reset = provider(name).reset_at(message, 60, now)
+                    self.assertEqual(datetime.fromtimestamp(reset, timezone.utc),
+                                     expected.replace(tzinfo=timezone.utc))
 
     def test_unknown_reset_and_malformed_time_use_fallback(self):
         now = datetime(2026, 10, 22, 22, 0, tzinfo=timezone.utc)

@@ -98,6 +98,10 @@ class BaseLegionSettings(BaseSettings):
         """A provider's settings per role."""
         return getattr(self, provider)
 
+    def role(self, provider, role):
+        """A provider's model and effort for a role, with the defaults applied."""
+        return self.roles(provider).role(role)
+
     @classmethod
     def load(cls):
         """The settings, or a SettingsError naming each invalid variable.
