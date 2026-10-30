@@ -3,7 +3,7 @@
 from pathlib import Path
 import time
 
-from .base import Provider, QuotaUnavailable, QuotaWindow, Result
+from .base import CONTAINER_HOME, ContainerLogin, Provider, QuotaUnavailable, QuotaWindow, Result
 
 
 class Claude(Provider):
@@ -18,6 +18,7 @@ class Claude(Provider):
     # The host's Claude Code login: the workers' setup token can't read usage.
     credentials = Path.home() / ".claude" / ".credentials.json"
     windows = {"five_hour": "5h", "seven_day": "7d"}
+    login_file = ".claude.login"  # the token from `claude setup-token`, alone in the file
 
     def session_flags(self, project):
         return ["--add-dir", str(project), "--max-budget-usd", f"{self.settings.budget_usd:g}"]
@@ -39,3 +40,9 @@ class Claude(Provider):
                                        "anthropic-beta": "oauth-2025-04-20"})
         return [QuotaWindow(label=label, used_percent=usage[key]["utilization"], resets_at=usage[key]["resets_at"])
                 for key, label in self.windows.items() if usage.get(key)]
+
+    def container_login(self):
+        """The setup token as CLAUDE_CODE_OAUTH_TOKEN; the login file itself isn't mounted."""
+        token = (self.settings.logins_folder / self.login_file).read_text().strip()
+        return ContainerLogin(environment={"CLAUDE_CODE_OAUTH_TOKEN": token},
+                              sessions=CONTAINER_HOME / ".claude" / "projects")

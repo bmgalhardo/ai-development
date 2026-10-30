@@ -1,11 +1,28 @@
 """Worker sessions as child processes: started together, held to a time limit, stopped with their children."""
 
 import os
+from pathlib import Path
 import signal
 import subprocess
 import threading
+from typing import Callable
+
+from pydantic import BaseModel
 
 TIMED_OUT = 124  # the exit code of coreutils timeout
+
+
+class Session(BaseModel):
+    """A session's command and log, with variables to add to its environment and file descriptors it holds.
+
+    `started` runs once the session's process holds them, so the runner can let go of its own copies.
+    """
+
+    command: list[str]
+    log: Path
+    environment: dict[str, str] = {}
+    keep: list[int] = []
+    started: Callable[[], None] | None = None
 
 
 class Sessions:
@@ -14,16 +31,19 @@ class Sessions:
         self.timeout = timeout
         self.cwd = cwd
 
-    def run(self, jobs):
-        """Run (command, log path) jobs at once; return their exit codes. Ctrl-C stops them all."""
+    def run(self, sessions):
+        """Run the sessions at once; return their exit codes. Ctrl-C stops them all."""
         outputs, children = [], []
         try:
-            for command, log in jobs:
-                outputs.append(log.open("w"))
+            for session in sessions:
+                outputs.append(session.log.open("w"))
                 # Children hold the lock too, so a killed runner cannot leave an unowned worker.
-                children.append(subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=outputs[-1],
+                children.append(subprocess.Popen(session.command, stdin=subprocess.DEVNULL, stdout=outputs[-1],
                                                  stderr=subprocess.STDOUT, start_new_session=True,
-                                                 pass_fds=(self.lock_fd,), cwd=self.cwd))
+                                                 pass_fds=(self.lock_fd, *session.keep), cwd=self.cwd,
+                                                 env=os.environ | session.environment))
+                if session.started:
+                    session.started()
             return self.wait(children, outputs)
         except KeyboardInterrupt:
             for child in children:

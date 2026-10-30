@@ -19,10 +19,11 @@ from unittest.mock import patch
 from legion.runner import loop
 from legion.runner.loop import Launch, Runner, RunnerError
 from legion.runner.repo import Repo, UnsafeRepoError
-from legion.runner.sessions import TIMED_OUT, Sessions
+from legion.runner.sessions import TIMED_OUT, Session, Sessions
 from legion.settings import Settings
 
 FAKE_WORKER = Path(__file__).with_name("fake_worker.py")
+FAKE_DOCKER = Path(__file__).with_name("fake_docker.py")
 
 
 class RunnerTests(unittest.TestCase):
@@ -142,8 +143,8 @@ class RunnerTests(unittest.TestCase):
 
     def test_interrupt_snapshots_work(self):
         def interrupt(sessions, jobs):
-            for _, log in jobs:
-                log.write_text("")
+            for session in jobs:
+                session.log.write_text("")
             (self.project / "code.txt").write_text("interrupted edit\n")
             raise KeyboardInterrupt
         with patch.object(Sessions, "run", interrupt):
@@ -211,7 +212,7 @@ class RunnerTests(unittest.TestCase):
         command = [sys.executable, "-c", "import os,time; print(os.getpid(), flush=True); time.sleep(30)"]
         try:
             with self.assertRaises(KeyboardInterrupt):
-                Sessions(self.lock.fileno(), 60, self.root).run([(command, log)])
+                Sessions(self.lock.fileno(), 60, self.root).run([Session(command=command, log=log)])
         finally:
             interrupter.join(timeout=6)
         with self.assertRaises(ProcessLookupError):
@@ -295,6 +296,55 @@ class RunnerTests(unittest.TestCase):
         marker = self.root / "after-build.txt"
         self.assertEqual(self.run_loop(WORK_AFTER_BUILD=f"touch {marker}"), 0)
         self.assertFalse(marker.exists())
+
+    # Containers
+
+    def use_containers(self):
+        """A fake docker on PATH that runs the session on the host, and the workers' logins."""
+        docker = self.root / "bin/docker"
+        docker.write_text(f"#!{sys.executable}\n" + FAKE_DOCKER.read_text())
+        docker.chmod(0o755)
+        logins = self.root / ".logins"
+        logins.mkdir()
+        (logins / ".claude.login").write_text("setup-token\n")
+        (logins / ".codex.login").write_text("{}\n")
+        return {"WORK_CONTAINER": "1", "FAKE_DOCKER_LOG": str(self.root / "docker.jsonl")}
+
+    def docker_calls(self):
+        return [json.loads(line) for line in (self.root / "docker.jsonl").read_text().splitlines()]
+
+    def test_containers_run_each_session_with_its_provider_login_and_role(self):
+        self.assertEqual(self.run_loop(TEST_SCENARIO="review", **self.use_containers()), 0)
+        self.assertEqual([(r["role"], r["provider"], r["outcome"]) for r in self.records()],
+                         [("implement", "claude", "in review"), ("review", "codex", "reviewed"),
+                          ("review", "codex", "reviewed"), ("fix", "claude", "done")])
+        runs = [call for call in self.docker_calls() if call["args"][0] == "run"]
+        roles = [(labels["legion.provider"], labels["legion.role"]) for labels in
+                 [dict(call["args"][i + 1].split("=", 1) for i, part in enumerate(call["args"]) if part == "--label")
+                  for call in runs]]
+        self.assertEqual(roles, [("claude", "implement"), ("codex", "review"), ("codex", "review"), ("claude", "fix")])
+        self.assertEqual(runs[0]["environment"]["CLAUDE_CODE_OAUTH_TOKEN"], "setup-token")
+        self.assertIn(f"{self.project}:{self.project}:ro", runs[1]["args"])
+        self.assertIn(f"{self.project}:{self.project}:rw", runs[3]["args"])
+        self.assertIn("--skip-git-repo-check", runs[1]["args"])
+        self.assertIn("danger-full-access", runs[1]["args"])
+        self.assertNotIn("read-only", runs[1]["args"])
+        for provider in ("claude", "codex"):
+            self.assertTrue((self.root / f".scratch/project/sessions/{provider}").is_dir())
+
+    def test_stopping_a_container_session_removes_its_container(self):
+        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", WORK_TIMEOUT="1", **self.use_containers()), 0)
+        self.assertEqual(self.records()[0]["exit_code"], TIMED_OUT)
+        calls = [call["args"] for call in self.docker_calls()]
+        name = next(args[args.index("--name") + 1] for args in calls if args[0] == "run")
+        self.assertIn(["rm", "-f", name], calls)
+
+    def test_a_new_runner_removes_the_projects_leftover_containers(self):
+        self.issue.unlink()
+        with patch.dict(os.environ, self.use_containers()):
+            self.assertEqual(Launch(Settings.load(), self.project).run(), 0)
+        self.assertEqual([call["args"] for call in self.docker_calls()],
+                         [["ps", "-aq", "--filter", "label=legion.project=project"], ["rm", "-f", "leftover"]])
 
 
 class RepoTests(unittest.TestCase):

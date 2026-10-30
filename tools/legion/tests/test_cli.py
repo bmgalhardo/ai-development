@@ -1,15 +1,17 @@
-"""The next and status commands, as a hand-run session sees them."""
+"""The commands, as a hand-run session sees them."""
 
 from contextlib import redirect_stdout
 import io
+import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from legion import cli
+from legion import cli, container
 
 
 class CommandTests(unittest.TestCase):
@@ -49,6 +51,24 @@ class CommandTests(unittest.TestCase):
     def test_a_tracker_error_exits_with_its_message(self):
         with self.assertRaisesRegex(SystemExit, "is not a git repo"):
             self.run_command("next", "missing")
+
+    def test_a_hand_opened_shell_runs_through_the_wrapper(self):
+        binaries = self.root / "bin"
+        binaries.mkdir()
+        docker = binaries / "docker"
+        docker.write_text(f"#!{sys.executable}\n" + Path(__file__).with_name("fake_docker.py").read_text())
+        docker.chmod(0o755)
+        (self.root / ".logins").mkdir()
+        (self.root / ".logins/.claude.login").write_text("setup-token\n")
+        log = self.root / "docker.jsonl"
+        environment = os.environ | {"PATH": f"{binaries}:{os.environ['PATH']}", "FAKE_DOCKER_LOG": str(log)}
+        shell = subprocess.run([str(Path(container.__file__).with_name("run.sh")), "claude", "review",
+                                str(self.root / "project"), "sh", "-c", "echo token $CLAUDE_CODE_OAUTH_TOKEN"],
+                               env=environment, capture_output=True, text=True)
+        self.assertEqual((shell.returncode, shell.stdout), (0, "token setup-token\n"), shell.stderr)
+        run = json.loads(log.read_text().splitlines()[1])["args"]
+        self.assertEqual(run[0], "run")
+        self.assertIn(f"{self.root}/project:{self.root}/project:ro", run)
 
     def test_invalid_settings_exit_with_the_setting_named(self):
         with patch.dict(os.environ, {"WORK_WAIT": "0"}):

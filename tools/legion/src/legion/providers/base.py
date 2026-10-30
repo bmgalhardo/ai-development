@@ -6,15 +6,18 @@ attributes; it reads its own log events.
 
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
+from io import IOBase
 import json
+from pathlib import Path
 import re
 from typing import ClassVar
 from urllib.error import HTTPError
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 RESET_MARGIN = 30  # seconds after a reset before trying again
+CONTAINER_HOME = Path("/home/worker")  # the worker image's home, temporary in each container
 
 
 class Result(BaseModel):
@@ -23,6 +26,35 @@ class Result(BaseModel):
     messages: str = ""
     usage: list[dict] = []
     report: str = ""
+
+
+class Mount(BaseModel):
+    """A host path mounted in a container, at `target`."""
+
+    host: Path
+    target: Path
+    writable: bool = False
+
+
+class ContainerLogin(BaseModel):
+    """What a provider gives its container: a login and where its CLI keeps sessions.
+
+    `environment` values reach the container through the docker client's environment, never its command line.
+    `held` is an open, locked login file, kept for the container's life; `wait_for` is a login file
+    to lock, waiting until it is free, before the container starts.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    environment: dict[str, str] = {}
+    mounts: list[Mount] = []
+    sessions: Path  # the CLI's session folder inside the container
+    held: IOBase | None = None
+    wait_for: Path | None = None
+
+    def release(self):
+        if self.held:
+            self.held.close()
 
 
 class QuotaUnavailable(Exception):
@@ -196,9 +228,9 @@ class Provider(ABC):
         except OSError:
             raise QuotaUnavailable("login unreadable") from None
 
+    @abstractmethod
     def container_login(self):
-        """The login and session folder a container needs. Filled by the containers ticket."""
-        raise NotImplementedError
+        """The login and session folder a container needs, from the logins folder; OSError if the login is missing."""
 
     @staticmethod
     def lines(log):

@@ -1,6 +1,7 @@
 """The worker loop for one project: next issue, step, provider, run, record, outcome."""
 
 from collections import Counter, defaultdict
+from contextlib import ExitStack
 from datetime import datetime
 import fcntl
 import shlex
@@ -10,6 +11,7 @@ import time
 
 from pydantic import BaseModel
 
+from ..container import Container
 from ..prompts import Prompts
 from ..providers import registry
 from ..tracker import Cycle, Tracker
@@ -19,7 +21,7 @@ from .cooldowns import Cooldowns
 from .dashboard import Dashboard
 from .repo import Repo
 from .router import Router, Situation, Stop, Wait
-from .sessions import TIMED_OUT, Sessions
+from .sessions import TIMED_OUT, Session, Sessions
 
 AXES = ("standards", "spec")
 FINISHED = {"implement": ("done", "blocked", "in review"), "review": ("reviewed",), "fix": ("done", "blocked")}
@@ -53,8 +55,6 @@ class Launch:
         self.folder = settings.runner_folder(project)
 
     def run(self):
-        if self.settings.container:
-            raise RunnerError("WORK_CONTAINER=1: Legion's runner doesn't run sessions in containers yet")
         self.folder.mkdir(parents=True, exist_ok=True)
         with (self.folder / "runner.lock").open("a") as lock:
             try:
@@ -63,6 +63,9 @@ class Launch:
                 raise RunnerError(f"A worker loop already owns {self.project}. Stop it before starting another.") \
                     from None
             signal.signal(signal.SIGTERM, self.interrupt)
+            if self.settings.container:
+                # Holding the lock, any container of this project is left over from a killed runner.
+                Container.remove_leftovers(self.project)
             dashboard = Dashboard(self.settings, self.folder)
             dashboard.start()
             try:
@@ -144,7 +147,7 @@ class Runner:
             return self.wait(decision.until)
         provider = registry.provider(decision.provider, self.settings)
         jobs = self.jobs(cycle, issue, step, provider)
-        codes = self.launch(jobs)
+        codes = self.launch(provider, jobs)
         outcomes = [self.record(cycle, issue, provider, job.attempt, code) for job, code in zip(jobs, codes)]
         self.save_current([job.attempt for job in jobs])
         return STOPPED if None in codes else self.react(issue, provider, jobs, outcomes)
@@ -169,10 +172,14 @@ class Runner:
         reviews = " and ".join(str(self.review_file(cycle, issue, axis).relative_to(self.root)) for axis in AXES)
         return self.prompts.render(attempt.role, issue=attempt.issue, axis=attempt.axis, reviews=reviews)
 
-    def launch(self, jobs):
-        """Run the jobs' sessions; their exit codes, None for each if interrupted, 127 if they couldn't start."""
+    def launch(self, provider, jobs):
+        """Run the jobs' sessions; their exit codes, None for each if interrupted, 127 if they couldn't start.
+
+        In containers, each session's container is removed when the sessions end, however they end.
+        """
         try:
-            return self.sessions.run([(job.command, job.attempt.log_path) for job in jobs])
+            with ExitStack() as containers:
+                return self.sessions.run([self.session(containers, provider, job) for job in jobs])
         except KeyboardInterrupt:
             return [None] * len(jobs)
         except OSError as error:
@@ -180,6 +187,14 @@ class Runner:
                 with job.attempt.log_path.open("a") as log:
                     log.write(f"Worker launch failed: {error}\n")
             return [127] * len(jobs)
+
+    def session(self, containers, provider, job):
+        """The job's session: its command as is, or in a worker container (WORK_CONTAINER)."""
+        if not self.settings.container:
+            return Session(command=job.command, log=job.attempt.log_path)
+        container = containers.enter_context(Container(self.settings, self.project, provider, job.attempt.role))
+        return Session(command=container.command(job.command), log=job.attempt.log_path,
+                       environment=container.environment(), keep=container.keep(), started=container.started)
 
     def record(self, cycle, issue, provider, attempt, code):
         """Read the session's result, save a review, snapshot unfinished work, and append the attempt."""

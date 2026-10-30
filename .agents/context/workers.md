@@ -25,7 +25,7 @@ Unknown `WORK_` keys in `.env` are ignored; an invalid value stops the run, nami
 | `WORK_WAIT` | `1800` | Fallback cooldown seconds when no reset time is understood |
 | `WORK_TIMEOUT` | `14400` | Seconds before an attempt is stopped; a stopped attempt whose issue isn't finished counts as a failure (`timeout`) |
 | `WORK_BUDGET_USD` | `15` | Claude CLI's per-attempt budget flag |
-| `WORK_CONTAINER` | `0` | `1` runs each session in a worker container (prototype; `tools/container/README.md`); Legion's runner refuses it for now |
+| `WORK_CONTAINER` | `0` | `1` runs each session in a worker container (Legion's README: Containers) |
 | `WORK_DASHBOARD` | `1` | `0` skips starting the dashboard |
 | `WORK_DASHBOARD_PORT` | `8765` | Dashboard port |
 | `WORK_DASHBOARD_HOST` | `127.0.0.1` | Dashboard bind address; `0.0.0.0` opens it to the network (no login) |
