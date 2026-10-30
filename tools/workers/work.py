@@ -92,9 +92,13 @@ def worker_command(provider, project, issue, role="implement", handoff=False, ax
             instruction += f" Use {review_model} for both code-review subagents; report if that model cannot be selected."
         model = model_for(provider)
     if provider == "codex":
-        sandbox = "read-only" if role == "review" else "danger-full-access"
+        # Codex's own sandbox can't start in a container; there the read-only mounts are the reviewer's sandbox.
+        sandbox = "read-only" if role == "review" and not containerized() else "danger-full-access"
         command = ["codex", "exec", "--sandbox", sandbox, "-c",
                    'approval_policy="never"', "--color", "never", "--json"]
+        if containerized():
+            # The container has no .git for the workflow folder, and no host config that trusts it.
+            command.append("--skip-git-repo-check")
     else:
         command = ["claude", "-p", "--add-dir", str(project), "--permission-mode", "auto",
                    "--max-budget-usd", os.environ.get("WORK_BUDGET_USD", "15"),
@@ -103,7 +107,27 @@ def worker_command(provider, project, issue, role="implement", handoff=False, ax
             command.append("--disallowedTools=Edit,Write,NotebookEdit")
     if model:
         command.extend(["--model", model])
-    return command + [instruction]
+    command.append(instruction)
+    if containerized():
+        mounts = "review" if role == "review" else "implement"
+        command = [str(next_issue.WORKFLOW / "tools/container/run.sh"), provider, mounts, str(project)] + command
+    return command
+
+
+def containerized():
+    """Whether sessions run in worker containers (tools/container/README.md)."""
+    return os.environ.get("WORK_CONTAINER", "0") == "1"
+
+
+def remove_containers(label):
+    """Remove the worker containers with this label; killing their docker client leaves them running."""
+    try:
+        found = subprocess.run(["docker", "ps", "-aq", "--filter", f"label={label}"],
+                               capture_output=True, text=True).stdout.split()
+        if found:
+            subprocess.run(["docker", "rm", "-f", *found], capture_output=True)
+    except FileNotFoundError:
+        pass
 
 
 def stop(child):
@@ -122,6 +146,8 @@ def stop(child):
         pass
     if child.poll() is None:
         child.wait()
+    if containerized():
+        remove_containers(f"work.pid={child.pid}")
 
 
 def start_dashboard(directory):
@@ -388,6 +414,9 @@ def main():
         except BlockingIOError:
             sys.exit(f"A worker loop already owns {project}. Stop it before starting another.")
         signal.signal(signal.SIGTERM, interrupt)
+        if containerized():
+            # Holding the lock, any container of this project is left over from a killed runner.
+            remove_containers(f"work.project={project.name}")
         dashboard = start_dashboard(directory)
         try:
             return run(project, directory, lock.fileno())

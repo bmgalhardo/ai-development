@@ -62,12 +62,15 @@ Done when recreating a worker preserves login and unfinished work, and it can co
 Progress (2026-10-28):
 
 - Done: the base image and `tools/container/run.sh` (`tools/container/README.md`).
-  One provider and one role per container; each gets only its own login file, from `~/.config/ai-workers/`.
+  One provider and one role per container; each gets only its own login file, from `.logins/` (git-ignored).
   A reviewer gets the project read-only: Codex's own sandbox can't start in a container.
-- Next: a project image (`.agents/container/Dockerfile` in the project) with its toolchain, tried by hand on 03-prototype.
-- Then: `WORK_CONTAINER=1` in the runner; removing a stopped attempt's container; Claude's `stream-json` output in the worker logs, so the retro digest keeps its tool calls.
-- Then: the host never follows symlinks in outputs, nor runs the project's code or git hooks.
-- Open: whether a Codex token renewal reaches `.codex.login` through the single-file mount; check after 2026-11-07.
+- Done: a project image (`.agents/container/Dockerfile`, here as `tools/container/prototype/` while prototyping); 03-prototype's check, captures and Web export pass in it.
+- Done: `WORK_CONTAINER=1` in the runner; a stopped attempt's container is removed, and leftovers at startup.
+- Done: each CLI's session files in `.scratch/<project>/sessions/`, read by the retro digest.
+- Done: the runner's git refuses a project `.git` that can run commands; publishing refuses symlinks.
+- Done: one Codex session per login file at a time; `.codex-2.login` lets reviewers run in parallel.
+- Done: issue 01 of 03-prototype's cycle through implement, review and fix in containers, resumed after its container was killed.
+- Open: a Codex renewal through the single-file mount is unobserved; Codex rewrites the file in place, so it should reach the host.
 
 ## 2. Isolated attempts and durable checkpoints
 

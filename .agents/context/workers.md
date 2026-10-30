@@ -26,6 +26,7 @@ Each setting can also sit in this repo's `.env` (not in git), as `KEY=value`; th
 | `WORK_WAIT` | `1800` | Fallback cooldown seconds when no reset time is understood |
 | `WORK_TIMEOUT` | `14400` | Seconds before an attempt is stopped; a stopped attempt whose issue isn't finished counts as a failure (`timeout`) |
 | `WORK_BUDGET_USD` | `15` | Claude CLI's per-attempt budget flag |
+| `WORK_CONTAINER` | `0` | `1` runs each session in a worker container through `tools/container/run.sh` (prototype; `tools/container/README.md`) |
 | `WORK_DASHBOARD` | `1` | `0` skips starting the dashboard |
 | `WORK_PUBLISH` | `1` | `0` skips publishing the build when the loop ends |
 | `WORK_DASHBOARD_PORT` | `8765` | Dashboard port |
@@ -49,7 +50,7 @@ WORK_FALLBACK_AGENT=none tools/work.sh ../<project>
 By default Claude implements and Codex reviews.
 
 1. **Implement:** the implementer commits, sets the issue `in review` and exits.
-2. **Review:** the runner starts one reviewer session per axis (Standards, Spec), in parallel. Each runs `/code-review` on its axis against `Base:` and edits nothing. Codex reviewers run in a read-only sandbox; Claude reviewers run without edit tools.
+2. **Review:** the runner starts one reviewer session per axis (Standards, Spec), in parallel. Each runs `/code-review` on its axis against `Base:` and edits nothing. Codex reviewers run in a read-only sandbox (in a container, read-only mounts instead); Claude reviewers run without edit tools.
 3. **Save:** the runner writes each final report to the cycle's `reviews/NN-standards.md` and `reviews/NN-spec.md`, with the reviewer and the reviewed commit.
 4. **Fix:** a fresh implementer session (the implement skill's Fix session) handles the saved findings, commits and closes the issue.
 

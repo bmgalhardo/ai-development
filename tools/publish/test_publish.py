@@ -96,6 +96,26 @@ class PublishRunTests(unittest.TestCase):
         self.assertEqual(publish(self.project, ['mocks'], server, self.staging), 0)
         self.assertEqual(server.calls, 0)
 
+    def test_a_symlink_in_an_output_stops_before_uploading(self):
+        self.prepare('app')
+        secret = self.root / 'secret'
+        secret.write_text('key')
+        (self.project / 'out/app/key.txt').symlink_to(secret)
+        server = FakeServer()
+        with self.assertRaises(SystemExit):
+            publish(self.project, None, server, self.staging)
+        self.assertEqual(server.uploaded, [])
+
+    def test_a_symlink_in_a_mock_stops_before_uploading(self):
+        self.mock()
+        secret = self.root / 'secret'
+        secret.write_text('key')
+        (self.root / '.scratch/project/2026-10-27-next/mocks/2026-10-27-look/key.txt').symlink_to(secret)
+        server = FakeServer()
+        with self.assertRaises(SystemExit):
+            publish(self.project, ['mocks'], server, self.staging)
+        self.assertEqual(server.uploaded, [])
+
     def test_the_review_publishes_mocks_and_keeps_the_build(self):
         self.prepare('app', 'docs')
         self.mock()

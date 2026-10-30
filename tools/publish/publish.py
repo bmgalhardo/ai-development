@@ -115,6 +115,7 @@ def mocks(project, out):
     links = []
     for index in found:
         folder = index.parent
+        refuse_symlinks(folder)
         shutil.copytree(folder, out / folder.name, ignore=shutil.ignore_patterns(*MOCK_SOURCES))
         mock = out / folder.name / "index.html"
         mock.write_text(BACK_LINK.sub("../", mock.read_text(encoding="utf-8")), encoding="utf-8")
@@ -123,6 +124,13 @@ def mocks(project, out):
         links.append((match.group(1) if match else folder.name, f"{folder.name}/"))
     (out / "index.html").write_text(page(f"{title(project)}: mocks", "Newest first.", links), encoding="utf-8")
     return out
+
+
+def refuse_symlinks(folder):
+    """Stop on a symlink in what gets published: a session could point one at any file on the host."""
+    links = [p for p in [folder, *folder.rglob("*")] if p.is_symlink()]
+    if links:
+        raise SystemExit(f"Refusing to publish symlinks: {', '.join(map(str, links))}")
 
 
 def title(project):
@@ -193,6 +201,8 @@ def publish(project, names, server, staging):
         if not (folder / "index.html").is_file():
             print(f"Missing {folder}/index.html: prepare the {name} output first", file=sys.stderr)
             return 1
+    for folder in folders.values():
+        refuse_symlinks(folder)
     for name, folder in folders.items():
         count = server.upload(folder, slug, name)
         print(f"uploaded {name}: {count} files")

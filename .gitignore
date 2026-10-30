@@ -7,3 +7,6 @@ __pycache__/
 .scratch/
 .env
 *.local.md
+
+# Worker logins (tools/container/README.md); never under .agents/ or .scratch/, which containers see.
+.logins/

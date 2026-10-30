@@ -19,9 +19,11 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[3]
-CLAUDE_LOGS = Path.home() / ".claude/projects" / str(ROOT).replace("/", "-")
-CODEX_LOGS = Path.home() / ".codex/sessions"
 WORK_LOGS = ROOT / ".scratch"  # each cycle keeps its worker logs in <project>/<cycle>/work/
+# The host's sessions, then each project's worker containers' (tools/container/run.sh).
+CLAUDE_LOGS = [Path.home() / ".claude/projects" / str(ROOT).replace("/", "-"),
+               *sorted(WORK_LOGS.glob("*/sessions/claude/*/"))]
+CODEX_LOGS = [Path.home() / ".codex/sessions", *sorted(WORK_LOGS.glob("*/sessions/codex"))]
 SKIP = ("<local-command-caveat>", "<system-reminder>", "<command-message>", "Caveat:")
 
 
@@ -192,12 +194,12 @@ def main():
     parser.add_argument("--until", default="")
     parser.add_argument("--session", default="", help="one session id")
     args = parser.parse_args()
-    paths = sorted(CLAUDE_LOGS.glob("*.jsonl"), key=lambda p: p.stat().st_mtime)
+    paths = sorted((p for d in CLAUDE_LOGS for p in d.glob("*.jsonl")), key=lambda p: p.stat().st_mtime)
     if args.session:
         paths = [p for p in paths if p.stem == args.session]
     found = [d for d in (digest(p, args.since, args.until) for p in paths) if d]
     by_session = {}
-    for path in sorted(CODEX_LOGS.glob("**/*.jsonl"), key=lambda p: p.stat().st_size, reverse=True):
+    for path in sorted((p for d in CODEX_LOGS for p in d.glob("**/*.jsonl")), key=lambda p: p.stat().st_size, reverse=True):
         session_id = codex_session_id(path)
         if session_id and session_id not in by_session:
             by_session[session_id] = path
@@ -216,7 +218,7 @@ def main():
             f"session id: {session_id}" in p.read_text(errors="replace") for session_id in codex_ids)]
     found.extend(d for d in (digest_worker(p, args.since, args.until)
                              for p in worker_paths) if d)
-    print(f"# Session digest ({len(found)} sessions/workers; Claude: {CLAUDE_LOGS}; Codex: {CODEX_LOGS}; worker logs: {WORK_LOGS})\n")
+    print(f"# Session digest ({len(found)} sessions/workers; Claude: {', '.join(map(str, CLAUDE_LOGS))}; Codex: {', '.join(map(str, CODEX_LOGS))}; worker logs: {WORK_LOGS})\n")
     print("\n\n".join(found) if found else "No sessions in that window.")
 
 

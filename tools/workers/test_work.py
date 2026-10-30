@@ -17,7 +17,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from tools.workers import next_issue, work
+from tools.workers import next_issue, work, work_attempt
 from tools.workers.work_attempt import failure_kind, git, read_result, retry_at
 
 
@@ -271,6 +271,31 @@ class WorkerTests(unittest.TestCase):
         self.assertIn('codex-review', review)
         self.assertIn('override-claude', claude)
 
+    def test_container_runs_each_session_with_its_provider_and_mounts(self):
+        with patch.dict(os.environ, {'WORK_CONTAINER': '1'}):
+            implement = work.worker_command('claude', self.project, 'issue.md')
+            fix = work.worker_command('codex', self.project, 'issue.md', 'fix', reviews=('r.md',))
+            review = work.worker_command('codex', self.project, 'issue.md', 'review', axis='spec')
+        run = str(work.next_issue.WORKFLOW / 'tools/container/run.sh')
+        self.assertEqual(implement[:5], [run, 'claude', 'implement', str(self.project), 'claude'])
+        self.assertEqual(fix[:5], [run, 'codex', 'implement', str(self.project), 'codex'])
+        self.assertEqual(review[:4], [run, 'codex', 'review', str(self.project)])
+        self.assertIn('danger-full-access', review)
+        self.assertNotIn('read-only', review)
+        self.assertIn('--skip-git-repo-check', fix)
+
+    def test_without_container_codex_reviews_in_its_read_only_sandbox(self):
+        review = work.worker_command('codex', self.project, 'issue.md', 'review', axis='spec')
+        self.assertEqual(review[0], 'codex')
+        self.assertIn('read-only', review)
+
+    def test_stopping_a_container_session_removes_its_container(self):
+        child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'], start_new_session=True)
+        with patch.dict(os.environ, {'WORK_CONTAINER': '1'}), \
+                patch.object(work, 'remove_containers') as remove:
+            work.stop(child)
+        remove.assert_called_once_with(f'work.pid={child.pid}')
+
     def test_interrupt_stops_real_worker_before_returning(self):
         log = self.directory / 'sleeping.log'
         def interrupt_when_started():
@@ -357,6 +382,40 @@ class WorkerTests(unittest.TestCase):
         self.issue.unlink()
         self.assertEqual(self.run_loop(), 0)
         self.assertFalse((self.root / 'calls.jsonl').exists())
+
+
+class HostGitTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.project = Path(temp.name)
+        subprocess.run(['git', 'init', '-q', str(self.project)], check=True)
+        self.ran = self.project.parent / f'{self.project.name}-ran'
+        self.addCleanup(lambda: self.ran.unlink(missing_ok=True))
+
+    def test_a_clean_repo_runs_git(self):
+        self.assertEqual(work_attempt.git(self.project, 'status', '--porcelain'), b'')
+
+    def test_a_planted_fsmonitor_is_refused_without_running_it(self):
+        subprocess.run(['git', '-C', str(self.project), 'config', 'core.fsmonitor', f'touch {self.ran}'], check=True)
+        with self.assertRaises(SystemExit):
+            work_attempt.git(self.project, 'status', '--porcelain')
+        self.assertFalse(self.ran.exists())
+
+    def test_an_installed_hook_is_refused(self):
+        hook = self.project / '.git/hooks/post-checkout'
+        hook.write_text(f'#!/bin/sh\ntouch {self.ran}\n')
+        hook.chmod(0o755)
+        with self.assertRaises(SystemExit) as stopped:
+            work_attempt.git(self.project, 'status', '--porcelain')
+        self.assertIn('hook post-checkout', str(stopped.exception))
+
+    def test_diff_skips_external_diff_drivers(self):
+        (self.project / 'a.txt').write_text('one\n')
+        subprocess.run(['git', '-C', str(self.project), 'add', 'a.txt'], check=True)
+        with patch.dict(os.environ, {'GIT_EXTERNAL_DIFF': f'touch {self.ran}'}):
+            work_attempt.git(self.project, 'diff', '--binary', '--cached')
+        self.assertFalse(self.ran.exists())
 
 
 class ResultTests(unittest.TestCase):

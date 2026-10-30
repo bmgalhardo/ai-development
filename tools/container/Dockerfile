@@ -20,4 +20,6 @@ ARG UID=1000
 ARG GID=1000
 RUN groupadd -g "$GID" worker && useradd -m -u "$UID" -g "$GID" -s /bin/bash worker
 USER worker
+# Codex's login file and both CLIs' session folders are mounted in here; the CLIs write their other files beside them.
+RUN mkdir /home/worker/.claude /home/worker/.codex
 WORKDIR /home/worker

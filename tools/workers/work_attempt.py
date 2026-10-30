@@ -102,8 +102,31 @@ def retry_at(message, fallback, now=None):
     return now.timestamp() + fallback
 
 
+# A session can edit the project's .git, and the runner's git runs on the host.
+# These settings would make that git run a command, so the runner refuses a repo that has them.
+UNSAFE_CONFIG = re.compile(r"^(core\.(fsmonitor|hookspath|pager|editor|sshcommand|askpass|gitproxy)"
+                           r"|filter\.|diff\..*\.(command|textconv)|merge\..*\.driver|include|alias\.)",
+                           re.IGNORECASE)
+SAFE_GIT = ("-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=false")
+
+
+def unsafe_git(project):
+    """What in the project's .git could make git run a command: config keys and installed hooks."""
+    local = subprocess.run(["git", "-C", str(project), "config", "--local", "--name-only", "--list"],
+                           capture_output=True, text=True).stdout.split()
+    hooks = project / ".git" / "hooks"
+    installed = [p.name for p in hooks.iterdir() if not p.name.endswith(".sample")] if hooks.is_dir() else []
+    return [key for key in local if UNSAFE_CONFIG.match(key)] + [f"hook {name}" for name in installed]
+
+
 def git(project, *args):
-    return subprocess.check_output(["git", "-C", str(project), *args])
+    found = unsafe_git(project)
+    if found:
+        raise SystemExit(f"{project}/.git can run commands ({', '.join(found)}): "
+                         "inspect it before running git there.")
+    if args[0] == "diff":
+        args = ("diff", "--no-ext-diff", "--no-textconv", *args[1:])
+    return subprocess.check_output(["git", *SAFE_GIT, "-C", str(project), *args])
 
 
 def snapshot(project, issue, directory):

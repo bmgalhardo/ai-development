@@ -64,3 +64,10 @@ publish are the workflow's (`engineering.md`, `machine.local.md`, `publish-serve
   review keeps to its generic smell baseline and says so.
 - **Build folder:** a project that builds keeps its prepared files in an
   ignored folder (for example `artifacts/`, in `.gitignore`).
+- **Container image:** `.agents/container/Dockerfile` adds the toolchain
+  its checks need beyond git, Python, uv and Node (a display, system
+  libraries). It starts `ARG BASE` and `FROM ${BASE}`, without naming the
+  base, and installs as `USER root`, then returns to `USER worker`. Tools
+  the project keeps in its build folder (an engine binary) stay there.
+  Without it, worker containers run the project on the base image
+  (`tools/container/README.md`).
