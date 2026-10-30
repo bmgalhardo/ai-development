@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from tools import settings
 from tools.publish import publish as publisher
 from tools.publish.publish import project_menu, index, outputs, publish, title
 
@@ -147,7 +146,7 @@ class PublishRunTests(unittest.TestCase):
         self.assertEqual(publish(self.project, None, None, self.staging), 1)
 
     def test_the_server_comes_from_the_environment_or_dotenv(self):
-        with patch.dict('os.environ', {}, clear=True), patch.object(settings, 'WORKFLOW', self.root):
+        with patch.dict('os.environ', {}, clear=True), patch.object(publisher, 'WORKFLOW', self.root):
             self.assertIsNone(publisher.server_url())
             (self.root / '.env').write_text('# local\nPUBLISH_URL="https://from.env"\n')
             self.assertEqual(publisher.server_url(), 'https://from.env')

@@ -37,8 +37,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from tools.settings import load_env
-
 WORKFLOW = Path(__file__).resolve().parents[2]
 MOCKS = "mocks"  # the review's output; every other output is the build's
 # What a mock folder keeps to itself: the scripts and notes that made it,
@@ -66,6 +64,17 @@ a { display: block; padding: 1rem 1.25rem; border: 1px solid var(--line);
   text-decoration: none; font-weight: 600; }
 a:hover { border-color: var(--accent); color: var(--accent); }
 """
+
+
+def load_env():
+    """Set each KEY=VALUE of this repo's .env (not in git) that the environment doesn't already have."""
+    env = WORKFLOW / ".env"
+    if not env.is_file():
+        return
+    for line in env.read_text(encoding="utf-8").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip().strip('"'))
 
 
 def server_url():
