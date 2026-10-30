@@ -88,6 +88,12 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual((fix.model, fix.effort), ("sonnet", "high"))
         self.assertEqual(settings.roles("codex").role("fix").effort, "medium")
 
+    def test_effort_is_one_of_the_providers_own_values(self):
+        self.assertEqual(self.load(WORK_CLAUDE__IMPLEMENT__EFFORT="max").roles("claude").role("implement").effort,
+                         "max")
+        with self.assertRaisesRegex(SettingsError, "WORK_CODEX__REVIEW__EFFORT: max is not one of"):
+            self.load(WORK_CODEX__REVIEW__EFFORT="max")
+
     def test_container_switch_accepts_one_and_zero(self):
         self.assertTrue(self.load(WORK_CONTAINER="1").container)
         self.assertFalse(self.load(WORK_DASHBOARD="0").dashboard)

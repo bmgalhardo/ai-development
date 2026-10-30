@@ -1,18 +1,40 @@
-"""The registered providers.
+"""The registered providers: every `Provider` subclass in this package, one file each.
 
-A placeholder registry: the provider classes replace these names.
+Deleting a provider's file removes it.
 """
 
+from importlib import import_module
+import pkgutil
 import shutil
 
-NAMES = ("claude", "codex")
+from .base import Provider
 
 
-def registered():
-    """Every provider's name, in the default preference order."""
-    return NAMES
+class Registry:
+    """Provider classes by name, in the default preference order."""
+
+    def __init__(self, classes):
+        self.classes = {cls.name: cls for cls in sorted(classes, key=lambda cls: cls.rank)}
+
+    @classmethod
+    def discover(cls):
+        """The subclasses of every module in this package."""
+        for module in pkgutil.iter_modules(__path__):
+            import_module(f"{__name__}.{module.name}")
+        return cls(Provider.__subclasses__())
+
+    def names(self):
+        return tuple(self.classes)
+
+    def installed(self):
+        """Every registered provider whose CLI is on PATH, in the default preference order."""
+        return [name for name, cls in self.classes.items() if shutil.which(cls.name)]
+
+    def efforts(self, name):
+        return self.classes[name].efforts
+
+    def provider(self, name, settings):
+        return self.classes[name](settings)
 
 
-def installed():
-    """Every registered provider whose CLI is on PATH, in the default preference order."""
-    return [name for name in registered() if shutil.which(name)]
+registry = Registry.discover()
