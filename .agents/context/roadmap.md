@@ -185,7 +185,7 @@ It stays `open` until its blockers are done, then it is ready like any other.
 The dashboard shows a ready manual ticket with its own mark.
 The runner never starts a session on a manual ticket.
 When a manual ticket is the next ready issue, the runner launches nothing else, prints that the user must act (`/implement <NN>`, by hand), and waits.
-While it waits it reads the issue file, as during a quota wait, and goes on once the ticket is `done` or `blocked`.
+While it waits it reads the issue file, as during a quota wait. It goes on once the ticket is `done`, and stops with its report when the ticket is `blocked`.
 `/implement` on a manual ticket asks the user at the steps the ticket names, and closes it with step 11 as usual.
 `/to-tickets` marks a ticket manual when its work needs the user.
 
