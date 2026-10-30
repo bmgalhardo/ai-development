@@ -94,6 +94,10 @@ class BaseLegionSettings(BaseSettings):
     def logins_folder(self):
         return self.logins or self.root / ".logins"
 
+    def runner_folder(self, project):
+        """A project's runner state: its lock, current attempts and the dashboard's log."""
+        return self.root / ".scratch" / project.name / "runner"
+
     def roles(self, provider):
         """A provider's settings per role."""
         return getattr(self, provider)

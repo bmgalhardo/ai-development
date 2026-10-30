@@ -12,7 +12,7 @@ UNSAFE_CONFIG = re.compile(r"^(core\.(fsmonitor|hookspath|pager|editor|sshcomman
 SAFE_GIT = ("-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=false")
 
 
-class UnsafeRepo(Exception):
+class UnsafeRepoError(Exception):
     """The project's .git can run commands; inspect it before running git there."""
 
 
@@ -33,8 +33,8 @@ class Repo:
         """Run git in the project, refusing a .git that can run commands; external diff drivers are off."""
         found = self.unsafe()
         if found:
-            raise UnsafeRepo(f"{self.path}/.git can run commands ({', '.join(found)}): "
-                             "inspect it before running git there.")
+            raise UnsafeRepoError(f"{self.path}/.git can run commands ({', '.join(found)}): "
+                                  "inspect it before running git there.")
         if args[0] == "diff":
             args = ("diff", "--no-ext-diff", "--no-textconv", *args[1:])
         return subprocess.check_output(["git", *SAFE_GIT, "-C", str(self.path), *args])

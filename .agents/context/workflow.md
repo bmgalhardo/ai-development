@@ -217,8 +217,9 @@ project's contract (`project-setup.md`), and its engineering doc says how:
 The build doesn't upload. When the worker loop ends with the build issue
 `done`, it runs `WORK_AFTER_BUILD`, set to publish the build's outputs
 (`python3 tools/publish/publish.py {project}`), which prints their links.
-A project without a publishing doc has nothing to publish; an empty
-`WORK_AFTER_BUILD` skips it. A failed upload is reported at the end of the run: fix it
+A project without a publishing doc has nothing to publish.
+An empty `WORK_AFTER_BUILD` skips publishing.
+The command's exit code becomes the loop's: without a publish server, it fails. A failed upload is reported at the end of the run: fix it
 and run `/publish`. The cycle is complete once every output is on the
 server. That published build is the next review.
 

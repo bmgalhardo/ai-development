@@ -48,10 +48,14 @@ class AttemptLog:
     def new(self, issue, role, provider, settings, axis=None):
         name = f"{issue.stem}-{axis or role}-{datetime.now():%Y%m%d-%H%M%S}-{uuid4().hex[:8]}"
         role_settings = settings.role(provider, role)
-        return Attempt(attempt=name, issue=str(issue.relative_to(self.root)), role=role, axis=axis,
+        return Attempt(attempt=name, issue=self.identity(issue), role=role, axis=axis,
                        provider=provider, model=role_settings.model or "CLI default", effort=role_settings.effort,
                        review_model=settings.role(provider, "review").model or "inherited",
                        started_at=datetime.now(timezone.utc).isoformat(), log=str(self.folder / f"{name}.log"))
+
+    def identity(self, issue):
+        """How records name an issue: its path relative to the workflow root."""
+        return str(issue.relative_to(self.root))
 
     def recovery(self, attempt):
         return self.folder / f"{attempt.attempt}-recovery"
@@ -62,7 +66,7 @@ class AttemptLog:
 
     def implementer(self, issue):
         """The provider of the issue's last implement attempt, or None."""
-        identity = str(issue.relative_to(self.root))
+        identity = self.identity(issue)
         provider = None
         for line in self.history.read_text().splitlines() if self.history.exists() else []:
             try:

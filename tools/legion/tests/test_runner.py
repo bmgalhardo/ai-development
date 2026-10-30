@@ -17,8 +17,8 @@ import unittest
 from unittest.mock import patch
 
 from legion.runner import loop
-from legion.runner.loop import Launch, Runner
-from legion.runner.repo import Repo, UnsafeRepo
+from legion.runner.loop import Launch, Runner, RunnerError
+from legion.runner.repo import Repo, UnsafeRepoError
 from legion.runner.sessions import TIMED_OUT, Sessions
 from legion.settings import Settings
 
@@ -92,9 +92,13 @@ class RunnerTests(unittest.TestCase):
 
     def test_the_record_keeps_todays_fields_and_adds_effort(self):
         self.run_loop()
-        self.assertEqual(list(self.records()[0]),
-                         ["attempt", "issue", "role", "axis", "provider", "model", "effort", "review_model",
-                          "started_at", "log", "exit_code", "outcome", "duration_seconds", "usage", "recovery"])
+        records = self.records()
+        self.assertEqual([r["outcome"] for r in records], ["quota", "done"])
+        for record in records:
+            self.assertEqual(list(record),
+                             ["attempt", "issue", "role", "axis", "provider", "model", "effort", "review_model",
+                              "started_at", "log", "exit_code", "outcome", "duration_seconds", "usage", "recovery"])
+        self.assertIsNone(records[1]["recovery"])
 
     def test_persisted_cooldown_skips_provider_on_restart(self):
         self.cooldowns.parent.mkdir(parents=True)
@@ -151,13 +155,13 @@ class RunnerTests(unittest.TestCase):
 
     def test_dirty_unclaimed_repo_is_rejected(self):
         (self.project / "code.txt").write_text("user work\n")
-        with self.assertRaisesRegex(ValueError, "uncommitted changes"):
+        with self.assertRaisesRegex(RunnerError, "uncommitted changes"):
             self.run_loop()
         self.assertFalse((self.root / "calls.jsonl").exists())
 
     def test_second_runner_is_rejected(self):
         fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        with self.assertRaisesRegex(ValueError, "already owns"):
+        with self.assertRaisesRegex(RunnerError, "already owns"):
             Launch(Settings.load(), self.project).run()
 
     def test_dashboard_stops_with_the_runner(self):
@@ -308,7 +312,7 @@ class RepoTests(unittest.TestCase):
 
     def test_a_planted_fsmonitor_is_refused_without_running_it(self):
         subprocess.run(["git", "-C", str(self.project), "config", "core.fsmonitor", f"touch {self.ran}"], check=True)
-        with self.assertRaises(UnsafeRepo):
+        with self.assertRaises(UnsafeRepoError):
             self.repo.git("status", "--porcelain")
         self.assertFalse(self.ran.exists())
 
@@ -316,7 +320,7 @@ class RepoTests(unittest.TestCase):
         hook = self.project / ".git/hooks/post-checkout"
         hook.write_text(f"#!/bin/sh\ntouch {self.ran}\n")
         hook.chmod(0o755)
-        with self.assertRaisesRegex(UnsafeRepo, "hook post-checkout"):
+        with self.assertRaisesRegex(UnsafeRepoError, "hook post-checkout"):
             self.repo.git("status", "--porcelain")
 
     def test_diff_skips_external_diff_drivers(self):

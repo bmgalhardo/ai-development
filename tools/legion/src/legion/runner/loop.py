@@ -14,7 +14,7 @@ from ..prompts import Prompts
 from ..providers import registry
 from ..tracker import Cycle, Tracker
 from ..utils import save_json, say
-from .attempts import AttemptLog
+from .attempts import Attempt, AttemptLog
 from .cooldowns import Cooldowns
 from .dashboard import Dashboard
 from .repo import Repo
@@ -24,6 +24,17 @@ from .sessions import TIMED_OUT, Sessions
 AXES = ("standards", "spec")
 FINISHED = {"implement": ("done", "blocked", "in review"), "review": ("reviewed",), "fix": ("done", "blocked")}
 STOPPED = 130  # the exit code of a run stopped by Ctrl-C or SIGTERM
+
+
+class RunnerError(Exception):
+    """A run that can't start or go on: another runner, no usable provider, or a dirty checkout."""
+
+
+class Job(BaseModel):
+    """An attempt and the command of its session."""
+
+    attempt: Attempt
+    command: list[str]
 
 
 class Step(BaseModel):
@@ -39,17 +50,17 @@ class Launch:
     def __init__(self, settings, project):
         self.settings = settings
         self.project = project
-        self.folder = settings.root / ".scratch" / project.name / "runner"
+        self.folder = settings.runner_folder(project)
 
     def run(self):
         if self.settings.container:
-            raise ValueError("WORK_CONTAINER=1: Legion's runner doesn't run sessions in containers yet")
+            raise RunnerError("WORK_CONTAINER=1: Legion's runner doesn't run sessions in containers yet")
         self.folder.mkdir(parents=True, exist_ok=True)
         with (self.folder / "runner.lock").open("a") as lock:
             try:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
-                raise ValueError(f"A worker loop already owns {self.project}. Stop it before starting another.") \
+                raise RunnerError(f"A worker loop already owns {self.project}. Stop it before starting another.") \
                     from None
             signal.signal(signal.SIGTERM, self.interrupt)
             dashboard = Dashboard(self.settings, self.folder)
@@ -74,7 +85,7 @@ class Runner:
         self.project = project
         self.root = settings.root
         self.repo = Repo(project)
-        self.folder = self.root / ".scratch" / project.name / "runner"
+        self.folder = settings.runner_folder(project)
         self.cooldowns = Cooldowns(self.root / ".scratch" / "runner" / "cooldowns.json")
         self.sessions = Sessions(lock_fd, settings.timeout, self.root)
         self.prompts = Prompts()
@@ -91,11 +102,11 @@ class Runner:
                 say(f"{name} is not installed; running without it")
         usable = [name for name in self.settings.preference if name in installed]
         if not usable:
-            raise ValueError("No provider in WORK_PREFERENCE is installed")
+            raise RunnerError("No provider in WORK_PREFERENCE is installed")
         return usable
 
     def run(self):
-        cycle = Tracker(self.root / ".scratch" / self.project.name).current_cycle()
+        cycle = Tracker.for_project(self.root, self.project).current_cycle()
         self.attempts = AttemptLog(cycle.path, self.root)
         self.check_clean(cycle)
         while True:
@@ -110,7 +121,7 @@ class Runner:
     def check_clean(self, cycle):
         claimed = any(issue.status in ("in progress", "in review") for issue in cycle.issues.values())
         if self.repo.dirty() and not claimed:
-            raise ValueError(f"{self.project} has uncommitted changes and no issue is in progress or in review: "
+            raise RunnerError(f"{self.project} has uncommitted changes and no issue is in progress or in review: "
                              "commit or stash them first")
 
     def step(self, cycle, issue):
@@ -126,27 +137,33 @@ class Runner:
                               failed=self.failed[issue.path], implementer=self.attempts.implementer(issue.path))
         decision = self.router.choose(step.role, situation, time.time())
         if isinstance(decision, Stop):
-            say(f"Stopping: {', '.join(decision.signed_out)} authentication needs attention. See {self.attempts.folder}")
+            say(f"Stopping: {', '.join(decision.signed_out)} authentication needs attention. "
+                f"See {self.attempts.folder}")
             return 1
         if isinstance(decision, Wait):
             return self.wait(decision.until)
         provider = registry.provider(decision.provider, self.settings)
         jobs = self.jobs(cycle, issue, step, provider)
         codes = self.launch(jobs)
-        outcomes = [self.record(cycle, issue, provider, attempt, code) for (attempt, _), code in zip(jobs, codes)]
-        save_json(self.folder / "current.json", [attempt.record() for attempt, _ in jobs])
+        outcomes = [self.record(cycle, issue, provider, job.attempt, code) for job, code in zip(jobs, codes)]
+        self.save_current([job.attempt for job in jobs])
         return STOPPED if None in codes else self.react(issue, provider, jobs, outcomes)
 
     def jobs(self, cycle, issue, step, provider):
         """The step's attempts (one per missing review axis), each with its session's command."""
         attempts = [self.attempts.new(issue.path, step.role, provider.name, self.settings, axis)
                     for axis in step.axes or [None]]
-        save_json(self.folder / "current.json", [attempt.record() for attempt in attempts])
+        self.save_current(attempts)
         for attempt in attempts:
             say(f"{issue.path.name}: {attempt.axis or attempt.role} using {provider.name} ({attempt.model}); "
                 f"log: {attempt.log}")
-        return [(attempt, provider.command(step.role, self.prompt(cycle, issue, attempt), self.project))
+        return [Job(attempt=attempt,
+                    command=provider.command(step.role, self.prompt(cycle, issue, attempt), self.project))
                 for attempt in attempts]
+
+    def save_current(self, attempts):
+        """The latest attempts, for the dashboard; with outcomes once they end."""
+        save_json(self.folder / "current.json", [attempt.record() for attempt in attempts])
 
     def prompt(self, cycle, issue, attempt):
         reviews = " and ".join(str(self.review_file(cycle, issue, axis).relative_to(self.root)) for axis in AXES)
@@ -155,12 +172,12 @@ class Runner:
     def launch(self, jobs):
         """Run the jobs' sessions; their exit codes, None for each if interrupted, 127 if they couldn't start."""
         try:
-            return self.sessions.run([(command, attempt.log_path) for attempt, command in jobs])
+            return self.sessions.run([(job.command, job.attempt.log_path) for job in jobs])
         except KeyboardInterrupt:
             return [None] * len(jobs)
         except OSError as error:
-            for attempt, _ in jobs:
-                with attempt.log_path.open("a") as log:
+            for job in jobs:
+                with job.attempt.log_path.open("a") as log:
                     log.write(f"Worker launch failed: {error}\n")
             return [127] * len(jobs)
 
@@ -169,6 +186,7 @@ class Runner:
         result = provider.parse_log(attempt.log_path)
         status = Cycle.read(cycle.path).issues[issue.number].status
         outcome = self.outcome(attempt.role, provider, result, code, status)
+        attempt.recovery = None
         if outcome == "reviewed":
             self.save_review(cycle, issue, attempt, result.report)
         if attempt.role != "review" and outcome not in FINISHED[attempt.role]:
@@ -194,17 +212,16 @@ class Runner:
 
     def react(self, issue, provider, jobs, outcomes):
         """Continue after finished work, an authentication failure or a quota stop; count other failures."""
-        if all(outcome in FINISHED[jobs[0][0].role] for outcome in outcomes):
+        if all(outcome in FINISHED[jobs[0].attempt.role] for outcome in outcomes):
             return None
         if "authentication" in outcomes:
             self.signed_out.add(provider.name)
             say(f"{provider.name} authentication failed; continuing without it (log in and restart to use it again)")
             return None
         if "quota" in outcomes:
-            messages = "\n".join(provider.parse_log(attempt.log_path).messages for attempt, _ in jobs)
+            messages = "\n".join(provider.parse_log(job.attempt.log_path).messages for job in jobs)
             self.cooldowns.set(provider.name, provider.reset_at(messages, self.settings.wait))
-            reset = datetime.fromtimestamp(self.cooldowns.until[provider.name]).astimezone().isoformat()
-            say(f"{provider.name} quota exhausted; cooling down until {reset}")
+            say(f"{provider.name} quota exhausted; cooling down until {self.cooldowns.reset_time(provider.name)}")
             if "failure" not in outcomes:
                 return None
         self.failures[issue.path] += 1

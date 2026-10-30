@@ -1,5 +1,6 @@
 """Provider cooldowns: when each provider's quota resets, kept across restarts."""
 
+from datetime import datetime
 import json
 
 from ..utils import save_json
@@ -16,3 +17,7 @@ class Cooldowns:
         self.until[provider] = until
         self.path.parent.mkdir(parents=True, exist_ok=True)
         save_json(self.path, self.until)
+
+    def reset_time(self, provider):
+        """The provider's reset as a local ISO time."""
+        return datetime.fromtimestamp(self.until[provider]).astimezone().isoformat()

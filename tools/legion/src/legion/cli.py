@@ -5,8 +5,8 @@ import os
 import subprocess
 import sys
 
-from .runner.loop import Launch
-from .runner.repo import UnsafeRepo
+from .runner.loop import Launch, RunnerError
+from .runner.repo import UnsafeRepoError
 from .settings import Settings, SettingsError
 from .tracker import Tracker, TrackerError
 
@@ -64,7 +64,8 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
     try:
         code = getattr(Commands(Settings.load()), args.command)(args)
-    except (SettingsError, TrackerError, UnsafeRepo, ValueError, OSError, subprocess.CalledProcessError) as error:
+    except (SettingsError, TrackerError, RunnerError, UnsafeRepoError, OSError,
+            subprocess.CalledProcessError) as error:
         sys.exit(str(error))
     return code or 0
 
