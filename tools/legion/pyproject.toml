@@ -12,3 +12,7 @@ legion = "legion.cli:main"
 [build-system]
 requires = ["uv_build>=0.12,<0.13"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dashboard = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1"]
+dev = ["httpx>=0.27,<1"]
