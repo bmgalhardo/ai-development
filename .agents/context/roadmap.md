@@ -17,9 +17,11 @@ Treat provider quota exhaustion as an interrupted attempt, not a blocked issue.
 ## Current implementation: quick wins complete
 
 - Legion (`tools/legion/`) is the worker loop, the worker containers, the issue tracker and the dashboard, in one uv package.
-- Run it with `tools/legion.sh <run|next|status|dashboard> ../<project>`; keep `tools/work.sh ../<project>` as shorthand for `run`.
+- Run it with `tools/legion.sh <run|next|status|dashboard> ../<project>`.
+- Keep `tools/work.sh ../<project>` as shorthand for `run`.
 - Run one implementation at a time per project, with a per-project runner lock.
-- Take providers in `WORK_PREFERENCE` order; a cooling or failing provider hands work to the next.
+- Take providers in `WORK_PREFERENCE` order.
+- Hand work to the next provider when one is cooling down or fails.
 - Review each issue in two parallel read-only sessions, one per axis, by a provider other than the implementer when one is available, then fix in a fresh implementer session.
 - Save review reports in the cycle's `reviews/`; never repeat a saved review.
 - Persist provider cooldowns and wait when both configured providers are unavailable.
@@ -34,15 +36,25 @@ Treat provider quota exhaustion as an interrupted attempt, not a blocked issue.
 - Assign small relevant prefactors explicitly; propose separate tickets for wider refactors.
 - Render the debt register in the review and as its own board page.
 
-Code is grouped by responsibility:
+Code is grouped by responsibility.
+Legion's package is `tools/legion/src/legion/`:
 
-- `tools/legion/src/legion/`: `settings.py` and `tracker.py` (issue readiness and status); `providers/` (Claude and Codex: commands, log parsing, logins); `runner/` (the loop, the router, sessions, attempts, recovery with the safe git, cooldowns); `container/` (the `Container` arguments, image recipes, build and shell wrapper); `dashboard/` (the board, quotas and its API).
+- `settings.py`: the `WORK_` settings.
+- `tracker.py`: issue readiness and status.
+- `providers/`: Claude and Codex commands, log parsing and logins.
+- `runner/`: the loop, the router, sessions, attempts, recovery with the safe git, and cooldowns.
+- `container/`: the `Container` arguments, image recipes, build and shell wrapper.
+- `dashboard/`: the board, quotas and its API.
+
+Around it:
+
 - `tools/legion/tests/`: the loop end to end, the router, provider parsing, the dashboard API and the small checks.
 - `tools/README.md`: entry points and focused test commands.
 - `workers.md`: current configuration and artifact formats.
 
 These quick wins remain sequential and use the project's existing checkout and branch.
-Containers are optional (`WORK_CONTAINER=1`); there are no isolated attempt branches or queue service yet.
+Containers are optional (`WORK_CONTAINER=1`).
+There are no isolated attempt branches or queue service yet.
 Recovery snapshots occur after an attempt ends, not periodically during execution.
 A self-review's subagent model depends on the host's selector and must be reported honestly.
 Usage records are not estimates of remaining subscription quota.
