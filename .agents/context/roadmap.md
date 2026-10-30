@@ -1,6 +1,6 @@
 # Agentic queues roadmap
 
-Updated: 2026-10-24.
+Updated: 2026-10-30.
 This roadmap concerns the shared workflow, not a project feature cycle.
 The previous project cycle is complete.
 Future increments below are proposed work, not instructions to implement them automatically.
@@ -16,13 +16,14 @@ Treat provider quota exhaustion as an interrupted attempt, not a blocked issue.
 
 ## Current implementation: quick wins complete
 
-- Keep `tools/work.sh ../<project>` as the worker entry point.
+- Legion (`tools/legion/`) is the worker loop, the worker containers, the issue tracker and the dashboard, in one uv package.
+- Run it with `tools/legion.sh <run|next|status|dashboard> ../<project>`; keep `tools/work.sh ../<project>` as shorthand for `run`.
 - Run one implementation at a time per project, with a per-project runner lock.
-- Prefer `WORK_AGENT` (Claude); fall back to the other installed provider on quota exhaustion.
-- Review each issue in two parallel read-only sessions by `WORK_REVIEW_AGENT` (Codex), one per axis, then fix in a fresh implementer session.
+- Take providers in `WORK_PREFERENCE` order; a cooling or failing provider hands work to the next.
+- Review each issue in two parallel read-only sessions, one per axis, by a provider other than the implementer when one is available, then fix in a fresh implementer session.
 - Save review reports in the cycle's `reviews/`; never repeat a saved review.
 - Persist provider cooldowns and wait when both configured providers are unavailable.
-- Configure implementation models and request review models separately per provider.
+- Configure a model and an effort per provider and role (`workers.md`).
 - Preserve commits and unfinished edits, including work whose checks fail.
 - Snapshot tracked edits, the index, untracked files, HEAD and the issue after unfinished attempts.
 - Record attempt outcomes, durations and available provider-native usage.
@@ -35,13 +36,13 @@ Treat provider quota exhaustion as an interrupted attempt, not a blocked issue.
 
 Code is grouped by responsibility:
 
-- `tools/workers/`: readiness, execution, provider handling, recovery and tests.
-- `tools/review/`: board rendering, template and tests.
+- `tools/legion/src/legion/`: `settings.py` and `tracker.py` (issue readiness and status); `providers/` (Claude and Codex: commands, log parsing, logins); `runner/` (the loop, the router, sessions, attempts, recovery with the safe git, cooldowns); `container/` (the `Container` arguments, image recipes, build and shell wrapper); `dashboard/` (the board, quotas and its API).
+- `tools/legion/tests/`: the loop end to end, the router, provider parsing, the dashboard API and the small checks.
 - `tools/README.md`: entry points and focused test commands.
 - `workers.md`: current configuration and artifact formats.
 
 These quick wins remain sequential and use the project's existing checkout and branch.
-There are no container workers, isolated attempt branches, queue service or progress dashboard yet.
+Containers are optional (`WORK_CONTAINER=1`); there are no isolated attempt branches or queue service yet.
 Recovery snapshots occur after an attempt ends, not periodically during execution.
 A self-review's subagent model depends on the host's selector and must be reported honestly.
 Usage records are not estimates of remaining subscription quota.
@@ -61,10 +62,10 @@ Done when recreating a worker preserves login and unfinished work, and it can co
 
 Progress (2026-10-28):
 
-- Done: the base image and `tools/container/run.sh` (`tools/container/README.md`).
+- Done: the base image (`legion-worker`) and Legion's shell wrapper (`tools/legion/README.md`: Containers).
   One provider and one role per container; each gets only its own login file, from `.logins/` (git-ignored).
   A reviewer gets the project read-only: Codex's own sandbox can't start in a container.
-- Done: a project image (`.agents/container/Dockerfile`, here as `tools/container/prototype/` while prototyping); 03-prototype's check, captures and Web export pass in it.
+- Done: a project image (`legion-<project>`, from `.agents/container/Dockerfile`, here as Legion's `container/prototype/` while prototyping); 03-prototype's check, captures and Web export pass in it.
 - Done: `WORK_CONTAINER=1` in the runner; a stopped attempt's container is removed, and leftovers at startup.
 - Done: each CLI's session files in `.scratch/<project>/sessions/`, read by the retro digest.
 - Done: the runner's git refuses a project `.git` that can run commands; publishing refuses symlinks.
@@ -139,7 +140,7 @@ The project picks when it deploys: per issue (like CI after a merge) or per cycl
 The review stops being a ticket: when the loop ends, however it ends, a review step writes `review.md`.
 That review lists blocked issues and the issues they kept from running, with their reasons.
 Done at that retro: the build ticket only prepares the outputs; the worker loop publishes them when the build is done; the review publishes its own mocks; a project without a publishing doc deploys nothing.
-This removes the build issue's special readiness rule in `next_issue.py`.
+This removes the build issue's special readiness rule in Legion's tracker.
 Today a blocked issue with a dependent chain leaves the build issue never ready, so nothing is published.
 
 Done when a cycle with a blocked issue still deploys its finished work and its review names the block.

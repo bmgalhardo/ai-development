@@ -5,35 +5,35 @@ Keep the root `work.sh` as the stable worker entry point.
 
 | Folder | Responsibility | Command from the repo root |
 |---|---|---|
-| `workers/` | Provider selection, issue readiness, cooldowns, recovery and attempt records | `tools/work.sh ../<project>` |
+| `legion/` | The worker loop, worker containers, issue tracker and dashboard | `tools/legion.sh <run\|next\|status\|dashboard> ../<project>` |
 | `publish/` | Upload a build's outputs, or a review's mocks, to the publish server | `python3 tools/publish/publish.py ../<project> [mocks]` |
 | `project/` | Check a project repo against the contract (`project-setup.md`) | `python3 tools/project/check_contract.py ../<project>` |
-| `dashboard/` | Read-only Kanban board and worker activity | `uv run --project tools/dashboard python -m tools.dashboard` |
-| `container/` | The worker image and a container for a project | `tools/container/build.sh`, `tools/container/run.sh ../<project>` |
 
+`tools/work.sh ../<project>` is shorthand for `tools/legion.sh run ../<project>`.
 The dashboard runs independently of workers at http://127.0.0.1:8765.
-`work.sh` starts it for the run when it isn't already running.
-See `dashboard/README.md` for setup, status semantics and remote access.
+The runner starts it for the run when it isn't already running.
+See `legion/README.md` for containers, the dashboard and remote access.
 
 Inspect issue status without starting a worker:
 
 ```bash
-python3 tools/workers/next_issue.py ../<project> --status
+tools/legion.sh status ../<project>
+tools/legion.sh next ../<project>
 ```
 
 Run the tests for the folder being changed:
 
 ```bash
-python3 -m unittest discover -s tools/workers -t .
+uv run --project tools/legion --group dashboard python -m unittest discover -s tools/legion/tests
 python3 -m unittest discover -s tools/publish -t .
 python3 -m unittest discover -s tools/project -t .
-uv run --project tools/dashboard python -m unittest discover -s tools/dashboard -t .
 ```
 
 Run all tool tests after changes spanning folders:
 
 ```bash
-uv run --project tools/dashboard python -m unittest discover -s tools -t .
+uv run --project tools/legion --group dashboard python -m unittest discover -s tools/legion/tests
+python3 -m unittest discover -s tools -t .
 ```
 
 The worker settings are in `.agents/context/workers.md`.

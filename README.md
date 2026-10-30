@@ -52,5 +52,6 @@ Python 3 and [uv](https://docs.astral.sh/uv/), plus the agent CLIs the
 workers use (Claude Code, Codex). Run the tool tests with:
 
 ```bash
-uv run --project tools/dashboard python -m unittest discover -s tools -t .
+uv run --project tools/legion --group dashboard python -m unittest discover -s tools/legion/tests
+python3 -m unittest discover -s tools -t .
 ```

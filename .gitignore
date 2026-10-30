@@ -8,5 +8,5 @@ __pycache__/
 .env
 *.local.md
 
-# Worker logins (tools/container/README.md); never under .agents/ or .scratch/, which containers see.
+# Worker logins (tools/legion/README.md: Containers); never under .agents/ or .scratch/, which containers see.
 .logins/
