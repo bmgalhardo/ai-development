@@ -14,8 +14,8 @@ class SettingsTests(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
-        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("WORK_")}
-        patcher = patch.dict(os.environ, clean | {"WORK_ROOT": str(self.root)}, clear=True)
+        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
+        patcher = patch.dict(os.environ, clean | {"LEGION_ROOT": str(self.root)}, clear=True)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -25,7 +25,7 @@ class SettingsTests(unittest.TestCase):
             return Settings.load()
 
     def test_the_env_file_is_the_workflow_roots(self):
-        settings = self.load("WORK_WAIT=60\n")
+        settings = self.load("LEGION_WAIT=60\n")
         self.assertEqual((settings.root, settings.wait), (self.root, 60))
 
     def test_defaults(self):
@@ -38,16 +38,20 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.logins_folder, settings.root / ".logins")
 
     def test_the_environment_wins_over_the_env_file(self):
-        settings = self.load("WORK_WAIT=60\nWORK_TIMEOUT=90\n", WORK_WAIT="30")
+        settings = self.load("LEGION_WAIT=60\nLEGION_TIMEOUT=90\n", LEGION_WAIT="30")
         self.assertEqual((settings.wait, settings.timeout), (30, 90))
 
-    def test_unknown_work_keys_in_the_env_file_are_ignored(self):
-        settings = self.load("WORK_AGENT=claude\nWORK_PUBLISH=0\nPUBLISH_URL=https://publish.test\n")
+    def test_unknown_legion_keys_in_the_env_file_are_ignored(self):
+        settings = self.load("LEGION_AGENT=claude\nLEGION_PUBLISH=0\nPUBLISH_URL=https://publish.test\n")
         self.assertEqual(settings.wait, 1800)
 
+    def test_the_old_work_prefix_is_not_read(self):
+        settings = self.load("WORK_WAIT=60\n", WORK_TIMEOUT="90")
+        self.assertEqual((settings.wait, settings.timeout), (1800, 14400))
+
     def test_preference_is_a_comma_list_of_known_providers(self):
-        self.assertEqual(self.load(WORK_PREFERENCE="codex, claude").preference, ["codex", "claude"])
-        self.assertEqual(self.load(WORK_PREFERENCE="claude").preference, ["claude"])
+        self.assertEqual(self.load(LEGION_PREFERENCE="codex, claude").preference, ["codex", "claude"])
+        self.assertEqual(self.load(LEGION_PREFERENCE="claude").preference, ["claude"])
 
     def test_an_unset_preference_is_every_installed_provider_claude_first(self):
         with patch("legion.providers.shutil.which", side_effect=lambda name: f"/bin/{name}"):
@@ -56,25 +60,25 @@ class SettingsTests(unittest.TestCase):
             self.assertEqual(self.load().preference, ["codex"])
 
     def test_invalid_values_fail_with_the_setting_named(self):
-        for name, value, message in (("WORK_PREFERENCE", "claude,gemini", "unknown provider gemini"),
-                                     ("WORK_PREFERENCE", "claude,claude", "claude more than once"),
-                                     ("WORK_WAIT", "0", "greater than 0"),
-                                     ("WORK_DASHBOARD_PORT", "port", "integer")):
+        for name, value, message in (("LEGION_PREFERENCE", "claude,gemini", "unknown provider gemini"),
+                                     ("LEGION_PREFERENCE", "claude,claude", "claude more than once"),
+                                     ("LEGION_WAIT", "0", "greater than 0"),
+                                     ("LEGION_DASHBOARD_PORT", "port", "integer")):
             with self.subTest(name=name, value=value):
                 with self.assertRaisesRegex(SettingsError, f"{name}: .*{message}"):
                     self.load(**{name: value})
 
     def test_unknown_nested_keys_in_the_env_file_are_ignored(self):
-        settings = self.load("WORK_CODEX__REWIEW__MODEL=gpt\nWORK_CLAUDE__IMPLEMENT__MODLE=opus\n")
+        settings = self.load("LEGION_CODEX__REWIEW__MODEL=gpt\nLEGION_CLAUDE__IMPLEMENT__MODLE=opus\n")
         self.assertIsNone(settings.roles("claude").role("implement").model)
 
     def test_an_unparsable_nested_value_is_an_error(self):
         with self.assertRaisesRegex(SettingsError, "Invalid settings"):
-            self.load(WORK_CLAUDE__IMPLEMENT="not json")
+            self.load(LEGION_CLAUDE__IMPLEMENT="not json")
 
     def test_model_and_effort_per_provider_and_role(self):
-        settings = self.load("WORK_CODEX__REVIEW__EFFORT=high\n", WORK_CLAUDE__IMPLEMENT__MODEL="opus",
-                             WORK_CLAUDE__REVIEW__MODEL="sonnet")
+        settings = self.load("LEGION_CODEX__REVIEW__EFFORT=high\n", LEGION_CLAUDE__IMPLEMENT__MODEL="opus",
+                             LEGION_CLAUDE__REVIEW__MODEL="sonnet")
         claude, codex = settings.roles("claude"), settings.roles("codex")
         self.assertEqual((claude.role("implement").model, claude.role("implement").effort), ("opus", "medium"))
         self.assertEqual((claude.role("review").model, claude.role("review").effort), ("sonnet", "medium"))
@@ -82,21 +86,21 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(codex.role("implement").model, None)
 
     def test_fix_falls_back_to_implement_for_each_unset_field(self):
-        settings = self.load(WORK_CLAUDE__IMPLEMENT__MODEL="opus", WORK_CLAUDE__IMPLEMENT__EFFORT="high",
-                             WORK_CLAUDE__FIX__MODEL="sonnet")
+        settings = self.load(LEGION_CLAUDE__IMPLEMENT__MODEL="opus", LEGION_CLAUDE__IMPLEMENT__EFFORT="high",
+                             LEGION_CLAUDE__FIX__MODEL="sonnet")
         fix = settings.roles("claude").role("fix")
         self.assertEqual((fix.model, fix.effort), ("sonnet", "high"))
         self.assertEqual(settings.roles("codex").role("fix").effort, "medium")
 
     def test_effort_is_one_of_the_providers_own_values(self):
-        self.assertEqual(self.load(WORK_CLAUDE__IMPLEMENT__EFFORT="max").roles("claude").role("implement").effort,
+        self.assertEqual(self.load(LEGION_CLAUDE__IMPLEMENT__EFFORT="max").roles("claude").role("implement").effort,
                          "max")
-        with self.assertRaisesRegex(SettingsError, "WORK_CODEX__REVIEW__EFFORT: max is not one of"):
-            self.load(WORK_CODEX__REVIEW__EFFORT="max")
+        with self.assertRaisesRegex(SettingsError, "LEGION_CODEX__REVIEW__EFFORT: max is not one of"):
+            self.load(LEGION_CODEX__REVIEW__EFFORT="max")
 
     def test_container_switch_accepts_one_and_zero(self):
-        self.assertTrue(self.load(WORK_CONTAINER="1").container)
-        self.assertFalse(self.load(WORK_DASHBOARD="0").dashboard)
+        self.assertTrue(self.load(LEGION_CONTAINER="1").container)
+        self.assertFalse(self.load(LEGION_DASHBOARD="0").dashboard)
 
 
 if __name__ == "__main__":

@@ -48,7 +48,7 @@ class QuotaTests(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.folder = Path(temp.name)
-        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("WORK_")}
+        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
         with patch.dict(os.environ, clean, clear=True):
             self.settings = Settings(_env_file=None, logins=self.folder, preference=["claude", "codex"])
         self.claude = registry.provider("claude", self.settings)

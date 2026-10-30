@@ -76,8 +76,8 @@ def build_parser():
     shell.add_argument("argv", metavar="command", nargs=argparse.REMAINDER, help="the command to run (default: bash)")
     commands.add_parser("build", help=Commands.build.__doc__).add_argument("project", nargs="?", help=PROJECT_HELP)
     dashboard = commands.add_parser("dashboard", help=Commands.dashboard.__doc__)
-    dashboard.add_argument("--host", help="bind address (default: WORK_DASHBOARD_HOST, else this host only)")
-    dashboard.add_argument("--port", type=int, help="port (default: WORK_DASHBOARD_PORT, else 8765)")
+    dashboard.add_argument("--host", help="bind address (default: LEGION_DASHBOARD_HOST, else this host only)")
+    dashboard.add_argument("--port", type=int, help="port (default: LEGION_DASHBOARD_PORT, else 8765)")
     return parser
 
 

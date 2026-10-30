@@ -105,7 +105,7 @@ class Runner:
                 say(f"{name} is not installed; running without it")
         usable = [name for name in self.settings.preference if name in installed]
         if not usable:
-            raise RunnerError("No provider in WORK_PREFERENCE is installed")
+            raise RunnerError("No provider in LEGION_PREFERENCE is installed")
         return usable
 
     def run(self):
@@ -189,7 +189,7 @@ class Runner:
             return [127] * len(jobs)
 
     def session(self, containers, provider, job):
-        """The job's session: its command as is, or in a worker container (WORK_CONTAINER)."""
+        """The job's session: its command as is, or in a worker container (LEGION_CONTAINER)."""
         if not self.settings.container:
             return Session(command=job.command, log=job.attempt.log_path)
         container = containers.enter_context(Container(self.settings, self.project, provider, job.attempt.role))
@@ -269,10 +269,10 @@ class Runner:
         return self.after_build() if cycle.build and cycle.build.status == "done" else 0
 
     def after_build(self):
-        """Run WORK_AFTER_BUILD once the build is done; its exit code becomes the runner's."""
+        """Run LEGION_AFTER_BUILD once the build is done; its exit code becomes the runner's."""
         command = self.settings.after_build
         if not command:
-            say("The build is done; no after-build command (WORK_AFTER_BUILD)")
+            say("The build is done; no after-build command (LEGION_AFTER_BUILD)")
             return 0
         command = command.replace("{project}", shlex.quote(str(self.project)))
         say(f"The build is done; running {command}")

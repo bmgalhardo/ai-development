@@ -91,7 +91,7 @@ def digest(path, since, until):
 
 
 def digest_worker(path, since, until):
-    """Summarize a plain-text tools/work.sh log using its timestamped name."""
+    """Summarize a plain-text worker log using its timestamped name."""
     # <issue>[-<role>]-YYYYMMDD-HHMMSS[-<attempt id>]
     match = re.fullmatch(r"(.+)-(\d{8})-(\d{6})(?:-[0-9a-f]{8})?", path.stem)
     if not match:

@@ -103,7 +103,7 @@ class Container:
                                           if path.is_symlink() and path.resolve() == target)]
 
     def image(self):
-        """WORK_IMAGE, else the project's image when built, else the worker image."""
+        """LEGION_IMAGE, else the project's image when built, else the worker image."""
         if self.settings.image:
             return self.settings.image
         project_image = f"legion-{self.project.name}"

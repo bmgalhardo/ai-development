@@ -7,7 +7,7 @@ grill, spec, tickets, implement, retro, and back to review. They are ours
 to change over time, mostly through `/retro`.
 
 This repo holds what every project shares: this cycle, the issue tracker
-(`issue-tracker.md`), the skills, the worker loop (`tools/work.sh`), the
+(`issue-tracker.md`), the skills, the worker loop (`tools/legion.sh run`), the
 publisher (`tools/publish/publish.py`), the machine's tools
 (`engineering.md`, and this machine's `machine.local.md`) and how to
 publish (`publish-server.md`). It also holds each project's cycles and
@@ -151,22 +151,22 @@ is no persisted file carrying the interview into `/to-spec`.
 
 ## 3. Implementation (without the user)
 
-After `/to-tickets`, the user runs `tools/work.sh` here (for the current
-project, or `tools/work.sh ../<project>`) and leaves. Nobody asks the user anything until
+After `/to-tickets`, the user runs `tools/legion.sh run ../<project>` here
+and leaves. Nobody asks the user anything until
 the build is published: choices, open questions and declined review
 findings go into the issues' `## Comments`, and the build issue collects
 them into the project's `docs/review.md` for the next review.
 
-`work.sh` runs independent workers: for each ready issue
+The loop runs independent workers: for each ready issue
 (`tools/legion.sh next`), one fresh worker at a time, until no issue is ready.
 Claude Code implements and Codex reviews, each in its own sessions
-(`WORK_PREFERENCE` changes them). The implementer
+(`LEGION_PREFERENCE` changes them). The implementer
 commits and leaves the issue `in review`. Two read-only reviewers, one
 per `/code-review` axis, run in parallel; the runner saves their reports
 in the cycle's `reviews/`. A fresh fixer handles the findings and closes
 the issue. When the reviewer has no quota, an available implementer
 reviews instead.
-Claude's per-attempt budget is `WORK_BUDGET_USD` (default 15). Codex uses
+Claude's per-attempt budget is `LEGION_BUDGET_USD` (default 15). Codex uses
 its CLI configuration. Model settings, quota fallback, recovery artifacts
 and attempt metrics are documented in `workers.md`. There is no queue
 service. Each worker:
@@ -215,10 +215,10 @@ project's contract (`project-setup.md`), and its engineering doc says how:
 6. Commit, and close the build issue.
 
 The build doesn't upload. When the worker loop ends with the build issue
-`done`, it runs `WORK_AFTER_BUILD`, set to publish the build's outputs
+`done`, it runs `LEGION_AFTER_BUILD`, set to publish the build's outputs
 (`python3 tools/publish/publish.py {project}`), which prints their links.
 A project without a publishing doc has nothing to publish.
-An empty `WORK_AFTER_BUILD` skips publishing.
+An empty `LEGION_AFTER_BUILD` skips publishing.
 The command's exit code becomes the loop's: without a publish server, it fails. A failed upload is reported at the end of the run: fix it
 and run `/publish`. The cycle is complete once every output is on the
 server. That published build is the next review.

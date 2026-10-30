@@ -1,7 +1,6 @@
 # Workflow tools
 
 Keep each tool's implementation, tests and supporting assets in its own folder.
-Keep the root `work.sh` as the stable worker entry point.
 
 | Folder | Responsibility | Command from the repo root |
 |---|---|---|
@@ -9,7 +8,6 @@ Keep the root `work.sh` as the stable worker entry point.
 | `publish/` | Upload a build's outputs, or a review's mocks, to the publish server | `python3 tools/publish/publish.py ../<project> [mocks]` |
 | `project/` | Check a project repo against the contract (`project-setup.md`) | `python3 tools/project/check_contract.py ../<project>` |
 
-`tools/work.sh ../<project>` is shorthand for `tools/legion.sh run ../<project>`.
 The dashboard runs independently of workers at http://127.0.0.1:8765.
 The runner starts it for the run when it isn't already running.
 See `legion/README.md` for containers, the dashboard and remote access.

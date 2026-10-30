@@ -24,7 +24,7 @@ class CommandTests(unittest.TestCase):
         issues.mkdir(parents=True)
         for name, status in (("01-first", "done"), ("02-second", "open"), ("03-build", "open")):
             (issues / f"{name}.md").write_text(f"**Status:** {status}\n**Blocked by:** 01\n")
-        patcher = patch.dict(os.environ, {"WORK_ROOT": str(self.root)})
+        patcher = patch.dict(os.environ, {"LEGION_ROOT": str(self.root)})
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -71,8 +71,8 @@ class CommandTests(unittest.TestCase):
         self.assertIn(f"{self.root}/project:{self.root}/project:ro", run)
 
     def test_invalid_settings_exit_with_the_setting_named(self):
-        with patch.dict(os.environ, {"WORK_WAIT": "0"}):
-            with self.assertRaisesRegex(SystemExit, "WORK_WAIT"):
+        with patch.dict(os.environ, {"LEGION_WAIT": "0"}):
+            with self.assertRaisesRegex(SystemExit, "LEGION_WAIT"):
                 self.run_command("status", "project")
 
 

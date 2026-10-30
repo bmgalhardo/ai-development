@@ -50,11 +50,11 @@ class RunnerTests(unittest.TestCase):
             executable = binaries / provider
             executable.write_text(f"#!{sys.executable}\n" + FAKE_WORKER.read_text())
             executable.chmod(0o755)
-        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("WORK_")}
+        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
         self.stack.enter_context(patch.dict(os.environ, clean | {
-            "PATH": f"{binaries}:{os.environ['PATH']}", "WORK_ROOT": str(self.root),
-            "WORK_PREFERENCE": "claude,codex", "WORK_CLAUDE__IMPLEMENT__MODEL": "test-claude",
-            "WORK_WAIT": "60", "WORK_DASHBOARD": "0"}, clear=True))
+            "PATH": f"{binaries}:{os.environ['PATH']}", "LEGION_ROOT": str(self.root),
+            "LEGION_PREFERENCE": "claude,codex", "LEGION_CLAUDE__IMPLEMENT__MODEL": "test-claude",
+            "LEGION_WAIT": "60", "LEGION_DASHBOARD": "0"}, clear=True))
         self.lock = self.stack.enter_context((self.directory / "runner.lock").open("a"))
 
     def run_loop(self, **environment):
@@ -131,14 +131,14 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(self.cooldowns.exists())
 
     def test_finished_worker_that_never_exits_is_stopped_and_counted_done(self):
-        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", WORK_TIMEOUT="1"), 0)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", LEGION_TIMEOUT="1"), 0)
         record = self.records()[0]
         self.assertEqual((record["outcome"], record["exit_code"]), ("done", TIMED_OUT))
         self.assertIn("Worker timed out after 1s", Path(record["log"]).read_text())
 
     def test_unfinished_worker_that_times_out_is_a_timeout(self):
         self.issue.write_text("**Status:** in progress\n**Blocked by:** None\n")
-        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", WORK_TIMEOUT="1", WORK_PREFERENCE="claude"), 1)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", LEGION_TIMEOUT="1", LEGION_PREFERENCE="claude"), 1)
         self.assertEqual([r["outcome"] for r in self.records()], ["timeout", "timeout"])
 
     def test_interrupt_snapshots_work(self):
@@ -177,7 +177,7 @@ class RunnerTests(unittest.TestCase):
             while not pid_file.exists():
                 time.sleep(0.05)
             return 0
-        with patch.dict(os.environ, {"WORK_DASHBOARD": "1", "WORK_DASHBOARD_PORT": str(port)}), \
+        with patch.dict(os.environ, {"LEGION_DASHBOARD": "1", "LEGION_DASHBOARD_PORT": str(port)}), \
                 patch.object(loop.Dashboard, "command", lambda _: board), patch.object(Runner, "run", run):
             self.assertEqual(Launch(Settings.load(), self.project).run(), 0)
         with self.assertRaises(ProcessLookupError):
@@ -194,7 +194,7 @@ class RunnerTests(unittest.TestCase):
     def test_a_single_provider_waits_for_its_own_reset(self):
         with patch.object(loop.time, "sleep", side_effect=KeyboardInterrupt):
             with self.assertRaises(KeyboardInterrupt):
-                self.run_loop(WORK_PREFERENCE="claude")
+                self.run_loop(LEGION_PREFERENCE="claude")
         self.assertEqual([r["provider"] for r in self.records()], ["claude"])
 
     def test_only_a_stopped_session_is_cleaned_up_right_after_it_stops(self):
@@ -254,7 +254,7 @@ class RunnerTests(unittest.TestCase):
 
     def test_every_issue_including_the_build_gets_reviewers_and_a_fixer(self):
         self.add_build_issue()
-        self.assertEqual(self.run_loop(TEST_SCENARIO="review", WORK_CODEX__REVIEW__MODEL="codex-review"), 0)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="review", LEGION_CODEX__REVIEW__MODEL="codex-review"), 0)
         steps = [(r["issue"][-13:], r["role"], r["axis"], r["provider"], r["outcome"]) for r in self.records()]
         for issue in ("01-feature.md", "/02-build.md"):
             self.assertEqual([step[1:] for step in steps if step[0].endswith(issue)],
@@ -271,7 +271,7 @@ class RunnerTests(unittest.TestCase):
         self.assertIn("Reviewer: codex (codex-review)", spec)
 
     def test_one_provider_does_everything(self):
-        self.assertEqual(self.run_loop(TEST_SCENARIO="review", WORK_PREFERENCE="claude"), 0)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="review", LEGION_PREFERENCE="claude"), 0)
         self.assertEqual([(r["role"], r["provider"]) for r in self.records()],
                          [("implement", "claude"), ("review", "claude"), ("review", "claude"), ("fix", "claude")])
 
@@ -294,19 +294,19 @@ class RunnerTests(unittest.TestCase):
     def test_the_after_build_command_runs_with_the_project(self):
         self.issue.write_text("**Status:** done\n")
         marker = self.root / "after-build.txt"
-        self.assertEqual(self.run_loop(WORK_AFTER_BUILD=f"echo {{project}} > {marker}; exit 3"), 3)
+        self.assertEqual(self.run_loop(LEGION_AFTER_BUILD=f"echo {{project}} > {marker}; exit 3"), 3)
         self.assertEqual(marker.read_text().strip(), str(self.project))
 
     def test_an_empty_after_build_command_does_nothing(self):
         self.issue.write_text("**Status:** done\n")
-        self.assertEqual(self.run_loop(WORK_AFTER_BUILD=""), 0)
+        self.assertEqual(self.run_loop(LEGION_AFTER_BUILD=""), 0)
 
     def test_the_after_build_command_waits_for_the_build(self):
         self.add_build_issue()
         self.issue.write_text("**Status:** done\n")
         (self.cycle / "issues/02-build.md").write_text("**Status:** blocked\n")
         marker = self.root / "after-build.txt"
-        self.assertEqual(self.run_loop(WORK_AFTER_BUILD=f"touch {marker}"), 0)
+        self.assertEqual(self.run_loop(LEGION_AFTER_BUILD=f"touch {marker}"), 0)
         self.assertFalse(marker.exists())
 
     # Containers
@@ -320,7 +320,7 @@ class RunnerTests(unittest.TestCase):
         logins.mkdir()
         (logins / ".claude.login").write_text("setup-token\n")
         (logins / ".codex.login").write_text("{}\n")
-        return {"WORK_CONTAINER": "1", "FAKE_DOCKER_LOG": str(self.root / "docker.jsonl")}
+        return {"LEGION_CONTAINER": "1", "FAKE_DOCKER_LOG": str(self.root / "docker.jsonl")}
 
     def docker_calls(self):
         return [json.loads(line) for line in (self.root / "docker.jsonl").read_text().splitlines()]
@@ -345,7 +345,7 @@ class RunnerTests(unittest.TestCase):
             self.assertTrue((self.root / f".scratch/project/sessions/{provider}").is_dir())
 
     def test_stopping_a_container_session_removes_its_container(self):
-        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", WORK_TIMEOUT="1", **self.use_containers()), 0)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", LEGION_TIMEOUT="1", **self.use_containers()), 0)
         self.assertEqual(self.records()[0]["exit_code"], TIMED_OUT)
         calls = [call["args"] for call in self.docker_calls()]
         name = next(args[args.index("--name") + 1] for args in calls if args[0] == "run")

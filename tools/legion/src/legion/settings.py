@@ -1,7 +1,7 @@
 """Legion's settings: the only reader of the environment and `.env`.
 
-Every setting is a `WORK_` variable. The environment wins over `.env`, unknown
-`WORK_` keys in `.env` are ignored, and invalid values fail when loading.
+Every setting is a `LEGION_` variable. The environment wins over `.env`, unknown
+`LEGION_` keys in `.env` are ignored, and invalid values fail when loading.
 """
 
 import os
@@ -30,7 +30,7 @@ class Role(BaseModel):
 
 
 class ProviderRoles(BaseModel):
-    """A provider's settings per role, from `WORK_<PROVIDER>__<ROLE>__MODEL` and `__EFFORT`."""
+    """A provider's settings per role, from `LEGION_<PROVIDER>__<ROLE>__MODEL` and `__EFFORT`."""
 
     implement: Role = Field(default_factory=Role)
     review: Role = Field(default_factory=Role)
@@ -45,7 +45,7 @@ class ProviderRoles(BaseModel):
 
 
 class BaseLegionSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="WORK_", env_file=".env", env_nested_delimiter="__",
+    model_config = SettingsConfigDict(env_prefix="LEGION_", env_file=".env", env_nested_delimiter="__",
                                       extra="ignore")
 
     root: Path = Field(default_factory=Path.cwd, description="the workflow repo, holding .scratch and .logins")
@@ -85,7 +85,7 @@ class BaseLegionSettings(BaseSettings):
         for name in registry.names():
             for role, settings in self.roles(name):
                 if settings.effort and settings.effort not in registry.efforts(name):
-                    variable = f"WORK_{name}__{role}__EFFORT".upper()
+                    variable = f"LEGION_{name}__{role}__EFFORT".upper()
                     raise ValueError(f"{variable}: {settings.effort} is not one of "
                                      f"{', '.join(registry.efforts(name))}")
         return self
@@ -110,9 +110,9 @@ class BaseLegionSettings(BaseSettings):
     def load(cls):
         """The settings, or a SettingsError naming each invalid variable.
 
-        `.env` is the workflow root's: `WORK_ROOT` from the environment, else the current folder.
+        `.env` is the workflow root's: `LEGION_ROOT` from the environment, else the current folder.
         """
-        root = Path(os.environ.get("WORK_ROOT") or Path.cwd())
+        root = Path(os.environ.get("LEGION_ROOT") or Path.cwd())
         try:
             return cls(_env_file=root / ".env")
         except ValidationError as error:
@@ -125,7 +125,7 @@ class BaseLegionSettings(BaseSettings):
     @staticmethod
     def variable(location):
         """The environment variable for a validation error's location."""
-        return "WORK_" + "__".join(str(part) for part in location if not isinstance(part, int)).upper()
+        return "LEGION_" + "__".join(str(part) for part in location if not isinstance(part, int)).upper()
 
 
 # One nested field per registered provider, so no setting names a provider here.

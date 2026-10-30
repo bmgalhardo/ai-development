@@ -21,7 +21,7 @@ PROMPT = "Implement the issue."
 
 def settings(**values):
     """Settings from these values alone, ignoring the environment and `.env`."""
-    clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("WORK_")}
+    clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
     with patch.dict(os.environ, clean, clear=True):
         return Settings(_env_file=None, **values)
 
@@ -76,18 +76,18 @@ class ClaudeOnlyTests(unittest.TestCase):
                 "from legion.providers import registry\n"
                 "from legion.settings import Settings, SettingsError\n"
                 "print(registry.names())\n"
-                "os.environ['WORK_PREFERENCE'] = 'claude'\n"
+                "os.environ['LEGION_PREFERENCE'] = 'claude'\n"
                 "settings = Settings.load()\n"
                 "print(settings.preference)\n"
                 "print(registry.provider('claude', settings).command('review', 'p', Path('/p'))[0])\n"
-                "os.environ['WORK_PREFERENCE'] = 'claude,codex'\n"
+                "os.environ['LEGION_PREFERENCE'] = 'claude,codex'\n"
                 "try:\n"
                 "    Settings.load()\n"
                 "except SettingsError as error:\n"
                 "    print('rejected' if 'unknown provider codex' in str(error) else error)\n"
             )
-            environment = {key: value for key, value in os.environ.items() if not key.upper().startswith("WORK_")}
-            environment |= {"PYTHONPATH": temp, "WORK_ROOT": temp}
+            environment = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
+            environment |= {"PYTHONPATH": temp, "LEGION_ROOT": temp}
             output = subprocess.run([sys.executable, "-c", script], cwd=temp, env=environment,
                                     capture_output=True, text=True, check=True).stdout
         self.assertEqual(output.splitlines(), ["('claude',)", "['claude']", "claude", "rejected"])

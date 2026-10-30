@@ -4,7 +4,7 @@ description: "Publish the cycle's build (its outputs, such as an app and the doc
 disable-model-invocation: true
 ---
 
-Publish the latest cycle's build by hand, for the project the build issue's `Repo:` names. The worker loop publishes it on its own when the build is done; use this when that failed, was skipped (an empty `WORK_AFTER_BUILD`), or after a fix. Claude and Codex publish the same way (`.agents/context/publish-server.md`).
+Publish the latest cycle's build by hand, for the project the build issue's `Repo:` names. The worker loop publishes it on its own when the build is done; use this when that failed, was skipped (an empty `LEGION_AFTER_BUILD`), or after a fix. Claude and Codex publish the same way (`.agents/context/publish-server.md`).
 
 1. **Check it's ready.** `tools/legion.sh status ../<project>`: the build issue is `done`. If not, say which issues are left and stop.
 2. **Publish.** `python3 tools/publish/publish.py ../<project>`. It uploads each output the project's publishing doc lists; a project without one has nothing to publish. If it stops on a missing output, prepare it (the project's engineering doc) and run it again.

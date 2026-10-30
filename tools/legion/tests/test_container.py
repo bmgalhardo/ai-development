@@ -44,7 +44,7 @@ class ContainerTests(unittest.TestCase):
         self.logins.mkdir()
         (self.logins / ".claude.login").write_text("setup-token\n")
         (self.logins / ".codex.login").write_text("{}\n")
-        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("WORK_")}
+        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
         patcher = patch.dict(os.environ, clean | {"GIT_AUTHOR_NAME": "Worker Owner",
                                                   "GIT_AUTHOR_EMAIL": "owner@example.com"}, clear=True)
         patcher.start()

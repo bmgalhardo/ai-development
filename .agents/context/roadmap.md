@@ -18,9 +18,8 @@ Treat provider quota exhaustion as an interrupted attempt, not a blocked issue.
 
 - Legion (`tools/legion/`) is the worker loop, the worker containers, the issue tracker and the dashboard, in one uv package.
 - Run it with `tools/legion.sh <run|next|status|dashboard> ../<project>`.
-- Keep `tools/work.sh ../<project>` as shorthand for `run`.
 - Run one implementation at a time per project, with a per-project runner lock.
-- Take providers in `WORK_PREFERENCE` order.
+- Take providers in `LEGION_PREFERENCE` order.
 - Hand work to the next provider when one is cooling down or fails.
 - Review each issue in two parallel read-only sessions, one per axis, by a provider other than the implementer when one is available, then fix in a fresh implementer session.
 - Save review reports in the cycle's `reviews/`; never repeat a saved review.
@@ -39,7 +38,7 @@ Treat provider quota exhaustion as an interrupted attempt, not a blocked issue.
 Code is grouped by responsibility.
 Legion's package is `tools/legion/src/legion/`:
 
-- `settings.py`: the `WORK_` settings.
+- `settings.py`: the `LEGION_` settings.
 - `tracker.py`: issue readiness and status.
 - `providers/`: Claude and Codex commands, log parsing and logins.
 - `runner/`: the loop, the router, sessions, attempts, recovery with the safe git, and cooldowns.
@@ -53,7 +52,7 @@ Around it:
 - `workers.md`: current configuration and artifact formats.
 
 These quick wins remain sequential and use the project's existing checkout and branch.
-Containers are optional (`WORK_CONTAINER=1`).
+Containers are optional (`LEGION_CONTAINER=1`).
 There are no isolated attempt branches or queue service yet.
 Recovery snapshots occur after an attempt ends, not periodically during execution.
 A self-review's subagent model depends on the host's selector and must be reported honestly.
@@ -78,7 +77,7 @@ Progress (2026-10-28):
   One provider and one role per container; each gets only its own login file, from `.logins/` (git-ignored).
   A reviewer gets the project read-only: Codex's own sandbox can't start in a container.
 - Done: a project image (`legion-<project>`, from `.agents/container/Dockerfile`, here as Legion's `container/prototype/` while prototyping); 03-prototype's check, captures and Web export pass in it.
-- Done: `WORK_CONTAINER=1` in the runner; a stopped attempt's container is removed, and leftovers at startup.
+- Done: `LEGION_CONTAINER=1` in the runner; a stopped attempt's container is removed, and leftovers at startup.
 - Done: each CLI's session files in `.scratch/<project>/sessions/`, read by the retro digest.
 - Done: the runner's git refuses a project `.git` that can run commands; publishing refuses symlinks.
 - Done: one Codex session per login file at a time; `.codex-2.login` lets reviewers run in parallel.
