@@ -30,7 +30,7 @@ Implement one issue, without the user. The issue tracker should have been provid
     - A finding never becomes a new open question.
 
     Re-run the checks and commit. Do not review those fixes again.
-11. **Close:** tick each acceptance box you met; for a box you didn't meet, write why under `## Comments`. Set the status to `done` and stop. Report the commits, the checks, your choices and open questions.
+11. **Close:** tick each acceptance box you met. If every box is ticked, set the status to `done`. Otherwise set it to `blocked`, and write one `Needs the user:` line under `## Comments` for each unmet box, saying what it needs. Stop and report the commits, the checks, your choices and open questions.
 
 ## Fix session
 
@@ -41,7 +41,7 @@ You handle the findings and close it. Do not run `/code-review` again.
 2. Read the code, spec sections and mock parts only as a finding needs them.
 3. Handle each finding with step 10's rules. Fix only what the findings call for; don't extend the implementation.
 4. If a fix can't go green, revert that fix, record the finding in `debt.md` with a `Review:` note, and go on. Never revert the implementer's commits.
-5. Re-run the checks, commit, then step 11: close the issue `done`. Report what you fixed and what you deferred.
+5. Re-run the checks, commit, then close the issue with step 11. Report what you fixed and what you deferred.
 
 If interrupted, leave the issue `in review` and record the findings handled so far in `## Progress`.
 

@@ -166,6 +166,16 @@ Codex's `used_percent` would also let the loop skip Codex before starting when i
 
 Done when a quota stop waits until the reset time the session file gives, and a near-limit Codex is skipped before it starts.
 
+## 9. End-of-run report
+
+Proposed at the Legion retro (2026-10-30).
+A run ended on 03-prototype with its build issue unpublished, and only the terminal said so; the dashboard stops with the run.
+When the loop ends, however it ends, print a report as its last lines.
+It lists each issue's status, every `blocked` issue with its `Needs the user:` lines, the run's failures and the after-build result.
+At the failure limit, set the issue `blocked` instead of leaving it `in progress`.
+
+Done when a run that ends with an issue needing the user says so in its last lines.
+
 ## Evidence and evaluation
 
 The last retrospective reported two quota interruptions involving about 14% of the cycle's weighted usage.

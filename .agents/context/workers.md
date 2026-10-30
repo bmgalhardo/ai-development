@@ -48,7 +48,7 @@ With `LEGION_PREFERENCE=claude,codex`, Claude implements and Codex reviews.
 1. **Implement:** the implementer commits, sets the issue `in review` and exits.
 2. **Review:** the runner starts one reviewer session per axis (Standards, Spec), in parallel. Each runs `/code-review` on its axis against `Base:` and edits nothing. Codex reviewers run in a read-only sandbox; Claude reviewers run without edit tools.
 3. **Save:** the runner writes each final report to the cycle's `reviews/NN-standards.md` and `reviews/NN-spec.md`, with the reviewer and the reviewed commit.
-4. **Fix:** a fresh implementer session (the implement skill's Fix session) handles the saved findings, commits and closes the issue.
+4. **Fix:** a fresh implementer session (the implement skill's Fix session) handles the saved findings, commits and closes the issue: `done` when every acceptance box is ticked, else `blocked` with a `Needs the user:` line per unmet box.
 
 Every issue, the build included, gets two separate reviewer sessions and a fixer.
 The loop never asks a session to review itself.

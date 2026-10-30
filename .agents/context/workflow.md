@@ -164,7 +164,7 @@ Claude Code implements and Codex reviews, each in its own sessions
 commits and leaves the issue `in review`. Two read-only reviewers, one
 per `/code-review` axis, run in parallel; the runner saves their reports
 in the cycle's `reviews/`. A fresh fixer handles the findings and closes
-the issue. When the reviewer has no quota, an available implementer
+the issue: `done`, or `blocked` with what needs the user. When the reviewer has no quota, an available implementer
 reviews instead.
 Claude's per-attempt budget is `LEGION_BUDGET_USD` (default 15). Codex uses
 its CLI configuration. Model settings, quota fallback, recovery artifacts
@@ -181,7 +181,8 @@ service. Each worker:
 - writes the issue's `Docs to write` in the same commit as the code;
 - is reviewed once and fixed once (`implement`, step 10): by separate
   reviewer and fixer sessions when a reviewer is configured;
-- sets the issue `done`, or `blocked` with its commits reverted.
+- sets the issue `done`; or `blocked`, with its commits reverted, or kept
+  when an acceptance box needs the user.
 
 The state lives in the issue files (`issue-tracker.md`), so the loop can
 be stopped and started again. An issue left `in progress` is resumed: its
@@ -222,6 +223,10 @@ An empty `LEGION_AFTER_BUILD` skips publishing.
 The command's exit code becomes the loop's: without a publish server, it fails. A failed upload is reported at the end of the run: fix it
 and run `/publish`. The cycle is complete once every output is on the
 server. That published build is the next review.
+
+Then, if the cycle has an `after.md`, work through it with the user: the
+steps with no code to review, such as a merge or a settings change
+(`/to-tickets`).
 
 ## 5. Retro
 

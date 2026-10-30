@@ -1,6 +1,8 @@
 """Verify the publisher reads a project's outputs and builds its menu pages."""
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -159,6 +161,12 @@ class PublishRunTests(unittest.TestCase):
         server = FakeServer()
         self.assertEqual(publish(self.project, ['mocks'], server, self.staging), 0)
         self.assertEqual(server.calls, 0)
+
+    def test_the_documented_command_runs_as_a_script(self):
+        script = Path(publisher.__file__)
+        result = subprocess.run([sys.executable, script, '--help'], cwd=publisher.WORKFLOW,
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == '__main__':
