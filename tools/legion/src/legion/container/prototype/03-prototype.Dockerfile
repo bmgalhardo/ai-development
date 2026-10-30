@@ -11,4 +11,7 @@ RUN apt-get update \
         libx11-6 libxcursor1 libxext6 libxi6 libxinerama1 libxkbcommon0 libxrandr2 libxrender1 \
         xvfb xauth \
     && rm -rf /var/lib/apt/lists/*
+# Chromium's system libraries, for the Web build's browser check (engineering.md: Web pages without a browser).
+RUN uvx --no-cache playwright install-deps chromium \
+    && rm -rf /var/lib/apt/lists/*
 USER worker
