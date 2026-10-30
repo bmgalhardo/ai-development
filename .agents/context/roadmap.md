@@ -176,6 +176,21 @@ At the failure limit, set the issue `blocked` instead of leaving it `in progress
 
 Done when a run that ends with an issue needing the user says so in its last lines.
 
+## 10. Manual tickets
+
+Proposed at the Legion retro (2026-10-30), after the Legion cycle's switch-over ticket had to ask the user while `/implement` says never to.
+A manual ticket is work done with the user: approvals, settings, merges, images, a run checked by hand.
+It is an ordinary issue with a `**Manual:** yes` line, and keeps its blocking edges, acceptance boxes and Progress.
+It stays `open` until its blockers are done, then it is ready like any other.
+The dashboard shows a ready manual ticket with its own mark.
+The runner never starts a session on a manual ticket.
+When a manual ticket is the next ready issue, the runner launches nothing else, prints that the user must act (`/implement <NN>`, by hand), and waits.
+While it waits it reads the issue file, as during a quota wait, and goes on once the ticket is `done` or `blocked`.
+`/implement` on a manual ticket asks the user at the steps the ticket names, and closes it with step 11 as usual.
+`/to-tickets` marks a ticket manual when its work needs the user.
+
+Done when a cycle with a manual ticket in the middle runs to its build, waiting once for the user's hand-run `/implement`.
+
 ## Evidence and evaluation
 
 The last retrospective reported two quota interruptions involving about 14% of the cycle's weighted usage.
