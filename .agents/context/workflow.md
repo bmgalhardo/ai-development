@@ -158,7 +158,7 @@ findings go into the issues' `## Comments`, and the build issue collects
 them into the project's `docs/review.md` for the next review.
 
 `work.sh` runs independent workers: for each ready issue
-(`next_issue.py`), one fresh worker at a time, until no issue is ready.
+(`tools/legion.sh next`), one fresh worker at a time, until no issue is ready.
 Claude Code implements and Codex reviews, each in its own sessions
 (`WORK_AGENT` and `WORK_REVIEW_AGENT` change them). The implementer
 commits and leaves the issue `in review`. Two read-only reviewers, one

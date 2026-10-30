@@ -1,0 +1,60 @@
+"""The next and status commands, as a hand-run session sees them."""
+
+from contextlib import redirect_stdout
+import io
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+from unittest.mock import patch
+
+from legion import cli
+
+
+class CommandTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.root = Path(temp.name)
+        subprocess.run(["git", "init", "-q", str(self.root / "project")], check=True)
+        issues = self.root / ".scratch/project/2026-10-22-test/issues"
+        issues.mkdir(parents=True)
+        for name, status in (("01-first", "done"), ("02-second", "open"), ("03-build", "open")):
+            (issues / f"{name}.md").write_text(f"**Status:** {status}\n**Blocked by:** 01\n")
+        patcher = patch.dict(os.environ, {"WORK_ROOT": str(self.root)})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def run_command(self, *args):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            cli.main(list(args))
+        return output.getvalue()
+
+    def test_next_prints_the_ready_issue_relative_to_the_root(self):
+        self.assertEqual(self.run_command("next", "project"),
+                         ".scratch/project/2026-10-22-test/issues/02-second.md\n")
+
+    def test_next_prints_nothing_when_no_issue_is_ready(self):
+        for name in ("02-second", "03-build"):
+            path = self.root / f".scratch/project/2026-10-22-test/issues/{name}.md"
+            path.write_text("**Status:** done\n")
+        self.assertEqual(self.run_command("next", "project"), "")
+
+    def test_status_lists_every_issue(self):
+        self.assertEqual(self.run_command("status", "project"),
+                         "01  done         01-first.md\n02  open         02-second.md\n03  open         03-build.md\n")
+
+    def test_a_tracker_error_exits_with_its_message(self):
+        with self.assertRaisesRegex(SystemExit, "is not a git repo"):
+            self.run_command("next", "missing")
+
+    def test_invalid_settings_exit_with_the_setting_named(self):
+        with patch.dict(os.environ, {"WORK_WAIT": "0"}):
+            with self.assertRaisesRegex(SystemExit, "WORK_WAIT"):
+                self.run_command("status", "project")
+
+
+if __name__ == "__main__":
+    unittest.main()

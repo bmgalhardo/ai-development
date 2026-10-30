@@ -75,4 +75,4 @@ if needed, with its `Repo:` line.
 
 Read the file at the referenced path. The user will normally pass the path
 or the issue number directly; a bare number means the session's project's
-current cycle. `python3 tools/workers/next_issue.py ../<project>` finds the next ready one.
+current cycle. `tools/legion.sh next ../<project>` finds the next ready one.

@@ -34,8 +34,9 @@ that project. Paths in a project's files are relative to that project's root.
   and Codex). A project lists only its outputs and their prepared folders.
 - `.agents/skills/`: the skills, adapted from Matt Pocock's
   (https://github.com/mattpocock/skills).
-- `tools/work.sh`: the worker loop; `tools/workers/next_issue.py`: the next
-  ready issue. Both take the project as an argument (`../<project>`).
+- `tools/work.sh`: the worker loop; `tools/legion.sh next` and `status`: the
+  next ready issue and every issue's status (Legion, `tools/legion/`). They
+  take the project as an argument (`../<project>`).
 - `tools/README.md`: tool folders, entry points and focused test commands.
 - `.agents/context/roadmap.md`: worker improvements, completed steps and next increments.
 

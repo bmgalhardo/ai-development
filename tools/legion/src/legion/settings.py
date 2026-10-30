@@ -1,0 +1,123 @@
+"""Legion's settings: the only reader of the environment and `.env`.
+
+Every setting is a `WORK_` variable. The environment wins over `.env`, unknown
+`WORK_` keys in `.env` are ignored, and invalid values fail when loading.
+"""
+
+from pathlib import Path
+import shutil
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field, PositiveFloat, PositiveInt, ValidationError, create_model, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from pydantic_settings import SettingsError as SourceError
+
+from .providers import registered
+
+ROLES = ("implement", "review", "fix")
+DEFAULT_EFFORT = "medium"
+
+
+class SettingsError(Exception):
+    """Settings that can't be used, naming each variable and why."""
+
+
+class Role(BaseModel):
+    """A provider's model and effort for one role; an unset model keeps the CLI's default."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    model: str | None = None
+    effort: str | None = None
+
+
+class ProviderRoles(BaseModel):
+    """A provider's settings per role, from `WORK_<PROVIDER>__<ROLE>__MODEL` and `__EFFORT`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    implement: Role = Field(default_factory=Role)
+    review: Role = Field(default_factory=Role)
+    fix: Role = Field(default_factory=Role)
+
+    def role(self, name):
+        """The settings for a role, effort defaulting to medium; fix falls back to implement per field."""
+        role = getattr(self, name)
+        fallback = self.implement if name == "fix" else Role()
+        return Role(model=role.model or fallback.model,
+                    effort=role.effort or fallback.effort or DEFAULT_EFFORT)
+
+
+def installed():
+    """Every registered provider whose CLI is on PATH, Claude first."""
+    return [name for name in registered() if shutil.which(name)]
+
+
+class BaseLegionSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="WORK_", env_file=".env", env_nested_delimiter="__",
+                                      extra="ignore")
+
+    root: Path = Field(default_factory=Path.cwd, description="the workflow repo, holding .scratch and .logins")
+    preference: Annotated[list[str], NoDecode] = Field(default_factory=installed)
+    wait: PositiveInt = 1800
+    timeout: PositiveInt = 14400
+    budget_usd: PositiveFloat = 15
+    container: bool = False
+    dashboard: bool = True
+    dashboard_port: int = Field(8765, ge=1, le=65535)
+    dashboard_host: str = "127.0.0.1"
+    logins: Path | None = None
+    image: str | None = None
+    container_memory: str = "1536m"
+    container_pids: PositiveInt = 512
+    after_build: str = ""
+
+    @field_validator("preference", mode="before")
+    @classmethod
+    def split(cls, value):
+        if isinstance(value, str):
+            return [name.strip() for name in value.split(",") if name.strip()]
+        return value
+
+    @field_validator("preference")
+    @classmethod
+    def known(cls, names):
+        for name in names:
+            if name not in registered():
+                raise ValueError(f"unknown provider {name}; known: {', '.join(registered())}")
+            if names.count(name) > 1:
+                raise ValueError(f"{name} more than once")
+        return names
+
+    @property
+    def scratch(self):
+        return self.root / ".scratch"
+
+    @property
+    def logins_folder(self):
+        return self.logins or self.root / ".logins"
+
+    def roles(self, provider):
+        """A provider's settings per role."""
+        return getattr(self, provider)
+
+    @classmethod
+    def load(cls, env_file=".env"):
+        """The settings, or a SettingsError naming each invalid variable."""
+        try:
+            return cls(_env_file=env_file)
+        except ValidationError as error:
+            lines = [f"{variable(problem['loc'])}: {problem['msg']}" for problem in error.errors()]
+            raise SettingsError("Invalid settings:\n" + "\n".join(lines)) from None
+        except SourceError as error:
+            raise SettingsError(f"Invalid settings: {error}") from None
+
+
+def variable(location):
+    """The environment variable for a validation error's location."""
+    return "WORK_" + "__".join(str(part) for part in location if not isinstance(part, int)).upper()
+
+
+# One nested field per registered provider, so no setting names a provider here.
+Settings = create_model("Settings", __base__=BaseLegionSettings,
+                        **{name: (ProviderRoles, Field(default_factory=ProviderRoles)) for name in registered()})
