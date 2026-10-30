@@ -5,7 +5,7 @@ attributes; it reads its own log events.
 """
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import json
 import re
 from typing import ClassVar
@@ -42,16 +42,6 @@ class QuotaWindow(BaseModel):
         if value != value:  # NaN
             raise ValueError("not a percentage")
         return max(0, min(100, value))
-
-    @staticmethod
-    def span(seconds):
-        """A window's length as a label: 5h, 7d."""
-        return f"{seconds // 86400}d" if seconds >= 86400 else f"{seconds // 3600}h"
-
-    @staticmethod
-    def iso(timestamp):
-        """Unix seconds as an ISO time in UTC."""
-        return datetime.fromtimestamp(timestamp, timezone.utc).isoformat()
 
 
 class Reset:
@@ -198,11 +188,13 @@ class Provider(ABC):
 
     @staticmethod
     def read_login(path):
-        """A login file's JSON; QuotaUnavailable when it is missing."""
+        """A login file's JSON; QuotaUnavailable when it is missing or unreadable."""
         try:
             return json.loads(path.read_text())
         except FileNotFoundError:
             raise QuotaUnavailable("no login") from None
+        except OSError:
+            raise QuotaUnavailable("login unreadable") from None
 
     def container_login(self):
         """The login and session folder a container needs. Filled by the containers ticket."""

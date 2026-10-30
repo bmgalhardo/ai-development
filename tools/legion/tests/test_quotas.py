@@ -97,6 +97,12 @@ class QuotaTests(unittest.TestCase):
         with self.assertRaisesRegex(QuotaUnavailable, "no login"):
             self.codex.quota(Fetch(codex=CODEX_USAGE))
 
+    def test_an_unreadable_login_is_unavailable(self):
+        (self.folder / ".codex.login").chmod(0)
+        self.addCleanup((self.folder / ".codex.login").chmod, 0o600)
+        with self.assertRaisesRegex(QuotaUnavailable, "login unreadable"):
+            self.codex.quota(Fetch(codex=CODEX_USAGE))
+
     def test_a_refusal_is_unavailable_with_its_status_only(self):
         refusal = HTTPError("https://chatgpt.com/backend-api/wham/usage", 401, "token expired", {}, None)
         with self.assertRaisesRegex(QuotaUnavailable, r"^usage endpoint refused \(401\)$"):

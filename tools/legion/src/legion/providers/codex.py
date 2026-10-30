@@ -1,5 +1,6 @@
 """Codex: `codex exec --json`, with a JSONL event stream in its log."""
 
+from datetime import datetime, timezone
 import json
 
 from .base import Provider, QuotaWindow, Result
@@ -38,6 +39,11 @@ class Codex(Provider):
         usage = fetch(self.usage_url, {"Authorization": f"Bearer {tokens['access_token']}",
                                        "ChatGPT-Account-Id": tokens["account_id"], "User-Agent": "codex-cli"})
         limits = usage.get("rate_limit") or {}
-        return [QuotaWindow(label=QuotaWindow.span(window["limit_window_seconds"]),
-                            used_percent=window["used_percent"], resets_at=QuotaWindow.iso(window["reset_at"]))
+        return [QuotaWindow(label=self.span(window["limit_window_seconds"]), used_percent=window["used_percent"],
+                            resets_at=datetime.fromtimestamp(window["reset_at"], timezone.utc).isoformat())
                 for key in ("primary_window", "secondary_window") if (window := limits.get(key))]
+
+    @staticmethod
+    def span(seconds):
+        """A window's length as a label: 5h, 7d."""
+        return f"{seconds // 86400}d" if seconds >= 86400 else f"{seconds // 3600}h"

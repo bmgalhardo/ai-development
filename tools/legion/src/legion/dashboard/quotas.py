@@ -28,10 +28,11 @@ class Account(BaseModel):
 
     def public(self):
         """What the board shows: the windows, the reading's time and whether it is stale."""
-        age = (datetime.now(timezone.utc) - self.captured_at).total_seconds() if self.captured_at else None
-        return {"provider": self.provider, "captured_at": self.captured_at.isoformat() if self.captured_at else None,
-                "stale": age is None or age > STALE, "windows": [window.model_dump() for window in self.windows],
-                "error": self.error}
+        return self.model_dump(mode="json") | {"stale": self.stale()}
+
+    def stale(self):
+        """No reading yet, or one older than STALE seconds."""
+        return self.captured_at is None or (datetime.now(timezone.utc) - self.captured_at).total_seconds() > STALE
 
 
 class Quotas:
@@ -53,7 +54,7 @@ class Quotas:
                 for provider in self.providers:
                     self.refresh(provider)
                 self.checked_at = time.monotonic()
-            return {"accounts": [account.public() for account in self.accounts.values()], "error": None}
+            return {"accounts": [account.public() for account in self.accounts.values()]}
 
     def refresh(self, provider):
         account = self.accounts[provider.name]

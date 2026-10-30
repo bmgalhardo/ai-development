@@ -82,7 +82,8 @@ Opening issue details focuses the title. Tab moves to Close with a visible keybo
 
 ### Account quotas
 
-The quota panel reads each provider's usage endpoint at most once a minute: Claude with the host's Claude Code login, Codex with the worker's first login file.
+The quota panel reads each provider's usage endpoint at most once a minute.
+Claude's uses the host's Claude Code login; Codex's uses the worker's first login file.
 It reads the tokens only: it never renews them and never serves them.
 When an endpoint refuses or a login is missing, the panel says unavailable.
 Each panel shows when its reading was taken, marked stale after three minutes.

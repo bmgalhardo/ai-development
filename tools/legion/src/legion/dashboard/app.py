@@ -16,6 +16,7 @@ STATIC = Path(__file__).parent / "static"
 def create_app(root=None, quotas=None):
     """The board's app over the workflow root, and the quotas of the preferred providers (default: from the settings)."""
     app = FastAPI(title="Dev workflow", docs_url=None, redoc_url=None)
+    # Settings are read only for what wasn't given.
     settings = Settings.load() if root is None or quotas is None else None
     store = Store(root or settings.root)
     quota_reader = quotas or Quotas.for_settings(settings)
