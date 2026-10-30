@@ -1,0 +1,1 @@
+Read .agents/skills/implement/SKILL.md and follow its Fix session for {issue}, with the saved reviews {reviews}. Work on this issue only, without asking the user questions. Record completed steps and remaining work in the issue's Progress section.

@@ -1,0 +1,1 @@
+Read .agents/skills/implement/SKILL.md and follow it to implement {issue}. Work on this issue only, without asking the user questions. Preserve existing commits and unfinished changes when resuming. Record completed steps and remaining work in the issue's Progress section. Separate review sessions follow: stop at the skill's Review handoff after step 9.

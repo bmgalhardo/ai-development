@@ -160,7 +160,7 @@ them into the project's `docs/review.md` for the next review.
 `work.sh` runs independent workers: for each ready issue
 (`tools/legion.sh next`), one fresh worker at a time, until no issue is ready.
 Claude Code implements and Codex reviews, each in its own sessions
-(`WORK_AGENT` and `WORK_REVIEW_AGENT` change them). The implementer
+(`WORK_PREFERENCE` changes them). The implementer
 commits and leaves the issue `in review`. Two read-only reviewers, one
 per `/code-review` axis, run in parallel; the runner saves their reports
 in the cycle's `reviews/`. A fresh fixer handles the findings and closes
@@ -215,10 +215,10 @@ project's contract (`project-setup.md`), and its engineering doc says how:
 6. Commit, and close the build issue.
 
 The build doesn't upload. When the worker loop ends with the build issue
-`done`, it publishes the build's outputs
-(`python3 tools/publish/publish.py ../<project>`) and prints their links.
-It skips this without a publish server, for a project without a
-publishing doc, or with `WORK_PUBLISH=0`. A failed upload is reported at the end of the run: fix it
+`done`, it runs `WORK_AFTER_BUILD`, set to publish the build's outputs
+(`python3 tools/publish/publish.py {project}`), which prints their links.
+A project without a publishing doc has nothing to publish; an empty
+`WORK_AFTER_BUILD` skips it. A failed upload is reported at the end of the run: fix it
 and run `/publish`. The cycle is complete once every output is on the
 server. That published build is the next review.
 

@@ -1,0 +1,1 @@
+Read .agents/skills/code-review/SKILL.md and review {issue} on the {axis} axis only, against the issue's Base:, without asking the user questions. Do not edit any file. End with the {axis} report as your final message.

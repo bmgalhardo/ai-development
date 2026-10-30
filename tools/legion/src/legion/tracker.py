@@ -82,10 +82,15 @@ class Tracker:
     @classmethod
     def for_project(cls, root, name):
         """The tracker of the project repo `name`, relative to the workflow root (`../<project>`)."""
+        return cls(root / ".scratch" / cls.project(root, name).name)
+
+    @staticmethod
+    def project(root, name):
+        """The project repo `name`, relative to the workflow root, checked to be a git repo."""
         project = (root / name).resolve()
         if not (project / ".git").exists():
             raise TrackerError(f"{project} is not a git repo")
-        return cls(root / ".scratch" / project.name)
+        return project
 
     def cycle_paths(self):
         if not self.folder.is_dir():
