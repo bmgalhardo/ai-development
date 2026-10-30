@@ -7,6 +7,7 @@ class Claude(Provider):
     name = "claude"
     executable = "claude"
     rank = 1
+    moshi_agent = "claude-code"  # its name in Moshi's quota snapshots
     efforts = ("low", "medium", "high", "xhigh", "max")
     effort_flag = ("--effort", "{}")
     base_flags = ("-p", "--permission-mode", "auto", "--output-format", "json")

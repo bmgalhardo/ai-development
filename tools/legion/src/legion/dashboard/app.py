@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -17,21 +17,26 @@ def create_app(root=None, quotas=None):
     """The board's app over the workflow root (default: the settings' root)."""
     app = FastAPI(title="Dev workflow", docs_url=None, redoc_url=None)
     store = Store(root or Settings.load().root)
+
+    @app.middleware("http")
+    async def no_store(request, call_next):
+        """Browsers never cache the API: every refresh reads the files again."""
+        response = await call_next(request)
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
     quota_reader = quotas if quotas is not None else Quotas()
 
     @app.get("/api/quotas")
-    def quota_status(response: Response):
-        response.headers["Cache-Control"] = "no-store"
+    def quota_status():
         return quota_reader.read()
 
     @app.get("/api/catalog")
-    def catalog(response: Response):
-        response.headers["Cache-Control"] = "no-store"
+    def catalog():
         return store.catalog()
 
     @app.get("/api/board")
-    def board(project: str, cycle: str, response: Response):
-        response.headers["Cache-Control"] = "no-store"
+    def board(project: str, cycle: str):
         try:
             return store.board(project, cycle)
         except LookupError as error:

@@ -11,8 +11,8 @@ from ..providers import registry
 
 
 def provider_of(agent):
-    """The registered provider a Moshi agent name belongs to ("claude-code" is claude), or None."""
-    return next((name for name in registry.names() if isinstance(agent, str) and agent.startswith(name)), None)
+    """The registered provider whose Moshi agent name this is, or None."""
+    return next((name for name in registry.names() if agent == registry.classes[name].moshi_agent), None)
 
 
 def normalize(snapshots):

@@ -7,7 +7,7 @@ import sys
 from .settings import Settings, SettingsError
 from .tracker import Tracker, TrackerError
 
-PROJECT = "the project's repo, relative to the workflow root (../<project>)"
+PROJECT_HELP = "the project's repo, relative to the workflow root (../<project>)"
 
 
 class Commands:
@@ -41,11 +41,11 @@ class Commands:
                     port=args.port or self.settings.dashboard_port)
 
 
-def parser():
+def build_parser():
     parser = argparse.ArgumentParser(prog="legion", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("next", "status"):
-        commands.add_parser(name, help=getattr(Commands, name).__doc__).add_argument("project", help=PROJECT)
+        commands.add_parser(name, help=getattr(Commands, name).__doc__).add_argument("project", help=PROJECT_HELP)
     dashboard = commands.add_parser("dashboard", help=Commands.dashboard.__doc__)
     dashboard.add_argument("--host", help="bind address (default: WORK_DASHBOARD_HOST, else this host only)")
     dashboard.add_argument("--port", type=int, help="port (default: WORK_DASHBOARD_PORT, else 8765)")
@@ -53,7 +53,7 @@ def parser():
 
 
 def main(argv=None):
-    args = parser().parse_args(argv)
+    args = build_parser().parse_args(argv)
     try:
         getattr(Commands(Settings.load()), args.command)(args)
     except (SettingsError, TrackerError) as error:

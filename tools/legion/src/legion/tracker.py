@@ -64,6 +64,14 @@ class Cycle(BaseModel):
             return all(other.status in ("done", "blocked") for other in self.issues.values() if other is not issue)
         return all(blocker in self.issues and self.issues[blocker].status == "done" for blocker in issue.blockers)
 
+    def blockers(self, issue):
+        """What the issue still waits for: its unfinished blockers; for the build, every unfinished issue."""
+        if issue.number == self.build.number:
+            return [other.number for other in self.issues.values()
+                    if other is not issue and other.status not in ("done", "blocked")]
+        return [number for number in issue.blockers
+                if number not in self.issues or self.issues[number].status != "done"]
+
 
 class Tracker:
     """A project's cycles, in the scratch folder under the project's folder name."""

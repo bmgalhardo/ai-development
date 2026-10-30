@@ -11,6 +11,7 @@ class Codex(Provider):
     name = "codex"
     executable = "codex"
     rank = 2
+    moshi_agent = "codex"  # its name in Moshi's quota snapshots
     efforts = ("minimal", "low", "medium", "high", "xhigh")
     effort_flag = ("-c", 'model_reasoning_effort="{}"')
     base_flags = ("exec", "-c", 'approval_policy="never"', "--color", "never", "--json")

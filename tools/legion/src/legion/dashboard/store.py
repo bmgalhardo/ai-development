@@ -56,33 +56,29 @@ class Store:
         heading = re.search(r"^#\s+(.+)$", content, re.M)
         stage = ("ready" if cycle.is_ready(issue) else "waiting") if issue.status == "open" else \
             STAGES.get(issue.status, "blocked")
-        if issue.number == cycle.build.number:
-            blockers = [other.number for other in cycle.issues.values()
-                        if other is not issue and other.status not in ("done", "blocked")]
-        else:
-            blockers = [number for number in issue.blockers
-                        if number not in cycle.issues or cycle.issues[number].status != "done"]
         progress = re.search(r"^## Progress\s*\n(.*?)(?=^## |\Z)", content, re.M | re.S)
         return {"number": issue.number, "title": heading[1] if heading else issue.path.stem,
                 "filename": issue.path.name, "status": issue.status, "stage": stage,
-                "blockers": blockers, "progress": progress[1].strip() if progress else "",
+                "blockers": cycle.blockers(issue), "progress": progress[1].strip() if progress else "",
                 "content": content}
 
     @staticmethod
-    def reviews(cycle, number):
-        """The issue's saved review reports, with the reviewer each names."""
-        reviewer = re.compile(rf"^Reviewer:\s*({'|'.join(registry.names())})\b", re.M | re.I)
+    def reviews(folder, number):
+        """The issue's saved review reports in the cycle folder, with the reviewer each names."""
+        names = "|".join(map(re.escape, registry.names()))
+        reviewer = re.compile(rf"^Reviewer:\s*({names})\b", re.M | re.I)
         reports = []
         for axis in AXES:
+            report = {"axis": axis, "status": "available", "content": "", "provider": None}
             try:
-                content = (cycle / "reviews" / f"{number}-{axis}.md").read_text(encoding="utf-8")
-                found = reviewer.search(content)
-                reports.append({"axis": axis, "status": "available", "content": content,
-                                "provider": found[1].lower() if found else None})
+                report["content"] = (folder / "reviews" / f"{number}-{axis}.md").read_text(encoding="utf-8")
             except FileNotFoundError:
-                reports.append({"axis": axis, "status": "missing", "content": "", "provider": None})
+                report["status"] = "missing"
             except OSError:
-                reports.append({"axis": axis, "status": "unreadable", "content": "", "provider": None})
+                report["status"] = "unreadable"
+            if found := reviewer.search(report["content"]):
+                report["provider"] = found[1].lower()
+            reports.append(report)
         return reports
 
 

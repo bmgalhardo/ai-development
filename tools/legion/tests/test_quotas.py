@@ -65,6 +65,7 @@ class QuotaTests(unittest.TestCase):
 
     def test_unknown_providers_and_non_numeric_percentages_are_not_quotas(self):
         self.assertEqual(normalize([{"agent": "other"}]), [])
+        self.assertEqual(normalize([{"agent": name} for name in ("claude", "claude-desktop", "codex-cli")]), [])
         accounts = normalize([{"agent": "codex", "windows": [{"usedPercentage": None},
                               {"usedPercentage": float("nan")}, {"usedPercentage": True}]}])
         self.assertEqual(accounts[0]["windows"], [])
