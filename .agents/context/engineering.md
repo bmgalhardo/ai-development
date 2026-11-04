@@ -15,8 +15,12 @@ if it exists.
 
 ## Shell
 
-- Wait for a long run with `run_in_background`, not `sleep`: a chained
-  `sleep` is blocked. Give the run a `timeout` above its expected time.
+- Run a long command (a check, a test suite) in its own Bash call, with a
+  `timeout` above its run time, up to 600000. With Bash's default 2-minute
+  timeout, it is moved to the background and its output goes to a file.
+- Don't chain an edit with a long command.
+- Don't wait with `sleep`: a chained `sleep` is blocked. Use
+  `run_in_background` only for a run longer than 10 minutes.
 - `pkill -f <pattern>` kills the shell itself if the pattern appears in
   the command line.
 - Stop what you started before you finish: a display server, a local web
@@ -30,8 +34,6 @@ turn re-reads it.
 
 - Read what you need: `grep -n` for the function, then `sed -n` its
   lines, not a whole file or a long range.
-- Edit with the Edit tool. Don't rewrite a file through Bash (`cat >`, a
-  Python `replace`) to change a few lines.
 - Keep a long command's output short: write it to a file, then read its
   tail or its failures (`| tail -n 30`, `grep -n FAIL`).
 
