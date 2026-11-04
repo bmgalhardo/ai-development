@@ -40,9 +40,10 @@ Break the work into **tracer bullet** tickets.
 - A completed slice is demoable or verifiable on its own
 - Each slice is small enough to finish well inside one session: one or two modules and their tests. Split a slice that would change several systems at once or carries many acceptance boxes
 - Any prefactoring should be done first
+- When a cycle removes features, put the removal as early as its replacements allow. A ticket that changes a rule the removed features share comes after the removal, so it doesn't migrate tests that are about to go
 - A spec's performance target is measured in the first slice that builds the hot path, against the target, as an acceptance criterion. It extrapolates from a sample rather than timing a full worst-case run, and records the result in Comments
 - A risk the user raised in review or grilling gets a **Stop if** condition on the first ticket that can show it, when its failure would carry into later tickets. Name the condition so the implementer can check it (a threshold, an observable outcome). No other ticket gets one
-- A shared artefact that several tickets would each have to keep passing (a reference, a baseline, a fixture) is a dependency, not a per-ticket chore. Either the first ticket that can set it does, and later tickets don't change it, or no ticket touches it this cycle and its check only reports. Choose by whether the artefact depends on what the cycle builds, and show the choice in the breakdown the user approves
+- A shared artefact that several tickets would each have to keep passing (a reference, a baseline, a fixture) is a dependency, not a per-ticket chore. Either the first ticket that can set it does, and later tickets don't change it, or no ticket touches it this cycle and its check only reports. Choose by whether the artefact depends on what the cycle builds, and show the choice in the breakdown the user approves. Correct the spec to match the choice. Every other ticket that touches the artefact's check says not to change the artefact, and names the ticket that sets it
 - A slice includes the docs for what it builds: it copies its part of the spec's agreed text into the docs in the same commit, so the docs never run ahead of the build
 
 </vertical-slice-rules>

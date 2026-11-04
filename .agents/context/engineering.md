@@ -45,6 +45,8 @@ Merge the branch and `git worktree remove` it when done.
 
 ## Screenshots and display
 
+- **Images:** the system Python has no PIL. Convert or read an image with
+  `uv run --with pillow python …`.
 - **No display** (no `DISPLAY`, `/tmp/.X11-unix` empty): run a private
   Xvfb without root. `apt-get download xvfb libunwind8 libxfont2
   libfontenc1 xkb-data x11-xkb-utils xserver-common libxkbfile1`, `dpkg -x`

@@ -75,7 +75,7 @@ Otherwise inherit the implementation session's model.
 
 - The diff command and commit list.
 - The paths of the issue, the spec and the mock the issue names.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. The mock is the agreed design: where the build matches the mock, it's right, even if a general doc says otherwise; don't report it. Under 400 words."
+- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong; (d) changes to a shared artefact (a reference, a baseline, a fixture) that another ticket sets. Quote the spec line for each finding. The mock is the agreed design: where the build matches the mock, it's right, even if a general doc says otherwise; don't report it. Under 400 words."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
