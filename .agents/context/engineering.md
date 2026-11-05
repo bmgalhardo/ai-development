@@ -21,6 +21,8 @@ if it exists.
 - Don't chain an edit with a long command.
 - Don't wait with `sleep`: a chained `sleep` is blocked. Use
   `run_in_background` only for a run longer than 10 minutes.
+- Never `git stash` or check out another commit in the project's tree.
+  To compare against an older commit, use a worktree (below).
 - `pkill -f <pattern>` kills the shell itself if the pattern appears in
   the command line.
 - Stop what you started before you finish: a display server, a local web
