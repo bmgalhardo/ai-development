@@ -37,7 +37,7 @@ Implement one issue, without the user. The issue tracker should have been provid
 When given an issue `in review` with its saved reviews, other sessions implemented and reviewed it.
 You handle the findings and close it. Do not run `/code-review` again.
 
-1. Read the project's `AGENTS.md` and context, the issue, its `## Progress` and `## Comments`, and both reviews. Keep the status `in review` and keep `Base:`.
+1. Read the project's `AGENTS.md` and context, this repo's `.agents/context/engineering.md`, the issue, its `## Progress` and `## Comments`, and both reviews. Keep the status `in review` and keep `Base:`.
 2. Read the code, spec sections and mock parts only as a finding needs them.
 3. Handle each finding with step 10's rules. Fix only what the findings call for; don't extend the implementation.
 4. If a fix can't go green, revert that fix, record the finding in `debt.md` with a `Review:` note, and go on. Never revert the implementer's commits.

@@ -18,13 +18,15 @@ if it exists.
 - Run a long command (a check, a test suite) in its own Bash call, with a
   `timeout` above its run time, up to 600000. With Bash's default 2-minute
   timeout, it is moved to the background and its output goes to a file.
+  Piping it to `tail` doesn't change this: still set the `timeout`.
+- If a command was moved to the background, end your turn. A notification
+  brings its result. Don't wait with `sleep`, `Monitor` or a `pgrep` loop.
 - Don't chain an edit with a long command.
-- Don't wait with `sleep`: a chained `sleep` is blocked. Use
-  `run_in_background` only for a run longer than 10 minutes.
+- Use `run_in_background` only for a run longer than 10 minutes.
 - Never `git stash` or check out another commit in the project's tree.
   To compare against an older commit, use a worktree (below).
-- `pkill -f <pattern>` kills the shell itself if the pattern appears in
-  the command line.
+- `pkill -f` and `pgrep -f` match your own shell if the pattern appears
+  in the command line: `pkill` kills it, and a `pgrep` loop never ends.
 - Stop what you started before you finish: a display server, a local web
   server, a watcher. A headless session doesn't exit while one runs, and
   the worker loop waits for it.
