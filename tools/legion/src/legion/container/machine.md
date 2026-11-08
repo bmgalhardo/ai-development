@@ -6,5 +6,5 @@ A worker container (Legion's, `tools/legion/` in the workflow repo). The default
 - No root and no `sudo`: you can't install system packages. Use uv or npm for anything else.
 - The home, `/home/worker`, is temporary: it is gone when the session ends.
 - Memory is limited, by default to 1.5 GB. Keep builds and test runs lean.
-- No display. A check that needs one must start its own Xvfb, if the project's image provides it.
+- No display. Run a command that needs one under `xvfb-run -a` when the project's image provides it.
 - The workflow repo is read-only. Only the project and its `.scratch/<project>/` can be written, and only by an implementer.
