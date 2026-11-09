@@ -11,8 +11,7 @@ docker build --build-context host-ca="$cas" --build-arg UID="$(id -u)" --build-a
 [ $# -ge 1 ] || exit 0
 project="$(readlink -f "$1")"
 name="$(basename "$project")"
-# The project's own recipe, else one kept here while prototyping.
+# The project's own recipe, in its repo.
 recipe="$project/.agents/container/Dockerfile"
-[ -f "$recipe" ] || recipe="$here/prototype/$name.Dockerfile"
 [ -f "$recipe" ] || { echo "No image recipe for $name: it runs on legion-worker" >&2; exit 0; }
 exec docker build --build-arg BASE=legion-worker -t "legion-$name" -f "$recipe" "$(dirname "$recipe")"

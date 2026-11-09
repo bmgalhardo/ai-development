@@ -76,7 +76,7 @@ Progress (2026-10-28):
 - Done: the base image (`legion-worker`) and Legion's shell wrapper (`tools/legion/README.md`: Containers).
   One provider and one role per container; each gets only its own login file, from `.logins/` (git-ignored).
   A reviewer gets the project read-only: Codex's own sandbox can't start in a container.
-- Done: a project image (`legion-<project>`, from `.agents/container/Dockerfile`, here as Legion's `container/prototype/` while prototyping); 03-prototype's check, captures and Web export pass in it.
+- Done: a project image (`legion-<project>`, from the project's `.agents/container/Dockerfile`); 03-prototype's check, captures and Web export pass in it.
 - Done: `LEGION_CONTAINER=1` in the runner; a stopped attempt's container is removed, and leftovers at startup.
 - Done: each CLI's session files in `.scratch/<project>/sessions/`, read by the retro digest.
 - Done: the runner's git refuses a project `.git` that can run commands; publishing refuses symlinks.

@@ -72,7 +72,6 @@ tools/legion.sh build ../<project>
 ```
 
 It builds the base, then `legion-<project>`, passing `BASE=legion-worker`.
-While prototyping, a project's recipe can sit in `src/legion/container/prototype/<project>.Dockerfile` instead.
 Rebuild the project's image after rebuilding the base.
 
 ### Run
