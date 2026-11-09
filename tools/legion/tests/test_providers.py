@@ -43,7 +43,7 @@ class CommandTests(unittest.TestCase):
                          base + ["--model", "opus", "--effort", "medium", PROMPT])
 
     def test_codex_commands_per_role(self):
-        codex = provider("codex", codex={"review": {"model": "gpt-review", "effort": "high"}})
+        codex = provider("codex", container=False, codex={"review": {"model": "gpt-review", "effort": "high"}})
         base = ["codex", "exec", "-c", 'approval_policy="never"', "--color", "never", "--json"]
         effort = ["-c", 'model_reasoning_effort="medium"']
         self.assertEqual(codex.command("implement", PROMPT, Path("/p")),

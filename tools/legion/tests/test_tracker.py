@@ -72,6 +72,24 @@ class TrackerTests(unittest.TestCase):
     def test_the_build_is_ready_once_the_others_are_done_or_blocked(self):
         self.assertEqual(self.next_number("done", "blocked", ("open", "01, 02")), "03")
 
+    def test_issues_waiting_for_each_other_are_stuck(self):
+        self.cycle("2026-10-22-test", "done", ("open", "03"), ("open", "01, 02"))
+        cycle = self.tracker.current_cycle()
+        self.assertEqual(cycle.stuck(), {"02": ["03"], "03": ["02"]})
+        self.assertIn("02 waits for 03; 03 waits for 02", cycle.stuck_message())
+
+    def test_an_issue_waiting_for_a_missing_number_is_stuck(self):
+        self.cycle("2026-10-22-test", ("open", "07"), "open")
+        self.assertEqual(self.tracker.current_cycle().stuck(), {"01": ["07"], "02": ["01"]})
+
+    def test_a_cycle_waiting_for_a_blocked_issue_is_not_stuck(self):
+        self.cycle("2026-10-22-test", "blocked", ("open", "01"), "open")
+        self.assertEqual(self.tracker.current_cycle().stuck(), {})
+
+    def test_a_cycle_with_a_ready_issue_is_not_stuck(self):
+        self.cycle("2026-10-22-test", "done", ("open", "01"), "open")
+        self.assertEqual(self.tracker.current_cycle().stuck(), {})
+
     def test_an_issue_without_a_status_is_an_error(self):
         folder = self.cycle("2026-10-22-test", "open")
         (folder / "issues/02-broken.md").write_text("no status\n")

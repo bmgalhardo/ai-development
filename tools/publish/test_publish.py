@@ -86,8 +86,8 @@ class PublishRunTests(unittest.TestCase):
             (self.project / 'out' / name).mkdir(parents=True)
             (self.project / 'out' / name / 'index.html').write_text('<p>')
 
-    def mock(self):
-        folder = self.root / '.scratch/project/2026-10-27-next/mocks/2026-10-27-look'
+    def mock(self, cycle='2026-10-27-next', name='2026-10-27-look'):
+        folder = self.root / '.scratch/project' / cycle / 'mocks' / name
         folder.mkdir(parents=True)
         (folder / 'index.html').write_text('<p>')
 
@@ -154,6 +154,21 @@ class PublishRunTests(unittest.TestCase):
             self.assertEqual(publisher.server_url(), 'https://from.env')
         with patch.dict('os.environ', {'PUBLISH_URL': 'https://from.environment'}):
             self.assertEqual(publisher.server_url(), 'https://from.environment')
+
+    def test_every_cycle_in_review_publishes_its_mocks(self):
+        self.mock('2026-10-20-built', '2026-10-20-old')
+        (self.root / '.scratch/project/2026-10-20-built/issues').mkdir()
+        (self.root / '.scratch/project/2026-10-20-built/issues/01-a.md').write_text('# A')
+        self.mock('2026-10-27-balance', '2026-10-28-cards')
+        self.mock('2026-10-29-research', '2026-10-29-chart')
+        server = FakeServer()
+        self.assertEqual(publish(self.project, ['mocks'], server, self.staging), 0)
+        out = self.staging / 'mocks'
+        self.assertTrue((out / '2026-10-27-balance/2026-10-28-cards/index.html').is_file())
+        self.assertTrue((out / '2026-10-29-research/2026-10-29-chart/index.html').is_file())
+        self.assertFalse((out / '2026-10-20-built').exists())
+        menu = (out / 'index.html').read_text()
+        self.assertLess(menu.index('2026-10-29-research'), menu.index('2026-10-27-balance'))
 
     def test_a_project_without_mocks_publishes_none(self):
         self.prepare('docs')

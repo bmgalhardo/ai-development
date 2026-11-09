@@ -53,3 +53,4 @@ Record which commit a completed review examined.
 On restart, reuse that review only if the implementation has not changed since that commit, apart from its recorded review fixes.
 Preserve completed findings if another review is needed for changed implementation.
 Keep this section short and current; keep historical explanations in Comments.
+Edit `## Progress` in place with the Edit tool. Never append a second `## Progress`.

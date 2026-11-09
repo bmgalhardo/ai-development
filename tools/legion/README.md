@@ -8,12 +8,14 @@ Run its commands from the workflow root through the wrapper, which runs them the
 
 ```bash
 tools/legion.sh next ../<project>     # the next issue a worker should take, or nothing
-tools/legion.sh status ../<project>   # every issue's status in the current cycle
+tools/legion.sh status ../<project>   # every issue's status in the current cycle; the build is marked
 ```
 
 The current cycle is the oldest with an issue ready or under way, else the newest.
 An issue left `in progress` comes first, then one `in review`, then the first `open` issue whose `Blocked by` issues are all `done`.
 The last issue (the build) is ready once every other issue is `done` or `blocked`.
+A cycle is stuck when issues are open but none is ready, under way or `blocked`: they wait only for each other or for a missing number.
+`next` and `run` then print what each open issue waits for and exit 1.
 Paths print relative to the workflow root.
 
 ## Settings
@@ -49,9 +51,10 @@ A provider may add its own.
 
 ## Containers
 
-With `LEGION_CONTAINER=1`, the runner runs each session in a worker container: Claude Code and Codex CLIs, git, Python, uv and Node, as a non-root user.
+By default (`LEGION_CONTAINER=1`), the runner runs each session in a worker container: Claude Code and Codex CLIs, git, Python, uv and Node, as a non-root user.
 The image recipes, the build script and the container's machine notes are in `src/legion/container/`, beside the `Container` class.
 The `Container` class names no provider: each provider gives its own login and session folder.
+The build copies the host's `/usr/local/share/ca-certificates/` into the image, so internal HTTPS verifies inside it.
 
 ### Build
 
@@ -111,7 +114,7 @@ The host's git author (its `GIT_AUTHOR_*` variables, else its git config) is the
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `LEGION_CONTAINER` | `0` | `1` runs each session in a worker container |
+| `LEGION_CONTAINER` | `1` | `0` runs each session on the host instead of a worker container |
 | `LEGION_LOGINS` | `.logins/` in this repo (git-ignored) | Folder with the login files |
 | `LEGION_IMAGE` | `legion-<project>` if built, else `legion-worker` | Image to run |
 | `LEGION_CONTAINER_MEMORY` | `1536m` | Memory limit |

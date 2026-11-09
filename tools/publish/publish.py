@@ -9,9 +9,10 @@ project's root:
     | app | `artifacts/artifact-site/` (`tools/package_artifact.py`) |
 
 A project without that doc has no outputs. The docs page includes the
-current review (docs/review.md). The mocks are the review's: the current
-cycle's (this repo's .scratch/<project>/<latest cycle>/mocks/), newest first,
-each as it was made. Each output is uploaded to
+current review (docs/review.md). The mocks are the reviews': those of every
+cycle still in review (this repo's .scratch/<project>/<cycle>/mocks/, in a
+cycle with no issues yet), one section per cycle, newest first, each as it
+was made. Each output is uploaded to
 <server>/<project>/.staging/<output>/ and then moved to
 <server>/<project>/<output>/, replacing the previous one. The server keeps
 projects.json, the list of projects the menu pages are built from.
@@ -57,6 +58,7 @@ body { margin: 0; background: var(--bg); color: var(--fg);
   font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
 main { max-width: 40rem; margin: 0 auto; padding: 3rem 16px; }
 h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+h2 { font-size: 1.1rem; margin: 2rem 0 .75rem; }
 p { color: var(--muted); margin: 0 0 2rem; }
 nav { display: grid; gap: .75rem; }
 a { display: block; padding: 1rem 1.25rem; border: 1px solid var(--line);
@@ -83,13 +85,18 @@ def server_url():
     return os.environ.get("PUBLISH_URL") or None
 
 
-def page(title, subtitle, links):
-    items = "\n".join(f'<a href="{html.escape(href)}">{html.escape(label)}</a>' for label, href in links)
+def page(title, subtitle, links, sections=()):
+    """A menu page: its links, then each (heading, links) section."""
+    def nav(links):
+        items = "\n".join(f'<a href="{html.escape(href)}">{html.escape(label)}</a>' for label, href in links)
+        return f'<nav>\n{items}\n</nav>'
+    body = (nav(links) if links else "") + "".join(
+        f'\n<h2>{html.escape(heading)}</h2>\n{nav(group)}' for heading, group in sections)
     return (f'<!doctype html>\n<html lang="en"><head><meta charset="utf-8">\n'
             f'<meta name="viewport" content="width=device-width, initial-scale=1">\n'
             f'<title>{html.escape(title)}</title><style>{STYLE}</style></head>\n'
             f'<body><main><h1>{html.escape(title)}</h1><p>{html.escape(subtitle)}</p>\n'
-            f'<nav>\n{items}\n</nav></main></body></html>\n')
+            f'{body}</main></body></html>\n')
 
 
 def project_menu(slug, entry):
@@ -115,23 +122,33 @@ def outputs(project):
     return found
 
 
+def in_review(cycle):
+    """A cycle is in review until it has issues."""
+    return not any(cycle.glob("issues/*.md"))
+
+
 def mocks(project, out):
-    """The current cycle's mocks page, prepared in out; None if the cycle has no mocks."""
-    cycles = sorted((WORKFLOW / ".scratch" / project.name).glob("[0-9]*-*/"))
-    found = sorted(cycles[-1].glob("mocks/*/index.html"), reverse=True) if cycles else []
-    if not found:
+    """The mocks page of every cycle in review, prepared in out; None if they have no mocks."""
+    cycles = sorted((WORKFLOW / ".scratch" / project.name).glob("[0-9]*-*/"), reverse=True)
+    sections = []
+    for cycle in filter(in_review, cycles):
+        links = []
+        for index in sorted(cycle.glob("mocks/*/index.html"), reverse=True):
+            folder = index.parent
+            refuse_symlinks(folder)
+            target = out / cycle.name / folder.name
+            shutil.copytree(folder, target, ignore=shutil.ignore_patterns(*MOCK_SOURCES))
+            mock = target / "index.html"
+            mock.write_text(BACK_LINK.sub("../../", mock.read_text(encoding="utf-8")), encoding="utf-8")
+            readme = folder / "README.md"
+            match = HEADING.search(readme.read_text(encoding="utf-8")) if readme.exists() else None
+            links.append((match.group(1) if match else folder.name, f"{cycle.name}/{folder.name}/"))
+        if links:
+            sections.append((cycle.name, links))
+    if not sections:
         return None
-    links = []
-    for index in found:
-        folder = index.parent
-        refuse_symlinks(folder)
-        shutil.copytree(folder, out / folder.name, ignore=shutil.ignore_patterns(*MOCK_SOURCES))
-        mock = out / folder.name / "index.html"
-        mock.write_text(BACK_LINK.sub("../", mock.read_text(encoding="utf-8")), encoding="utf-8")
-        readme = folder / "README.md"
-        match = HEADING.search(readme.read_text(encoding="utf-8")) if readme.exists() else None
-        links.append((match.group(1) if match else folder.name, f"{folder.name}/"))
-    (out / "index.html").write_text(page(f"{title(project)}: mocks", "Newest first.", links), encoding="utf-8")
+    (out / "index.html").write_text(
+        page(f"{title(project)}: mocks", "The cycles in review, newest first.", [], sections), encoding="utf-8")
     return out
 
 

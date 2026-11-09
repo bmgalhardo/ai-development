@@ -3,7 +3,11 @@
 # Usage: tools/legion.sh build [../<project>]
 set -euo pipefail
 here="$(dirname "$(readlink -f "$0")")"
-docker build --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" -t legion-worker "$here"
+# The host's local CAs go into the image; an empty folder when there are none.
+cas=/usr/local/share/ca-certificates
+[ -d "$cas" ] || cas="$(mktemp -d)"
+docker build --build-context host-ca="$cas" --build-arg UID="$(id -u)" --build-arg GID="$(id -g)" \
+    -t legion-worker "$here"
 [ $# -ge 1 ] || exit 0
 project="$(readlink -f "$1")"
 name="$(basename "$project")"

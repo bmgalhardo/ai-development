@@ -53,7 +53,7 @@ class BaseLegionSettings(BaseSettings):
     wait: PositiveInt = 1800
     timeout: PositiveInt = 14400
     budget_usd: PositiveFloat = 15
-    container: bool = False
+    container: bool = True
     dashboard: bool = True
     dashboard_port: int = Field(8765, ge=1, le=65535)
     dashboard_host: str = "127.0.0.1"

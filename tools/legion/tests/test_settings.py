@@ -31,7 +31,7 @@ class SettingsTests(unittest.TestCase):
     def test_defaults(self):
         settings = self.load()
         self.assertEqual((settings.wait, settings.timeout, settings.budget_usd), (1800, 14400, 15))
-        self.assertFalse(settings.container)
+        self.assertTrue(settings.container)
         self.assertTrue(settings.dashboard)
         self.assertEqual((settings.dashboard_host, settings.dashboard_port), ("127.0.0.1", 8765))
         self.assertEqual(settings.after_build, "")
@@ -99,7 +99,7 @@ class SettingsTests(unittest.TestCase):
             self.load(LEGION_CODEX__REVIEW__EFFORT="max")
 
     def test_container_switch_accepts_one_and_zero(self):
-        self.assertTrue(self.load(LEGION_CONTAINER="1").container)
+        self.assertFalse(self.load(LEGION_CONTAINER="0").container)
         self.assertFalse(self.load(LEGION_DASHBOARD="0").dashboard)
 
 

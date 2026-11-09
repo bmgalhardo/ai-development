@@ -52,7 +52,7 @@ Around it:
 - `workers.md`: current configuration and artifact formats.
 
 These quick wins remain sequential and use the project's existing checkout and branch.
-Containers are optional (`LEGION_CONTAINER=1`).
+Containers are the default; `LEGION_CONTAINER=0` runs sessions on the host.
 There are no isolated attempt branches or queue service yet.
 Recovery snapshots occur after an attempt ends, not periodically during execution.
 A self-review's subagent model depends on the host's selector and must be reported honestly.

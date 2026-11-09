@@ -25,7 +25,7 @@ Unknown `LEGION_` keys in `.env` are ignored; an invalid value stops the run, na
 | `LEGION_WAIT` | `1800` | Fallback cooldown seconds when no reset time is understood |
 | `LEGION_TIMEOUT` | `14400` | Seconds before an attempt is stopped; a stopped attempt whose issue isn't finished counts as a failure (`timeout`) |
 | `LEGION_BUDGET_USD` | `15` | Claude CLI's per-attempt budget flag |
-| `LEGION_CONTAINER` | `0` | `1` runs each session in a worker container (Legion's README: Containers) |
+| `LEGION_CONTAINER` | `1` | `0` runs each session on the host instead of a worker container (Legion's README: Containers) |
 | `LEGION_DASHBOARD` | `1` | `0` skips starting the dashboard |
 | `LEGION_DASHBOARD_PORT` | `8765` | Dashboard port |
 | `LEGION_DASHBOARD_HOST` | `127.0.0.1` | Dashboard bind address; `0.0.0.0` opens it to the network (no login) |

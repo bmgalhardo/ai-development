@@ -6,6 +6,10 @@ RUN apt-get update \
         ca-certificates curl git less nodejs npm procps python3 ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
+# The host's own CAs (build.sh passes /usr/local/share/ca-certificates), so internal HTTPS verifies.
+COPY --from=host-ca . /usr/local/share/ca-certificates/
+RUN update-ca-certificates
+
 COPY --from=ghcr.io/astral-sh/uv:0.12.22 /uv /uvx /usr/local/bin/
 
 # Pinned; bump them deliberately. The CLIs never update themselves in here.

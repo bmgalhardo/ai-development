@@ -34,8 +34,9 @@ python3 tools/publish/publish.py ../<project> mocks    # the review's mocks
   `.agents/context/publishing.md`: every row naming an output and its
   folder. A project without that doc has none.
 - The docs carry the current review (`docs/review.md`).
-- The mocks are the current cycle's `mocks/` (`.scratch/<project>/<cycle>/`),
-  newest first.
+- The mocks are those of every cycle still in review (no issues yet):
+  each cycle's `mocks/` (`.scratch/<project>/<cycle>/`), one section per
+  cycle, newest first. Parallel reviews each publish all of them.
 - With nothing to publish it says so and never contacts the server.
 - Without `PUBLISH_URL`, the worker loop skips publishing; the script
   stops with a message.

@@ -54,7 +54,7 @@ class RunnerTests(unittest.TestCase):
         self.stack.enter_context(patch.dict(os.environ, clean | {
             "PATH": f"{binaries}:{os.environ['PATH']}", "LEGION_ROOT": str(self.root),
             "LEGION_PREFERENCE": "claude,codex", "LEGION_CLAUDE__IMPLEMENT__MODEL": "test-claude",
-            "LEGION_WAIT": "60", "LEGION_DASHBOARD": "0"}, clear=True))
+            "LEGION_WAIT": "60", "LEGION_DASHBOARD": "0", "LEGION_CONTAINER": "0"}, clear=True))
         self.lock = self.stack.enter_context((self.directory / "runner.lock").open("a"))
 
     def run_loop(self, **environment):
@@ -308,6 +308,11 @@ class RunnerTests(unittest.TestCase):
         marker = self.root / "after-build.txt"
         self.assertEqual(self.run_loop(LEGION_AFTER_BUILD=f"touch {marker}"), 0)
         self.assertFalse(marker.exists())
+
+    def test_a_stuck_cycle_stops_with_an_error(self):
+        self.add_build_issue()
+        self.issue.write_text("**Status:** open\n**Blocked by:** 02\n")
+        self.assertEqual(self.run_loop(), 1)
 
     # Containers
 

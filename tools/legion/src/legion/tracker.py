@@ -64,6 +64,19 @@ class Cycle(BaseModel):
             return all(other.status in ("done", "blocked") for other in self.issues.values() if other is not issue)
         return all(blocker in self.issues and self.issues[blocker].status == "done" for blocker in issue.blockers)
 
+    def stuck(self):
+        """Open issues that can never become ready, each with what it waits for; empty when the cycle can go on.
+        Nothing is ready, under way or blocked, so the open issues wait only for each other or for a missing number."""
+        if self.next_issue() or any(issue.status == "blocked" for issue in self.issues.values()):
+            return {}
+        return {issue.number: self.blockers(issue) for issue in self.issues.values() if issue.status == "open"}
+
+    def stuck_message(self):
+        """Why the cycle is stuck, for the user: what each open issue waits for, and which issue is the build."""
+        waits = "; ".join(f"{number} waits for {', '.join(waiting) or 'nothing'}" for number, waiting in self.stuck().items())
+        return (f"Stuck: {waits}. The build is the last issue ({self.build.path.name}): "
+                "fix the Blocked by lines or the numbering.")
+
     def blockers(self, issue):
         """What the issue still waits for: its unfinished blockers; for the build, every unfinished issue."""
         if issue.number == self.build.number:

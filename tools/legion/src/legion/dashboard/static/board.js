@@ -185,7 +185,9 @@ async function refresh() {
     const catalog = await get('/api/catalog');
     if (requestRevision !== revision) return;
     const params = new URLSearchParams(location.search);
-    options($('project'), catalog.map(entry => entry.project), $('project').value || params.get('project') || catalog.at(-1)?.project);
+    // Without a choice, open the project with the newest cycle (cycle names start with their date).
+    const newest = catalog.reduce((best, entry) => !best || entry.cycles[0] > best.cycles[0] ? entry : best, null);
+    options($('project'), catalog.map(entry => entry.project), $('project').value || params.get('project') || newest?.project);
     const project = catalog.find(entry => entry.project === $('project').value);
     options($('cycle'), project?.cycles || [], $('cycle').value || params.get('cycle'));
     if (!project) {

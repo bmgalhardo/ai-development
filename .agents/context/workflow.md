@@ -74,7 +74,7 @@ the cycle's `mocks/<YYYY-MM-DD>-<slug>/` (its
 `index.html`, images, the scripts that made them, a README), labelled as a
 mockup. With a publish server, publish it with
 `python3 tools/publish/publish.py ../<project> mocks`: the Mocks page shows
-the cycle under review. Without one, give the user the mock's path. The user
+every cycle in review. Without one, give the user the mock's path. The user
 lands the design on the mock, and the refinement starts from what they
 chose.
 
@@ -98,6 +98,13 @@ its nav). Research code and data stay in the cycle's `research/`.
 So a review can run while another cycle is being implemented. Then it
 also reads that cycle's `spec.md`, so it doesn't ask for what is already
 coming.
+
+Several reviews can run at once, each in its own cycle folder. Each one
+writes only in its own folder. Each one reads the other open reviews'
+`feedback.md`, so it doesn't repeat or contradict them. A point that
+belongs to another review goes to the user, who says where it goes. Each
+review is refined, ticketed and built on its own; the worker loop takes
+the oldest cycle with issues first.
 
 Each review starts the next cycle: create its folder in
 `.scratch/<project>/` (dated today, the slug naming the change) as soon as

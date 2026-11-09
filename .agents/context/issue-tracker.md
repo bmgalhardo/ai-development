@@ -10,9 +10,9 @@ project is the session's project (`AGENTS.md`).
 ## Conventions
 
 - One cycle per folder: `.scratch/<project>/<YYYY-MM-DD>-<slug>/`, dated
-  the day it starts, the slug naming the change. Folders sort by date, and
-  the latest is the one under review. The worker loop works on the
-  oldest cycle with an issue ready or under way.
+  the day it starts, the slug naming the change. Folders sort by date. A
+  cycle with no issues yet is in review; several can be at once. The
+  worker loop works on the oldest cycle with an issue ready or under way.
 - A cycle runs from the review that starts it to its build. The review
   session creates the folder and writes `feedback.md`, `mocks/`,
   `assets/`, `direction/` (pages for `docs/direction/`) and `research/`
@@ -32,6 +32,9 @@ project is the session's project (`AGENTS.md`).
   `docs/review.md` (see `workflow.md`), published with the docs. The
   review session then writes the cycle's `feedback.md`, which the next
   `/grill-me` starts from.
+- An issue added mid-cycle takes the build's number. Renumber the build
+  to come last, and update every `Blocked by` and every mention of either
+  number.
 - Each issue file has a `Status:` line near the top: `open`, then
   `in progress` (a worker claimed it), then `in review` (implemented and
   committed, waiting for its review session), then `done`; or `blocked`

@@ -266,6 +266,9 @@ class Runner:
         say("No issue is ready.")
         for issue in cycle.issues.values():
             print(f"{issue.status:12s} {issue.path.name}")
+        if cycle.stuck():
+            say(cycle.stuck_message())
+            return 1
         return self.after_build() if cycle.build and cycle.build.status == "done" else 0
 
     def after_build(self):

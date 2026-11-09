@@ -30,14 +30,20 @@ class Commands:
 
     def next(self, args):
         """Print the next issue a worker should take in the current cycle, or nothing."""
-        issue = self._cycle(args.project).next_issue()
+        cycle = self._cycle(args.project)
+        issue = cycle.next_issue()
         if issue:
             print(os.path.relpath(issue.path, self.settings.root))
+        elif cycle.stuck():
+            print(cycle.stuck_message(), file=sys.stderr)
+            return 1
 
     def status(self, args):
         """List every issue's status in the current cycle."""
-        for number, issue in self._cycle(args.project).issues.items():
-            print(f"{number}  {issue.status:12s} {issue.path.name}")
+        cycle = self._cycle(args.project)
+        for number, issue in cycle.issues.items():
+            build = " (build)" if issue is cycle.build else ""
+            print(f"{number}  {issue.status:12s} {issue.path.name}{build}")
 
     def shell(self, args):
         """Open a shell, or run a command, in a worker container for a provider in a role; its exit code."""
