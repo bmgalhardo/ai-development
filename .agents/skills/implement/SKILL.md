@@ -30,7 +30,7 @@ Implement one issue, without the user. The issue tracker should have been provid
     - A finding never becomes a new open question.
 
     Re-run the checks and commit. Do not review those fixes again.
-11. **Close:** tick each acceptance box you met. If every box is ticked, set the status to `done`. Otherwise set it to `blocked`, and write one `Needs the user:` line under `## Comments` for each unmet box, saying what it needs. Stop and report the commits, the checks, your choices and open questions.
+11. **Close:** tick each acceptance box you met. Mark each `debt.md` entry assigned to this issue that the issue's commits resolved `resolved`, with its commit. If every box is ticked, set the status to `done`. Otherwise set it to `blocked`, and write one `Needs the user:` line under `## Comments` for each unmet box, saying what it needs. Stop and report the commits, the checks, your choices and open questions.
 
 ## Fix session
 
