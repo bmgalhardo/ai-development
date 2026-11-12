@@ -1,9 +1,92 @@
 # Agentic queues roadmap
 
-Updated: 2026-10-30.
+Updated: 2026-11-12.
 This roadmap concerns the shared workflow, not a project feature cycle.
 The previous project cycle is complete.
 Future increments below are proposed work, not instructions to implement them automatically.
+
+## Agreed direction: GitHub-backed epics and worker queue
+
+Agreed with the user on 2026-11-10. This is the next direction for the
+shared workflow. GitHub is the default platform for repos, epics/tickets,
+pull requests, checks, builds and deployments. Use GitHub-hosted runners
+where they fit; add homelab self-hosted runners only for hardware or private
+network needs (for example Blender on `hephaestus`). Do not self-host a Git
+platform without a concrete need.
+
+Keep two ways to prepare work, converging on the same epic and ticket model:
+
+- PM-led: review, `/grill-me`, `/to-spec`, `/to-tickets`; user approves
+  product decisions and ticket breakdown.
+- Delegated: an explicitly authorized coordinator resolves decisions within
+  stated scope and constraints, then produces the same spec and tickets.
+  Escalate decisions outside its authority to the user.
+
+One review becomes one epic. Several epics may be refined at once and then
+released independently into a shared ready-ticket queue. Each epic closes
+only after its tickets, integration/build and deployment succeed. Blocked
+work goes to a coordinator with evidence and attempted approaches; continue
+unrelated work. Escalate unresolved product decisions or disagreements to
+the user. Treat consensus as meeting acceptance criteria with evidence, not
+as agents agreeing with one another.
+
+Parallelize independent implementer tickets and independent research avenues.
+During cycle review, a research skill proposes a bounded number of agents and
+usage budget for the user's approval; an approved allocation covers that
+research batch. Record conclusions and unresolved questions in the cycle.
+Asset production (including Blender) is a later worker type with explicit
+inputs, output ownership and validation.
+
+Git flow: workers use isolated worktrees/branches and open PRs. Ticket PRs
+target their epic branch; reviewed changes must merge before dependents start.
+After implementation tickets and the epic's integration/docs work complete,
+the epic PR targets `main`. GitHub Actions runs checks/build/deploy and
+records the deployed commit. Serialize deployments to the shared destination.
+An epic closes only after successful deployment; failed builds/deploys remain
+retryable. Legion schedules work and observes GitHub state rather than owning
+PR, build or deployment state itself.
+
+Worker guard (from 03-prototype's boss-balance retro, 2026-11-11): workers
+still poll with `until`/`while … sleep` loops and `Monitor` despite
+`engineering.md`; one loop never matched and held the run. Give Claude
+workers a `PreToolUse` hook that denies `Monitor` and Bash sleep loops, as
+part of increment 2.
+
+### Proposed increments
+
+1. **GitHub workflow contract and pilot.** Choose GitHub Issues/Projects
+   representation for epics and tickets, PR branch rules, required checks,
+   credentials and event/status mapping. Pilot one epic manually end to end
+   with GitHub Actions before changing Legion. Define how cycle specs/assets
+   are made available to workers without creating duplicate sources of truth.
+2. **Isolated ticket PRs.** Give each worker an isolated checkout and branch;
+   push checkpoints, open/update its ticket PR, and resume safely. Merge a
+   reviewed ticket PR into the epic branch before marking it done or starting
+   dependents. Repair conflicts and combined-check failures against the
+   latest epic branch.
+3. **Epic release lifecycle.** Track epic states from review/released through
+   implementation, release, deployment and closed. Run integration/docs work
+   after all ticket PRs merge, then the epic PR and deployment. Record commit,
+   artifact and deployment result; retry failures without duplicate deploys.
+4. **Queue scheduler and coordinator.** Poll or receive GitHub events; claim
+   ready tickets across released epics with leases and ownership. Dispatch
+   independent work concurrently, retain dependency ordering, and route
+   blocked tickets to a coordinator. Escalate unresolved decisions to the
+   user; continue unrelated tickets.
+5. **Research skill and budgeted parallel research.** During review, identify
+   unknowns and independent avenues, propose agent count and a usage bound,
+   wait for user approval, run researchers, reconcile findings, and write
+   evidence into the cycle. Do not spawn research agents outside the approved
+   batch allocation.
+6. **Homelab runners and asset workers.** Add self-hosted GitHub runners only
+   where hosted runners cannot meet a concrete need. First candidate:
+   Blender work on `hephaestus`; define queueing, power lifecycle, artifact
+   return and validation before scheduling it.
+
+Keep the current local Markdown workflow usable during migration. Pilot and
+measure one epic before moving the queue authority; migrate existing cycles
+only after the GitHub contract and recovery behavior are proven. Preserve the
+homelab repo's existing uncommitted changes while assessing runner placement.
 
 ## Direction
 
@@ -86,6 +169,10 @@ Progress (2026-10-28):
 
 ## 2. Isolated attempts and durable checkpoints
 
+Folded into increment 2 of the agreed direction (2026-11-12).
+A checkpoint is a push to the ticket's PR branch.
+The done criterion below still applies.
+
 Give each issue attempt an isolated checkout and its own branch.
 Save progress at meaningful boundaries and push checkpoints to the Git remote.
 Preserve failing work as a checkpoint without calling the issue complete.
@@ -96,6 +183,10 @@ Keep completed review findings and avoid repeating reviews of unchanged implemen
 Done when a killed worker's replacement recovers a pushed checkpoint and finishes without changing another attempt's files.
 
 ## 3. Durable queue and ownership
+
+Folded into increment 4 of the agreed direction (2026-11-12).
+GitHub owns ticket, PR, build and deployment state.
+The coordinator's database holds only leases, attempts, heartbeats and provider state.
 
 Add one coordinator with a transactional database; SQLite is sufficient for an initial single-host coordinator.
 Import requirements and dependencies from existing Markdown tickets.
@@ -121,15 +212,18 @@ Done when the user can understand what is running or waiting without watching wo
 
 ## 5. Parallel execution and integration
 
+Folded into increments 2 and 4 of the agreed direction (2026-11-12).
+Integration targets the epic branch through ticket PRs, not `main` directly.
+
 Run one Claude worker and one Codex worker concurrently on independent ready issues.
 Use dependencies and declared touched modules to avoid obvious overlap.
-Serialize integration into the project's main development branch.
+Serialize ticket PR merges into the epic branch.
 Check each result against the latest integrated state before pushing it.
 Mark an issue done only after integration succeeds.
 Start dependents from that integrated state.
 Return conflicts or failed combined checks for repair.
 Run the final build after all integrations finish.
-Prefer this integration rule to stacked PRs initially.
+Do not stack ticket PRs on one another; each targets the epic branch.
 
 Done when two independent issues integrate successfully and their dependent issue starts with both changes present.
 
