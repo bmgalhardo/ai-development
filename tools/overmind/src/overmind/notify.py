@@ -12,7 +12,7 @@ LIMIT = 4096  # Telegram's longest message, in characters
 
 
 class Notifier:
-    """Sends messages to one Telegram chat with a bot, when `LEGION_TELEGRAM_TOKEN` and `_CHAT_ID` are set."""
+    """Sends messages to one Telegram chat with a bot, when `OVERMIND_TELEGRAM_TOKEN` and `_CHAT_ID` are set."""
 
     def __init__(self, settings):
         self.token = settings.telegram_token.get_secret_value() if settings.telegram_token else None

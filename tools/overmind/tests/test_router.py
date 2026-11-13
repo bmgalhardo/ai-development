@@ -2,7 +2,7 @@
 
 import unittest
 
-from legion.runner.router import Router, Situation, Stop, Use, Wait
+from overmind.runner.router import Router, Situation, Stop, Use, Wait
 
 NOW = 1000.0
 COOLING = {"cooldowns": {"claude": NOW + 600}}  # Claude out of quota for ten minutes

@@ -1,5 +1,5 @@
 [project]
-name = "legion"
+name = "overmind"
 version = "0.1.0"
 description = "Runs and observes the implementation of tickets by coding agents."
 readme = "README.md"
@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 dependencies = ["pydantic>=2,<3", "pydantic-settings>=2,<3"]
 
 [project.scripts]
-legion = "legion.cli:main"
+overmind = "overmind.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12,<0.13"]

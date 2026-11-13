@@ -7,10 +7,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from legion import container
-from legion.container import Container
-from legion.providers import registry
-from legion.settings import Settings
+from overmind import container
+from overmind.container import Container
+from overmind.providers import registry
+from overmind.settings import Settings
 
 HOME = Path("/home/worker")
 
@@ -44,7 +44,7 @@ class ContainerTests(unittest.TestCase):
         self.logins.mkdir()
         (self.logins / ".claude.login").write_text("setup-token\n")
         (self.logins / ".codex.login").write_text("{}\n")
-        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
+        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("OVERMIND_")}
         patcher = patch.dict(os.environ, clean | {"GIT_AUTHOR_NAME": "Worker Owner",
                                                   "GIT_AUTHOR_EMAIL": "owner@example.com"}, clear=True)
         patcher.start()
@@ -75,8 +75,8 @@ class ContainerTests(unittest.TestCase):
                 self.assertEqual(mounts[str(sessions)], (f"{scratch}/sessions/{provider}", "rw"))
                 self.assertTrue(Path(scratch, "sessions", provider).is_dir())
                 self.assertEqual(labels(worker.command(["true"])),
-                                 {"legion.project": "project", "legion.provider": provider, "legion.role": role,
-                                  "legion.pid": str(os.getpid())})
+                                 {"overmind.project": "project", "overmind.provider": provider, "overmind.role": role,
+                                  "overmind.pid": str(os.getpid())})
 
     def test_claude_gets_its_token_by_name_and_no_other_login(self):
         with self.container("claude", "implement") as worker:
@@ -127,7 +127,7 @@ class ContainerTests(unittest.TestCase):
         with self.container("claude", "implement") as worker:
             name = worker.command(["true"])[worker.command(["true"]).index("--name") + 1]
         self.assertIn(("rm", "-f", name), self.removed)
-        self.assertTrue(name.startswith("legion-project-claude-implement-"))
+        self.assertTrue(name.startswith("overmind-project-claude-implement-"))
 
     def test_only_the_agent_notes_and_their_links_are_mounted_read_only(self):
         with self.container("claude", "implement") as worker:
@@ -153,7 +153,7 @@ class ContainerTests(unittest.TestCase):
         self.assertEqual(command[command.index("--pids-limit") + 1], "64")
         self.assertEqual(command[command.index("--user") + 1], f"{os.getuid()}:{os.getgid()}")
         self.assertIn("ALL", command)
-        self.assertEqual(command[-5:], ["-w", str(self.root), "legion-worker", "claude", "-p"])
+        self.assertEqual(command[-5:], ["-w", str(self.root), "overmind-worker", "claude", "-p"])
         self.assertEqual({key: environment[key] for key in environment if key.startswith("GIT_")},
                          {"GIT_AUTHOR_NAME": "Worker Owner", "GIT_AUTHOR_EMAIL": "owner@example.com",
                           "GIT_COMMITTER_NAME": "Worker Owner", "GIT_COMMITTER_EMAIL": "owner@example.com"})
@@ -162,9 +162,9 @@ class ContainerTests(unittest.TestCase):
         with self.container("claude", "implement", image="custom") as worker:
             self.assertEqual(worker.image(), "custom")
         with self.container("claude", "implement") as worker:
-            self.assertEqual(worker.image(), "legion-worker")
+            self.assertEqual(worker.image(), "overmind-worker")
             with patch.object(Container, "docker", return_value=0):
-                self.assertEqual(worker.image(), "legion-project")
+                self.assertEqual(worker.image(), "overmind-project")
 
     def test_container_code_names_no_provider(self):
         source = Path(container.__file__).read_text().lower()

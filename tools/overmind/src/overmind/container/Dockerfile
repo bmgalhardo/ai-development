@@ -1,4 +1,4 @@
-# The worker image: the coding CLIs and a non-root user. See Legion's README.
+# The worker image: the coding CLIs and a non-root user. See Overmind's README.
 FROM debian:trixie-slim
 
 RUN apt-get update \

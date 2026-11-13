@@ -12,16 +12,16 @@ import time
 import unittest
 from unittest.mock import patch
 
-import legion
-from legion.providers import registry
-from legion.settings import Settings
+import overmind
+from overmind.providers import registry
+from overmind.settings import Settings
 
 PROMPT = "Implement the issue."
 
 
 def settings(**values):
     """Settings from these values alone, ignoring the environment and `.env`."""
-    clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
+    clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("OVERMIND_")}
     with patch.dict(os.environ, clean, clear=True):
         return Settings(_env_file=None, **values)
 
@@ -67,27 +67,27 @@ class CommandTests(unittest.TestCase):
 class ClaudeOnlyTests(unittest.TestCase):
     def test_deleting_the_codex_file_leaves_a_working_claude_registry(self):
         with tempfile.TemporaryDirectory() as temp:
-            package = Path(temp) / "legion"
-            shutil.copytree(Path(legion.__file__).parent, package, ignore=shutil.ignore_patterns("__pycache__"))
+            package = Path(temp) / "overmind"
+            shutil.copytree(Path(overmind.__file__).parent, package, ignore=shutil.ignore_patterns("__pycache__"))
             (package / "providers/codex.py").unlink()
             script = (
                 "import os\n"
                 "from pathlib import Path\n"
-                "from legion.providers import registry\n"
-                "from legion.settings import Settings, SettingsError\n"
+                "from overmind.providers import registry\n"
+                "from overmind.settings import Settings, SettingsError\n"
                 "print(registry.names())\n"
-                "os.environ['LEGION_PREFERENCE'] = 'claude'\n"
+                "os.environ['OVERMIND_PREFERENCE'] = 'claude'\n"
                 "settings = Settings.load()\n"
                 "print(settings.preference)\n"
                 "print(registry.provider('claude', settings).command('review', 'p', Path('/p'))[0])\n"
-                "os.environ['LEGION_PREFERENCE'] = 'claude,codex'\n"
+                "os.environ['OVERMIND_PREFERENCE'] = 'claude,codex'\n"
                 "try:\n"
                 "    Settings.load()\n"
                 "except SettingsError as error:\n"
                 "    print('rejected' if 'unknown provider codex' in str(error) else error)\n"
             )
-            environment = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
-            environment |= {"PYTHONPATH": temp, "LEGION_ROOT": temp}
+            environment = {key: value for key, value in os.environ.items() if not key.upper().startswith("OVERMIND_")}
+            environment |= {"PYTHONPATH": temp, "OVERMIND_ROOT": temp}
             output = subprocess.run([sys.executable, "-c", script], cwd=temp, env=environment,
                                     capture_output=True, text=True, check=True).stdout
         self.assertEqual(output.splitlines(), ["('claude',)", "['claude']", "claude", "rejected"])

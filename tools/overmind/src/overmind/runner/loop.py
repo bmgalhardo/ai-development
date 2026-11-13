@@ -108,7 +108,7 @@ class Runner:
                 say(f"{name} is not installed; running without it")
         usable = [name for name in self.settings.preference if name in installed]
         if not usable:
-            raise RunnerError("No provider in LEGION_PREFERENCE is installed")
+            raise RunnerError("No provider in OVERMIND_PREFERENCE is installed")
         return usable
 
     def run(self):
@@ -201,7 +201,7 @@ class Runner:
             return [127] * len(jobs)
 
     def session(self, containers, provider, job):
-        """The job's session: its command as is, or in a worker container (LEGION_CONTAINER)."""
+        """The job's session: its command as is, or in a worker container (OVERMIND_CONTAINER)."""
         if not self.settings.container:
             return Session(command=job.command, log=job.attempt.log_path)
         container = containers.enter_context(Container(self.settings, self.project, provider, job.attempt.role))
@@ -288,10 +288,10 @@ class Runner:
         return self.after_build() if cycle.build and cycle.build.status == "done" else 0
 
     def after_build(self):
-        """Run LEGION_AFTER_BUILD once the build is done; its exit code becomes the runner's."""
+        """Run OVERMIND_AFTER_BUILD once the build is done; its exit code becomes the runner's."""
         command = self.settings.after_build
         if not command:
-            self.reason = "The build is done; no after-build command (LEGION_AFTER_BUILD)."
+            self.reason = "The build is done; no after-build command (OVERMIND_AFTER_BUILD)."
             say(self.reason)
             return 0
         command = command.replace("{project}", shlex.quote(str(self.project)))
@@ -306,12 +306,12 @@ class Runner:
     def notify_blocked(self, issue):
         """Tell the user an issue is blocked and what it needs from them; the run goes on with other issues."""
         needs = issue.needs() or ["(no Needs the user: line; see the issue)"]
-        self.notifier.send(f"Legion · {self.project.name}: {issue.path.name} is blocked.\n"
+        self.notifier.send(f"Overmind · {self.project.name}: {issue.path.name} is blocked.\n"
                            + "\n".join(f"• {need}" for need in needs))
 
     def notify_end(self, cycle, code):
         """Tell the user the run ended: why, each blocked issue's needs, and the issues per status."""
-        lines = [f"Legion · {self.project.name}: the run ended (exit {code}).",
+        lines = [f"Overmind · {self.project.name}: the run ended (exit {code}).",
                  self.reason or "No issue is ready."]
         blocked = [issue for issue in cycle.issues.values() if issue.status == "blocked"]
         if blocked:

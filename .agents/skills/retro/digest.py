@@ -20,7 +20,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[3]
 WORK_LOGS = ROOT / ".scratch"  # each cycle keeps its worker logs in <project>/<cycle>/work/
-# The host's sessions, then each project's worker containers' (tools/legion/README.md: Containers).
+# The host's sessions, then each project's worker containers' (tools/overmind/README.md: Containers).
 CLAUDE_LOGS = [Path.home() / ".claude/projects" / str(ROOT).replace("/", "-"),
                *sorted(WORK_LOGS.glob("*/sessions/claude/*/"))]
 CODEX_LOGS = [Path.home() / ".codex/sessions", *sorted(WORK_LOGS.glob("*/sessions/codex"))]

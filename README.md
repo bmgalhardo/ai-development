@@ -9,7 +9,7 @@ independent git repo beside it (`../<project>/`) and never refers back here.
 1. **Review:** brainstorm a new direction, or QA the published build. Mocks
    and assets are made with the user while the feedback is fresh.
 2. **Refinement:** `/grill-me`, then `/to-spec`, then `/to-tickets`.
-3. **Implementation:** `tools/legion.sh run ../<project>` runs workers on the
+3. **Implementation:** `tools/overmind.sh run ../<project>` runs workers on the
    ready issues, without the user.
 4. **Build and publish:** the last issue gathers the evidence, writes the
    project's `docs/review.md` and prepares the outputs. The loop publishes
@@ -43,7 +43,7 @@ projects/
 - Set up a new project, or adopt an existing repo, with `/new-project`.
   Check one with `python3 tools/project/check_contract.py ../<project>`.
 - Local settings go in `.env` (not in git): `PUBLISH_URL` for the publish
-  server, `LEGION_DASHBOARD_HOST` for the dashboard. Both are optional.
+  server, `OVERMIND_DASHBOARD_HOST` for the dashboard. Both are optional.
 - This machine's tools go in `.agents/context/machine.local.md` (not in git).
 
 ## Requirements

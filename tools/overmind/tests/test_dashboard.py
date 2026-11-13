@@ -8,7 +8,7 @@ import unittest
 
 from fastapi.testclient import TestClient
 
-from legion.dashboard.app import create_app
+from overmind.dashboard.app import create_app
 
 
 class DashboardTests(unittest.TestCase):

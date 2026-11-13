@@ -12,11 +12,11 @@ from urllib.error import HTTPError
 
 from fastapi.testclient import TestClient
 
-from legion.dashboard.app import create_app
-from legion.dashboard.quotas import Quotas
-from legion.providers import registry
-from legion.providers.base import QuotaUnavailable
-from legion.settings import Settings
+from overmind.dashboard.app import create_app
+from overmind.dashboard.quotas import Quotas
+from overmind.providers import registry
+from overmind.providers.base import QuotaUnavailable
+from overmind.settings import Settings
 
 CLAUDE_USAGE = {"five_hour": {"utilization": 24.0, "resets_at": "2026-10-29T14:59:59+00:00"},
                 "seven_day": {"utilization": 11.0, "resets_at": "2026-11-03T23:59:59+00:00"},
@@ -48,7 +48,7 @@ class QuotaTests(unittest.TestCase):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
         self.folder = Path(temp.name)
-        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
+        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("OVERMIND_")}
         with patch.dict(os.environ, clean, clear=True):
             self.settings = Settings(_env_file=None, logins=self.folder, preference=["claude", "codex"])
         self.claude = registry.provider("claude", self.settings)

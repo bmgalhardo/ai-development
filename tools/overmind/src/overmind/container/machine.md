@@ -1,6 +1,6 @@
 # This machine
 
-A worker container (Legion's, `tools/legion/` in the workflow repo). The defaults are in `engineering.md`.
+A worker container (Overmind's, `tools/overmind/` in the workflow repo). The defaults are in `engineering.md`.
 
 - Debian, with git, Python 3, uv (`/usr/local/bin/uv`), Node and npm. A project's image may add its own tools.
 - No root and no `sudo`: you can't install system packages. Use uv or npm for anything else.

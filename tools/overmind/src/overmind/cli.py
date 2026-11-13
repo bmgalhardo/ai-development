@@ -1,4 +1,4 @@
-"""Legion's commands. Run them from the workflow root, or through `tools/legion.sh`."""
+"""Overmind's commands. Run them from the workflow root, or through `tools/overmind.sh`."""
 
 import argparse
 import os
@@ -65,13 +65,13 @@ class Commands:
             import uvicorn
             from .dashboard.app import create_app
         except ImportError:
-            sys.exit("The dashboard needs Legion's dashboard group: run it through tools/legion.sh dashboard")
+            sys.exit("The dashboard needs Overmind's dashboard group: run it through tools/overmind.sh dashboard")
         uvicorn.run(create_app(self.settings.root), host=args.host or self.settings.dashboard_host,
                     port=args.port or self.settings.dashboard_port)
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(prog="legion", description=__doc__)
+    parser = argparse.ArgumentParser(prog="overmind", description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("run", "next", "status"):
         commands.add_parser(name, help=getattr(Commands, name).__doc__).add_argument("project", help=PROJECT_HELP)
@@ -82,8 +82,8 @@ def build_parser():
     shell.add_argument("argv", metavar="command", nargs=argparse.REMAINDER, help="the command to run (default: bash)")
     commands.add_parser("build", help=Commands.build.__doc__).add_argument("project", nargs="?", help=PROJECT_HELP)
     dashboard = commands.add_parser("dashboard", help=Commands.dashboard.__doc__)
-    dashboard.add_argument("--host", help="bind address (default: LEGION_DASHBOARD_HOST, else this host only)")
-    dashboard.add_argument("--port", type=int, help="port (default: LEGION_DASHBOARD_PORT, else 8765)")
+    dashboard.add_argument("--host", help="bind address (default: OVERMIND_DASHBOARD_HOST, else this host only)")
+    dashboard.add_argument("--port", type=int, help="port (default: OVERMIND_DASHBOARD_PORT, else 8765)")
     return parser
 
 

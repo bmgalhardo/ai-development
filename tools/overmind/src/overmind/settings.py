@@ -1,7 +1,7 @@
-"""Legion's settings: the only reader of the environment and `.env`.
+"""Overmind's settings: the only reader of the environment and `.env`.
 
-Every setting is a `LEGION_` variable. The environment wins over `.env`, unknown
-`LEGION_` keys in `.env` are ignored, and invalid values fail when loading.
+Every setting is a `OVERMIND_` variable. The environment wins over `.env`, unknown
+`OVERMIND_` keys in `.env` are ignored, and invalid values fail when loading.
 """
 
 import os
@@ -30,7 +30,7 @@ class Role(BaseModel):
 
 
 class ProviderRoles(BaseModel):
-    """A provider's settings per role, from `LEGION_<PROVIDER>__<ROLE>__MODEL` and `__EFFORT`."""
+    """A provider's settings per role, from `OVERMIND_<PROVIDER>__<ROLE>__MODEL` and `__EFFORT`."""
 
     implement: Role = Field(default_factory=Role)
     review: Role = Field(default_factory=Role)
@@ -44,8 +44,8 @@ class ProviderRoles(BaseModel):
                     effort=role.effort or fallback.effort or DEFAULT_EFFORT)
 
 
-class BaseLegionSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="LEGION_", env_file=".env", env_nested_delimiter="__",
+class BaseOvermindSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="OVERMIND_", env_file=".env", env_nested_delimiter="__",
                                       extra="ignore")
 
     root: Path = Field(default_factory=Path.cwd, description="the workflow repo, holding .scratch and .logins")
@@ -86,7 +86,7 @@ class BaseLegionSettings(BaseSettings):
     @model_validator(mode="after")
     def telegram_pair(self):
         if bool(self.telegram_token) != bool(self.telegram_chat_id):
-            raise ValueError("set both LEGION_TELEGRAM_TOKEN and LEGION_TELEGRAM_CHAT_ID, or neither")
+            raise ValueError("set both OVERMIND_TELEGRAM_TOKEN and OVERMIND_TELEGRAM_CHAT_ID, or neither")
         return self
 
     @model_validator(mode="after")
@@ -94,7 +94,7 @@ class BaseLegionSettings(BaseSettings):
         for name in registry.names():
             for role, settings in self.roles(name):
                 if settings.effort and settings.effort not in registry.efforts(name):
-                    variable = f"LEGION_{name}__{role}__EFFORT".upper()
+                    variable = f"OVERMIND_{name}__{role}__EFFORT".upper()
                     raise ValueError(f"{variable}: {settings.effort} is not one of "
                                      f"{', '.join(registry.efforts(name))}")
         return self
@@ -119,9 +119,9 @@ class BaseLegionSettings(BaseSettings):
     def load(cls):
         """The settings, or a SettingsError naming each invalid variable.
 
-        `.env` is the workflow root's: `LEGION_ROOT` from the environment, else the current folder.
+        `.env` is the workflow root's: `OVERMIND_ROOT` from the environment, else the current folder.
         """
-        root = Path(os.environ.get("LEGION_ROOT") or Path.cwd())
+        root = Path(os.environ.get("OVERMIND_ROOT") or Path.cwd())
         try:
             return cls(_env_file=root / ".env")
         except ValidationError as error:
@@ -134,9 +134,9 @@ class BaseLegionSettings(BaseSettings):
     @staticmethod
     def variable(location):
         """The environment variable for a validation error's location."""
-        return "LEGION_" + "__".join(str(part) for part in location if not isinstance(part, int)).upper()
+        return "OVERMIND_" + "__".join(str(part) for part in location if not isinstance(part, int)).upper()
 
 
 # One nested field per registered provider, so no setting names a provider here.
-Settings = create_model("Settings", __base__=BaseLegionSettings,
+Settings = create_model("Settings", __base__=BaseOvermindSettings,
                         **{name: (ProviderRoles, Field(default_factory=ProviderRoles)) for name in registry.names()})

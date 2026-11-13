@@ -69,6 +69,6 @@ publish are the workflow's (`engineering.md`, `machine.local.md`, `publish-serve
   libraries). It starts `ARG BASE` and `FROM ${BASE}`, without naming the
   base, and installs as `USER root`, then returns to `USER worker`. Tools
   the project keeps in its build folder (an engine binary) stay there.
-  Legion builds it as `legion-<project>` (`tools/legion.sh build
+  Overmind builds it as `overmind-<project>` (`tools/overmind.sh build
   ../<project>`). Without it, worker containers run the project on the
-  base image, `legion-worker` (`tools/legion/README.md`).
+  base image, `overmind-worker` (`tools/overmind/README.md`).

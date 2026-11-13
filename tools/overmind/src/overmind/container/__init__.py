@@ -11,7 +11,7 @@ import subprocess
 from uuid import uuid4
 
 FOLDER = Path(__file__).parent
-WORKER_IMAGE = "legion-worker"
+WORKER_IMAGE = "overmind-worker"
 AGENT_NOTES = ("AGENTS.md", ".agents")  # all a session reads from the workflow repo, with their links
 # The host's machine notes, in `.agents`; inside a container, `machine.md` here replaces them.
 MACHINE_NOTES = Path("context/machine.local.md")
@@ -31,7 +31,7 @@ class Container:
         self.provider = provider
         self.role = role
         self.tty = tty
-        self.name = f"legion-{project.name}-{provider.name}-{role}-{uuid4().hex[:8]}"
+        self.name = f"overmind-{project.name}-{provider.name}-{role}-{uuid4().hex[:8]}"
         self.login = None
 
     def __enter__(self):
@@ -71,7 +71,7 @@ class Container:
     def labels(self):
         labels = {"project": self.project.name, "provider": self.provider.name, "role": self.role,
                   "pid": os.getpid()}
-        return [part for key, value in labels.items() for part in ("--label", f"legion.{key}={value}")]
+        return [part for key, value in labels.items() for part in ("--label", f"overmind.{key}={value}")]
 
     def mounts(self):
         """The agent notes read-only; the project and its scratch, read-only for a reviewer; the login and sessions."""
@@ -103,10 +103,10 @@ class Container:
                                           if path.is_symlink() and path.resolve() == target)]
 
     def image(self):
-        """LEGION_IMAGE, else the project's image when built, else the worker image."""
+        """OVERMIND_IMAGE, else the project's image when built, else the worker image."""
         if self.settings.image:
             return self.settings.image
-        project_image = f"legion-{self.project.name}"
+        project_image = f"overmind-{self.project.name}"
         return project_image if self.docker("image", "inspect", project_image) == 0 else WORKER_IMAGE
 
     def git_identity(self):
@@ -127,7 +127,7 @@ class Container:
     def remove_leftovers(cls, project):
         """Remove every container of the project: run while holding its runner lock, they are a killed run's."""
         try:
-            found = subprocess.run(["docker", "ps", "-aq", "--filter", f"label=legion.project={project.name}"],
+            found = subprocess.run(["docker", "ps", "-aq", "--filter", f"label=overmind.project={project.name}"],
                                    capture_output=True, text=True).stdout.split()
         except OSError:
             return

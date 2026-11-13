@@ -20,7 +20,7 @@ that project. Paths in a project's files are relative to that project's root.
 
 - `.agents/context/workflow.md`: the cycle: review (brainstorming or QA),
   `/grill-me`, `/to-spec`, `/to-tickets`, implementation
-  (`tools/legion.sh run`), build and publish, `/retro`, and back to review.
+  (`tools/overmind.sh run`), build and publish, `/retro`, and back to review.
   Read it before any of those.
 - `.agents/context/issue-tracker.md`: cycles, specs and issues as local
   Markdown in this repo's `.scratch/<project>/`. Every ticket names its repo.
@@ -34,8 +34,8 @@ that project. Paths in a project's files are relative to that project's root.
   and Codex). A project lists only its outputs and their prepared folders.
 - `.agents/skills/`: the skills, adapted from Matt Pocock's
   (https://github.com/mattpocock/skills).
-- `tools/legion.sh run`: the worker loop; `tools/legion.sh next` and `status`: the
-  next ready issue and every issue's status (Legion, `tools/legion/`). They
+- `tools/overmind.sh run`: the worker loop; `tools/overmind.sh next` and `status`: the
+  next ready issue and every issue's status (Overmind, `tools/overmind/`). They
   take the project as an argument (`../<project>`).
 - `tools/README.md`: tool folders, entry points and focused test commands.
 - `.agents/context/roadmap.md`: worker improvements, completed steps and next increments.

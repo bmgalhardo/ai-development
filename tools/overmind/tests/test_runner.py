@@ -17,11 +17,11 @@ import time
 import unittest
 from unittest.mock import patch
 
-from legion.runner import loop
-from legion.runner.loop import Launch, Runner, RunnerError
-from legion.runner.repo import Repo, UnsafeRepoError
-from legion.runner.sessions import TIMED_OUT, Session, Sessions
-from legion.settings import Settings
+from overmind.runner import loop
+from overmind.runner.loop import Launch, Runner, RunnerError
+from overmind.runner.repo import Repo, UnsafeRepoError
+from overmind.runner.sessions import TIMED_OUT, Session, Sessions
+from overmind.settings import Settings
 
 FAKE_WORKER = Path(__file__).with_name("fake_worker.py")
 FAKE_DOCKER = Path(__file__).with_name("fake_docker.py")
@@ -51,11 +51,11 @@ class RunnerTests(unittest.TestCase):
             executable = binaries / provider
             executable.write_text(f"#!{sys.executable}\n" + FAKE_WORKER.read_text())
             executable.chmod(0o755)
-        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("LEGION_")}
+        clean = {key: value for key, value in os.environ.items() if not key.upper().startswith("OVERMIND_")}
         self.stack.enter_context(patch.dict(os.environ, clean | {
-            "PATH": f"{binaries}:{os.environ['PATH']}", "LEGION_ROOT": str(self.root),
-            "LEGION_PREFERENCE": "claude,codex", "LEGION_CLAUDE__IMPLEMENT__MODEL": "test-claude",
-            "LEGION_WAIT": "60", "LEGION_DASHBOARD": "0", "LEGION_CONTAINER": "0"}, clear=True))
+            "PATH": f"{binaries}:{os.environ['PATH']}", "OVERMIND_ROOT": str(self.root),
+            "OVERMIND_PREFERENCE": "claude,codex", "OVERMIND_CLAUDE__IMPLEMENT__MODEL": "test-claude",
+            "OVERMIND_WAIT": "60", "OVERMIND_DASHBOARD": "0", "OVERMIND_CONTAINER": "0"}, clear=True))
         self.lock = self.stack.enter_context((self.directory / "runner.lock").open("a"))
 
     def run_loop(self, **environment):
@@ -132,14 +132,14 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(self.cooldowns.exists())
 
     def test_finished_worker_that_never_exits_is_stopped_and_counted_done(self):
-        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", LEGION_TIMEOUT="1"), 0)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", OVERMIND_TIMEOUT="1"), 0)
         record = self.records()[0]
         self.assertEqual((record["outcome"], record["exit_code"]), ("done", TIMED_OUT))
         self.assertIn("Worker timed out after 1s", Path(record["log"]).read_text())
 
     def test_unfinished_worker_that_times_out_is_a_timeout(self):
         self.issue.write_text("**Status:** in progress\n**Blocked by:** None\n")
-        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", LEGION_TIMEOUT="1", LEGION_PREFERENCE="claude"), 1)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", OVERMIND_TIMEOUT="1", OVERMIND_PREFERENCE="claude"), 1)
         self.assertEqual([r["outcome"] for r in self.records()], ["timeout", "timeout"])
 
     def test_interrupt_snapshots_work(self):
@@ -178,7 +178,7 @@ class RunnerTests(unittest.TestCase):
             while not pid_file.exists():
                 time.sleep(0.05)
             return 0
-        with patch.dict(os.environ, {"LEGION_DASHBOARD": "1", "LEGION_DASHBOARD_PORT": str(port)}), \
+        with patch.dict(os.environ, {"OVERMIND_DASHBOARD": "1", "OVERMIND_DASHBOARD_PORT": str(port)}), \
                 patch.object(loop.Dashboard, "command", lambda _: board), patch.object(Runner, "run", run):
             self.assertEqual(Launch(Settings.load(), self.project).run(), 0)
         with self.assertRaises(ProcessLookupError):
@@ -195,7 +195,7 @@ class RunnerTests(unittest.TestCase):
     def test_a_single_provider_waits_for_its_own_reset(self):
         with patch.object(loop.time, "sleep", side_effect=KeyboardInterrupt):
             with self.assertRaises(KeyboardInterrupt):
-                self.run_loop(LEGION_PREFERENCE="claude")
+                self.run_loop(OVERMIND_PREFERENCE="claude")
         self.assertEqual([r["provider"] for r in self.records()], ["claude"])
 
     def test_only_a_stopped_session_is_cleaned_up_right_after_it_stops(self):
@@ -255,7 +255,7 @@ class RunnerTests(unittest.TestCase):
 
     def test_every_issue_including_the_build_gets_reviewers_and_a_fixer(self):
         self.add_build_issue()
-        self.assertEqual(self.run_loop(TEST_SCENARIO="review", LEGION_CODEX__REVIEW__MODEL="codex-review"), 0)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="review", OVERMIND_CODEX__REVIEW__MODEL="codex-review"), 0)
         steps = [(r["issue"][-13:], r["role"], r["axis"], r["provider"], r["outcome"]) for r in self.records()]
         for issue in ("01-feature.md", "/02-build.md"):
             self.assertEqual([step[1:] for step in steps if step[0].endswith(issue)],
@@ -272,7 +272,7 @@ class RunnerTests(unittest.TestCase):
         self.assertIn("Reviewer: codex (codex-review)", spec)
 
     def test_one_provider_does_everything(self):
-        self.assertEqual(self.run_loop(TEST_SCENARIO="review", LEGION_PREFERENCE="claude"), 0)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="review", OVERMIND_PREFERENCE="claude"), 0)
         self.assertEqual([(r["role"], r["provider"]) for r in self.records()],
                          [("implement", "claude"), ("review", "claude"), ("review", "claude"), ("fix", "claude")])
 
@@ -295,19 +295,19 @@ class RunnerTests(unittest.TestCase):
     def test_the_after_build_command_runs_with_the_project(self):
         self.issue.write_text("**Status:** done\n")
         marker = self.root / "after-build.txt"
-        self.assertEqual(self.run_loop(LEGION_AFTER_BUILD=f"echo {{project}} > {marker}; exit 3"), 3)
+        self.assertEqual(self.run_loop(OVERMIND_AFTER_BUILD=f"echo {{project}} > {marker}; exit 3"), 3)
         self.assertEqual(marker.read_text().strip(), str(self.project))
 
     def test_an_empty_after_build_command_does_nothing(self):
         self.issue.write_text("**Status:** done\n")
-        self.assertEqual(self.run_loop(LEGION_AFTER_BUILD=""), 0)
+        self.assertEqual(self.run_loop(OVERMIND_AFTER_BUILD=""), 0)
 
     def test_the_after_build_command_waits_for_the_build(self):
         self.add_build_issue()
         self.issue.write_text("**Status:** done\n")
         (self.cycle / "issues/02-build.md").write_text("**Status:** blocked\n")
         marker = self.root / "after-build.txt"
-        self.assertEqual(self.run_loop(LEGION_AFTER_BUILD=f"touch {marker}"), 0)
+        self.assertEqual(self.run_loop(OVERMIND_AFTER_BUILD=f"touch {marker}"), 0)
         self.assertFalse(marker.exists())
 
     def test_a_stuck_cycle_stops_with_an_error(self):
@@ -337,8 +337,8 @@ class RunnerTests(unittest.TestCase):
         threading.Thread(target=server.serve_forever, daemon=True).start()
         self.addCleanup(server.server_close)
         self.addCleanup(server.shutdown)
-        environment = {"LEGION_TELEGRAM_TOKEN": "secret", "LEGION_TELEGRAM_CHAT_ID": "42",
-                       "LEGION_TELEGRAM_API": f"http://127.0.0.1:{server.server_port}"}
+        environment = {"OVERMIND_TELEGRAM_TOKEN": "secret", "OVERMIND_TELEGRAM_CHAT_ID": "42",
+                       "OVERMIND_TELEGRAM_API": f"http://127.0.0.1:{server.server_port}"}
         return messages, environment
 
     def test_a_blocked_issue_and_the_runs_end_are_notified(self):
@@ -364,13 +364,13 @@ class RunnerTests(unittest.TestCase):
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             port = probe.getsockname()[1]
-        self.assertEqual(self.run_loop(LEGION_TELEGRAM_TOKEN="secret", LEGION_TELEGRAM_CHAT_ID="42",
-                                       LEGION_TELEGRAM_API=f"http://127.0.0.1:{port}"), 0)
+        self.assertEqual(self.run_loop(OVERMIND_TELEGRAM_TOKEN="secret", OVERMIND_TELEGRAM_CHAT_ID="42",
+                                       OVERMIND_TELEGRAM_API=f"http://127.0.0.1:{port}"), 0)
 
     def test_without_telegram_settings_nothing_is_sent(self):
         messages, environment = self.telegram()
-        environment.pop("LEGION_TELEGRAM_TOKEN")
-        environment.pop("LEGION_TELEGRAM_CHAT_ID")
+        environment.pop("OVERMIND_TELEGRAM_TOKEN")
+        environment.pop("OVERMIND_TELEGRAM_CHAT_ID")
         self.assertEqual(self.run_loop(TEST_SCENARIO="blocked", **environment), 0)
         self.assertEqual(messages, [])
 
@@ -385,7 +385,7 @@ class RunnerTests(unittest.TestCase):
         logins.mkdir()
         (logins / ".claude.login").write_text("setup-token\n")
         (logins / ".codex.login").write_text("{}\n")
-        return {"LEGION_CONTAINER": "1", "FAKE_DOCKER_LOG": str(self.root / "docker.jsonl")}
+        return {"OVERMIND_CONTAINER": "1", "FAKE_DOCKER_LOG": str(self.root / "docker.jsonl")}
 
     def docker_calls(self):
         return [json.loads(line) for line in (self.root / "docker.jsonl").read_text().splitlines()]
@@ -396,7 +396,7 @@ class RunnerTests(unittest.TestCase):
                          [("implement", "claude", "in review"), ("review", "codex", "reviewed"),
                           ("review", "codex", "reviewed"), ("fix", "claude", "done")])
         runs = [call for call in self.docker_calls() if call["args"][0] == "run"]
-        roles = [(labels["legion.provider"], labels["legion.role"]) for labels in
+        roles = [(labels["overmind.provider"], labels["overmind.role"]) for labels in
                  [dict(call["args"][i + 1].split("=", 1) for i, part in enumerate(call["args"]) if part == "--label")
                   for call in runs]]
         self.assertEqual(roles, [("claude", "implement"), ("codex", "review"), ("codex", "review"), ("claude", "fix")])
@@ -410,7 +410,7 @@ class RunnerTests(unittest.TestCase):
             self.assertTrue((self.root / f".scratch/project/sessions/{provider}").is_dir())
 
     def test_stopping_a_container_session_removes_its_container(self):
-        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", LEGION_TIMEOUT="1", **self.use_containers()), 0)
+        self.assertEqual(self.run_loop(TEST_SCENARIO="hang", OVERMIND_TIMEOUT="1", **self.use_containers()), 0)
         self.assertEqual(self.records()[0]["exit_code"], TIMED_OUT)
         calls = [call["args"] for call in self.docker_calls()]
         name = next(args[args.index("--name") + 1] for args in calls if args[0] == "run")
@@ -421,7 +421,7 @@ class RunnerTests(unittest.TestCase):
         with patch.dict(os.environ, self.use_containers()):
             self.assertEqual(Launch(Settings.load(), self.project).run(), 0)
         self.assertEqual([call["args"] for call in self.docker_calls()],
-                         [["ps", "-aq", "--filter", "label=legion.project=project"], ["rm", "-f", "leftover"]])
+                         [["ps", "-aq", "--filter", "label=overmind.project=project"], ["rm", "-f", "leftover"]])
 
 
 class RepoTests(unittest.TestCase):

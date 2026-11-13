@@ -1,14 +1,14 @@
-# Legion
+# Overmind
 
 Runs and observes the implementation of tickets by coding agents: the worker loop, its containers, the tracker reader and the dashboard, as one package.
 It reads the tracker as `.agents/context/issue-tracker.md` defines it, in the workflow repo's `.scratch/`.
 
-Legion is a uv project with its own dependencies, and imports nothing from the rest of `tools/`.
+Overmind is a uv project with its own dependencies, and imports nothing from the rest of `tools/`.
 Run its commands from the workflow root through the wrapper, which runs them there:
 
 ```bash
-tools/legion.sh next ../<project>     # the next issue a worker should take, or nothing
-tools/legion.sh status ../<project>   # every issue's status in the current cycle; the build is marked
+tools/overmind.sh next ../<project>     # the next issue a worker should take, or nothing
+tools/overmind.sh status ../<project>   # every issue's status in the current cycle; the build is marked
 ```
 
 The current cycle is the oldest with an issue ready or under way, else the newest.
@@ -21,12 +21,12 @@ Paths print relative to the workflow root.
 ## Settings
 
 `settings.py` is the only code that reads the environment and the workflow root's `.env`.
-Every setting is a `LEGION_` variable; the environment wins over `.env`.
-Unknown `LEGION_` keys in `.env` are ignored. An invalid value stops the command, naming the variable.
-`LEGION_ROOT` is the workflow repo (default: the current folder, which the wrapper sets).
+Every setting is a `OVERMIND_` variable; the environment wins over `.env`.
+Unknown `OVERMIND_` keys in `.env` are ignored. An invalid value stops the command, naming the variable.
+`OVERMIND_ROOT` is the workflow repo (default: the current folder, which the wrapper sets).
 
-`LEGION_PREFERENCE` lists the providers to use, in order (default: every installed provider, in the registry's order).
-Each provider has a model and an effort per role: `LEGION_<PROVIDER>__<ROLE>__MODEL` and `__EFFORT`, for the roles `implement`, `review` and `fix`.
+`OVERMIND_PREFERENCE` lists the providers to use, in order (default: every installed provider, in the registry's order).
+Each provider has a model and an effort per role: `OVERMIND_<PROVIDER>__<ROLE>__MODEL` and `__EFFORT`, for the roles `implement`, `review` and `fix`.
 An unset model keeps the CLI's default.
 Effort defaults to `medium`.
 `fix` falls back to `implement` for each unset value.
@@ -34,7 +34,7 @@ Effort must be one of the provider's own values.
 
 ## Providers
 
-Each provider is one file in `src/legion/providers/`: a subclass of `Provider`.
+Each provider is one file in `src/overmind/providers/`: a subclass of `Provider`.
 The registry is the subclasses present: deleting a provider's file removes it.
 No other code names a provider.
 A provider defines:
@@ -51,27 +51,27 @@ A provider may add its own.
 
 ## Containers
 
-By default (`LEGION_CONTAINER=1`), the runner runs each session in a worker container: Claude Code and Codex CLIs, git, Python, uv and Node, as a non-root user.
-The image recipes, the build script and the container's machine notes are in `src/legion/container/`, beside the `Container` class.
+By default (`OVERMIND_CONTAINER=1`), the runner runs each session in a worker container: Claude Code and Codex CLIs, git, Python, uv and Node, as a non-root user.
+The image recipes, the build script and the container's machine notes are in `src/overmind/container/`, beside the `Container` class.
 The `Container` class names no provider: each provider gives its own login and session folder.
 The build copies the host's `/usr/local/share/ca-certificates/` into the image, so internal HTTPS verifies inside it.
 
 ### Build
 
 ```bash
-tools/legion.sh build
+tools/overmind.sh build
 ```
 
-It tags `legion-worker`, with the host user's uid and gid so files written to the mounts belong to them.
+It tags `overmind-worker`, with the host user's uid and gid so files written to the mounts belong to them.
 The CLI versions are pinned in the `Dockerfile`; bump them there.
 
 A project with `.agents/container/Dockerfile` (`project-setup.md`) gets its own image on top:
 
 ```bash
-tools/legion.sh build ../<project>
+tools/overmind.sh build ../<project>
 ```
 
-It builds the base, then `legion-<project>`, passing `BASE=legion-worker`.
+It builds the base, then `overmind-<project>`, passing `BASE=overmind-worker`.
 Rebuild the project's image after rebuilding the base.
 
 ### Run
@@ -80,15 +80,15 @@ The runner starts one container per session, with its provider and role.
 To open a shell, or run a command, in one by hand:
 
 ```bash
-tools/legion.sh shell <provider> <implement|review|fix> ../<project> [command...]
+tools/overmind.sh shell <provider> <implement|review|fix> ../<project> [command...]
 ```
 
-`src/legion/container/run.sh` takes the same arguments, with the project's path relative to the current folder.
+`src/overmind/container/run.sh` takes the same arguments, with the project's path relative to the current folder.
 Without a command it opens a shell.
 One container runs one provider in one role, and is removed when the command exits.
 The runner also removes a stopped session's container (a timeout or Ctrl-C), and, at startup, every container left over from a killed run of the project.
 
-Each container is named `legion-<project>-<provider>-<role>-<id>` and labelled `legion.project`, `legion.provider`, `legion.role` and `legion.pid` (the Legion process that started it).
+Each container is named `overmind-<project>-<provider>-<role>-<id>` and labelled `overmind.project`, `overmind.provider`, `overmind.role` and `overmind.pid` (the Overmind process that started it).
 
 The container sees the same absolute paths as the host:
 
@@ -102,7 +102,7 @@ The container sees the same absolute paths as the host:
 
 The links are the workflow root's own symbolic links to `AGENTS.md` and `.agents/`.
 That is all a session reads from this repo: `tools/`, `.git`, `.env` and the other projects' scratch aren't there.
-`src/legion/container/machine.md` replaces the host's `.agents/context/machine.local.md`, so a session reads the container's own notes.
+`src/overmind/container/machine.md` replaces the host's `.agents/context/machine.local.md`, so a session reads the container's own notes.
 It only can when the host has that file: a read-only mount can't cover a missing one.
 The session folders keep each CLI's full log on the host, for the retro's `digest.py`.
 An implementer can also reach them through its scratch, so a session could edit an earlier log.
@@ -113,11 +113,11 @@ The host's git author (its `GIT_AUTHOR_*` variables, else its git config) is the
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `LEGION_CONTAINER` | `1` | `0` runs each session on the host instead of a worker container |
-| `LEGION_LOGINS` | `.logins/` in this repo (git-ignored) | Folder with the login files |
-| `LEGION_IMAGE` | `legion-<project>` if built, else `legion-worker` | Image to run |
-| `LEGION_CONTAINER_MEMORY` | `1536m` | Memory limit |
-| `LEGION_CONTAINER_PIDS` | `512` | Process limit |
+| `OVERMIND_CONTAINER` | `1` | `0` runs each session on the host instead of a worker container |
+| `OVERMIND_LOGINS` | `.logins/` in this repo (git-ignored) | Folder with the login files |
+| `OVERMIND_IMAGE` | `overmind-<project>` if built, else `overmind-worker` | Image to run |
+| `OVERMIND_CONTAINER_MEMORY` | `1536m` | Memory limit |
+| `OVERMIND_CONTAINER_PIDS` | `512` | Process limit |
 
 Codex's own `read-only` sandbox can't start in here: bubblewrap needs user namespaces, which the container doesn't allow.
 A Codex reviewer runs with `danger-full-access`: the read-only mounts are the sandbox.
@@ -127,7 +127,7 @@ Don't mount anything under `/tmp/claude-<uid>`: Docker creates that path as root
 
 ### Logins
 
-One file per provider, in `LEGION_LOGINS`, mode `600`.
+One file per provider, in `OVERMIND_LOGINS`, mode `600`.
 A container gets only its own provider's login.
 
 - **`.claude.login`:** the token from `claude setup-token` on the host, alone in the file.
@@ -156,14 +156,14 @@ Don't run the project's code or git hooks on the host until the work is reviewed
 A read-only FastAPI board for every project's cycles:
 
 ```bash
-tools/legion.sh dashboard
+tools/overmind.sh dashboard
 ```
 
 Open http://127.0.0.1:8765 on the same machine. The server is a separate process.
 It never starts, stops or imports the worker runner, edits tickets, or writes worker artifacts.
-Stop it with Ctrl-C. Use `--port 8766` to choose another port (default: `LEGION_DASHBOARD_PORT`, else 8765).
+Stop it with Ctrl-C. Use `--port 8766` to choose another port (default: `OVERMIND_DASHBOARD_PORT`, else 8765).
 It listens on this machine only by default. It has no login: to open it from another
-device on your network, set `LEGION_DASHBOARD_HOST=0.0.0.0` (in the environment or `.env`)
+device on your network, set `OVERMIND_DASHBOARD_HOST=0.0.0.0` (in the environment or `.env`)
 or pass `--host 0.0.0.0`, then open `http://<host-ip>:8765`. For access through SSH instead:
 
 ```bash
@@ -181,7 +181,7 @@ Stage colors fill column and card headers. Agent icons identify providers in the
 attempts and worker strip. Implementing and Reviewing headers show the active providers.
 Codex uses the white OpenAI knot on green.
 The knot comes from Devicons (`vorillaz/devicons`, `packages/core/export-files/icons/openai-icon.svg`);
-its license is in `src/legion/dashboard/static/icons/DEVICONS-LICENSE.txt`.
+its license is in `src/overmind/dashboard/static/icons/DEVICONS-LICENSE.txt`.
 Issue details scroll beneath a fixed header, keeping Close visible.
 Opening issue details focuses the title. Tab moves to Close with a visible keyboard indicator.
 
@@ -216,5 +216,5 @@ Native logs and recovery archives are not served. No database or frontend build 
 Run the tests from the workflow root, with the dashboard's dependencies:
 
 ```bash
-uv run --project tools/legion --group dashboard python -m unittest discover -s tools/legion/tests
+uv run --project tools/overmind --group dashboard python -m unittest discover -s tools/overmind/tests
 ```
