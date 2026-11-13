@@ -29,12 +29,19 @@ Unknown `LEGION_` keys in `.env` are ignored; an invalid value stops the run, na
 | `LEGION_DASHBOARD` | `1` | `0` skips starting the dashboard |
 | `LEGION_DASHBOARD_PORT` | `8765` | Dashboard port |
 | `LEGION_DASHBOARD_HOST` | `127.0.0.1` | Dashboard bind address; `0.0.0.0` opens it to the network (no login) |
+| `LEGION_TELEGRAM_TOKEN` | Unset | A Telegram bot's token; with the chat, the runner sends notifications |
+| `LEGION_TELEGRAM_CHAT_ID` | Unset | The chat the bot writes to; set both Telegram variables or neither |
 
 A `fix` setting left unset falls back to the provider's `implement` setting.
 Model names belong to their provider: each provider has its own settings.
 An unset model preserves the CLI's configured default.
 Every session gets its model and effort as CLI flags.
 To publish the build when the loop ends, set `LEGION_AFTER_BUILD=python3 tools/publish/publish.py {project}`.
+With Telegram set, the runner sends a message when an issue turns `blocked`, with its `Needs the user:` lines.
+It also sends one when the run ends, unless the user stopped it: why it ended, each blocked issue's needs, and the issues per status.
+Notifications are sent only; answer by opening a session.
+A failed send is logged and the run goes on.
+Keep the token in `.env`, never in a tracked file.
 
 ```bash
 LEGION_CLAUDE__IMPLEMENT__MODEL=sonnet tools/legion.sh run ../<project>

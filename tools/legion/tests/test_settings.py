@@ -28,6 +28,13 @@ class SettingsTests(unittest.TestCase):
         settings = self.load("LEGION_WAIT=60\n")
         self.assertEqual((settings.root, settings.wait), (self.root, 60))
 
+    def test_telegram_needs_both_its_token_and_its_chat(self):
+        with self.assertRaisesRegex(SettingsError, "LEGION_TELEGRAM_CHAT_ID"):
+            self.load(LEGION_TELEGRAM_TOKEN="secret")
+        settings = self.load(LEGION_TELEGRAM_TOKEN="secret", LEGION_TELEGRAM_CHAT_ID="42")
+        self.assertEqual(settings.telegram_token.get_secret_value(), "secret")
+        self.assertNotIn("secret", repr(settings))
+
     def test_defaults(self):
         settings = self.load()
         self.assertEqual((settings.wait, settings.timeout, settings.budget_usd), (1800, 14400, 15))

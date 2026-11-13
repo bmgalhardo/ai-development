@@ -88,6 +88,35 @@ measure one epic before moving the queue authority; migrate existing cycles
 only after the GitHub contract and recovery behavior are proven. Preserve the
 homelab repo's existing uncommitted changes while assessing runner placement.
 
+## Open alternative: Legion as the home base, in the homelab
+
+Discussed with the user on 2026-11-13. Not decided; keep every option open.
+It would replace GitHub Issues and PRs in the direction above; git hosting stays.
+
+- **Session context.** A `SessionStart` hook fetches an L0 map from Legion: projects, active epics, ticket counts, pending decisions, latest build.
+  An L1 report per project (decisions, blocked tickets, the build to play) is fetched on demand; L2 is the files.
+  If Legion is down, the hook says so and sessions work from files.
+- **Decisions queue.** Collect `Needs the user:` lines, manual tickets and coordinator escalations, each with question, options, evidence and the tickets it holds.
+- **Hosting.** Legion as a Deployment on elysium (Apollo), managed by Flux from the homelab repo, with an HTTPRoute, a Vault certificate and secrets through VSO.
+  Reached from daedalus and through the VPN. Reads unauthenticated; writes take a token.
+- **Records.** Specs, tickets, reviews, debt and decisions in a private git repo (`legion-records`, on GitHub for off-site backup).
+  Legion clones it at start, is its only writer, and commits in batches. Session logs go to stdout and Argus.
+  Runtime state (leases, attempts, cooldowns) is rebuilt on restart, so no volume is needed.
+- **No PRs.** Parallel work needs branches and isolated checkouts, not PRs.
+  Reviewers read `git diff epic...ticket`; Legion merges reviewed tickets into the epic branch one at a time and re-runs checks.
+  A PR could mirror a diff for reading later.
+- **Workers as Jobs.** One Kubernetes Job per attempt in `legion-workers`: clone, check out the ticket branch, run the CLI, push.
+  Legion's ServiceAccount may only create, watch and delete Jobs there. Concurrency is a Legion setting plus resource requests.
+  Claude authenticates with `claude setup-token`; Codex rewrites `auth.json` on renewal, so it needs a writable login per worker (open problem).
+- **Images.** GitHub Actions builds the base image (on change and nightly) and each project image (on Dockerfile or lockfile change) into GHCR.
+  Tag project images by a hash of their recipe files; Legion picks the tag from the ticket branch and triggers a missing build.
+  An in-cluster registry and builder is the alternative if GHCR limits bite.
+- **Telegram.** Done: send-only notifications from the runner (blocked issue, run end; `workers.md`).
+  Later: buttons that answer a decision; a text reply that starts a headless coordinator Job; a direction that starts the delegated path, released with one tap.
+  Use long polling (`getUpdates`), so nothing is exposed; accept only the user's ID.
+
+Possible order: L0/L1 API with the hook and decisions queue; images on Actions; workers as Jobs; scheduler across released epics; Telegram answers.
+
 ## Direction
 
 Keep review, grill, spec, tickets, implementation, build and publication.

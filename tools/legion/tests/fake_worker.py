@@ -59,6 +59,10 @@ if scenario in ("review", "review_quota"):
     else:
         set_status("open", "in review")
     sys.exit(0)
+if scenario == "blocked":
+    set_status("open", "blocked")
+    issue.write_text(issue.read_text() + "\n## Comments\n\nNeeds the user: pick the boss's enrage time\n")
+    sys.exit(0)
 if scenario == "hang":
     if provider == "claude":
         set_status("open", "done")

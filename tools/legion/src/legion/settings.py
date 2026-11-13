@@ -8,8 +8,8 @@ import os
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import (BaseModel, Field, PositiveFloat, PositiveInt, ValidationError, create_model, field_validator,
-                      model_validator)
+from pydantic import (BaseModel, Field, PositiveFloat, PositiveInt, SecretStr, ValidationError, create_model,
+                      field_validator, model_validator)
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from pydantic_settings import SettingsError as SourceError
 
@@ -62,6 +62,9 @@ class BaseLegionSettings(BaseSettings):
     container_memory: str = "1536m"
     container_pids: PositiveInt = 512
     after_build: str = ""
+    telegram_token: SecretStr | None = None
+    telegram_chat_id: str | None = None
+    telegram_api: str = "https://api.telegram.org"
 
     @field_validator("preference", mode="before")
     @classmethod
@@ -79,6 +82,12 @@ class BaseLegionSettings(BaseSettings):
             if names.count(name) > 1:
                 raise ValueError(f"{name} more than once")
         return names
+
+    @model_validator(mode="after")
+    def telegram_pair(self):
+        if bool(self.telegram_token) != bool(self.telegram_chat_id):
+            raise ValueError("set both LEGION_TELEGRAM_TOKEN and LEGION_TELEGRAM_CHAT_ID, or neither")
+        return self
 
     @model_validator(mode="after")
     def known_efforts(self):

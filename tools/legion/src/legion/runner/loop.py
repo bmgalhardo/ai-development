@@ -12,6 +12,7 @@ import time
 from pydantic import BaseModel
 
 from ..container import Container
+from ..notify import Notifier
 from ..prompts import Prompts
 from ..providers import registry
 from ..tracker import Cycle, Tracker
@@ -96,6 +97,8 @@ class Runner:
         self.failures = Counter()  # issue path -> implementation failures this run
         self.failed = defaultdict(set)  # issue path -> providers that failed it this run; a retry prefers another
         self.signed_out = set()  # providers whose login failed; they sit out until the runner restarts
+        self.notifier = Notifier(settings)
+        self.reason = None  # why the run ended, for its notification
 
     def usable_providers(self):
         """The preference, without providers that aren't installed."""
@@ -109,9 +112,16 @@ class Runner:
         return usable
 
     def run(self):
+        """Work until no issue is ready or the run must stop; notify how it ended unless the user stopped it."""
         cycle = Tracker.for_project(self.root, self.project).current_cycle()
         self.attempts = AttemptLog(cycle.path, self.root)
         self.check_clean(cycle)
+        code = self.loop(cycle)
+        if code != STOPPED:
+            self.notify_end(Cycle.read(cycle.path), code)
+        return code
+
+    def loop(self, cycle):
         while True:
             cycle = Cycle.read(cycle.path)
             issue = cycle.next_issue()
@@ -140,8 +150,8 @@ class Runner:
                               failed=self.failed[issue.path], implementer=self.attempts.implementer(issue.path))
         decision = self.router.choose(step.role, situation, time.time())
         if isinstance(decision, Stop):
-            say(f"Stopping: {', '.join(decision.signed_out)} authentication needs attention. "
-                f"See {self.attempts.folder}")
+            self.reason = f"{', '.join(decision.signed_out)} authentication needs attention: log in and restart."
+            say(f"Stopping: {self.reason} See {self.attempts.folder}")
             return 1
         if isinstance(decision, Wait):
             return self.wait(decision.until)
@@ -150,6 +160,8 @@ class Runner:
         codes = self.launch(provider, jobs)
         outcomes = [self.record(cycle, issue, provider, job.attempt, code) for job, code in zip(jobs, codes)]
         self.save_current([job.attempt for job in jobs])
+        if "blocked" in outcomes:
+            self.notify_blocked(Cycle.read(cycle.path).issues[issue.number])
         return STOPPED if None in codes else self.react(issue, provider, jobs, outcomes)
 
     def jobs(self, cycle, issue, step, provider):
@@ -243,7 +255,10 @@ class Runner:
         self.failures[issue.path] += 1
         self.failed[issue.path].add(provider.name)
         say(f"Worker stopped ({', '.join(outcomes)}); {issue.path.name} ({self.failures[issue.path]}/2)")
-        return 1 if self.failures[issue.path] >= 2 else None
+        if self.failures[issue.path] < 2:
+            return None
+        self.reason = f"{issue.path.name} failed twice ({', '.join(sorted(self.failed[issue.path]))}): see its attempts."
+        return 1
 
     def save_review(self, cycle, issue, attempt, report):
         review = self.review_file(cycle, issue, attempt.axis)
@@ -267,7 +282,8 @@ class Runner:
         for issue in cycle.issues.values():
             print(f"{issue.status:12s} {issue.path.name}")
         if cycle.stuck():
-            say(cycle.stuck_message())
+            self.reason = cycle.stuck_message()
+            say(self.reason)
             return 1
         return self.after_build() if cycle.build and cycle.build.status == "done" else 0
 
@@ -275,11 +291,32 @@ class Runner:
         """Run LEGION_AFTER_BUILD once the build is done; its exit code becomes the runner's."""
         command = self.settings.after_build
         if not command:
-            say("The build is done; no after-build command (LEGION_AFTER_BUILD)")
+            self.reason = "The build is done; no after-build command (LEGION_AFTER_BUILD)."
+            say(self.reason)
             return 0
         command = command.replace("{project}", shlex.quote(str(self.project)))
         say(f"The build is done; running {command}")
         code = subprocess.run(command, shell=True, cwd=self.root, stdin=subprocess.DEVNULL).returncode
+        self.reason = f"The build is done; the after-build command failed (exit {code})." if code else \
+            "The build is done and the after-build command succeeded."
         if code:
             say(f"After-build command failed (exit {code})")
         return code
+
+    def notify_blocked(self, issue):
+        """Tell the user an issue is blocked and what it needs from them; the run goes on with other issues."""
+        needs = issue.needs() or ["(no Needs the user: line; see the issue)"]
+        self.notifier.send(f"Legion · {self.project.name}: {issue.path.name} is blocked.\n"
+                           + "\n".join(f"• {need}" for need in needs))
+
+    def notify_end(self, cycle, code):
+        """Tell the user the run ended: why, each blocked issue's needs, and the issues per status."""
+        lines = [f"Legion · {self.project.name}: the run ended (exit {code}).",
+                 self.reason or "No issue is ready."]
+        blocked = [issue for issue in cycle.issues.values() if issue.status == "blocked"]
+        if blocked:
+            lines.append("Blocked:")
+            lines += [f"• {issue.path.name}: {need}" for issue in blocked for need in issue.needs() or ["see the issue"]]
+        counts = Counter(issue.status for issue in cycle.issues.values())
+        lines.append(", ".join(f"{count} {status}" for status, count in counts.items()) or "No issues.")
+        self.notifier.send("\n".join(lines))

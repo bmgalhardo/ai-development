@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 STATUS = re.compile(r"^\*\*Status:\*\*\s*(.+?)\s*$", re.M)
 BLOCKED_BY = re.compile(r"^\*\*Blocked by:\*\*\s*(.+?)\s*$", re.M)
+NEEDS = re.compile(r"^\s*(?:[-*]\s+)?Needs the user:\s*(.+?)\s*$", re.M)
 
 
 class TrackerError(Exception):
@@ -32,6 +33,10 @@ class Issue(BaseModel):
         blocked = BLOCKED_BY.search(text)
         blockers = re.findall(r"\b(\d{2})\b", blocked[1]) if blocked else []
         return cls(number=path.name[:2], path=path, status=status[1], blockers=blockers)
+
+    def needs(self):
+        """The issue's `Needs the user:` lines: what a blocked issue waits for from the user."""
+        return NEEDS.findall(self.path.read_text(encoding="utf-8"))
 
 
 class Cycle(BaseModel):

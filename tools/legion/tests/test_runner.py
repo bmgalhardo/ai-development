@@ -2,6 +2,7 @@
 
 from contextlib import ExitStack
 import fcntl
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
 from pathlib import Path
@@ -313,6 +314,65 @@ class RunnerTests(unittest.TestCase):
         self.add_build_issue()
         self.issue.write_text("**Status:** open\n**Blocked by:** 02\n")
         self.assertEqual(self.run_loop(), 1)
+
+    # Notifications
+
+    def telegram(self):
+        """A local stand-in for Telegram's Bot API; the messages it receives."""
+        messages = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_POST(self):
+                messages.append((self.path, json.loads(self.rfile.read(int(self.headers["Content-Length"])))))
+                body = b'{"ok": true}'
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *_):
+                pass
+
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        environment = {"LEGION_TELEGRAM_TOKEN": "secret", "LEGION_TELEGRAM_CHAT_ID": "42",
+                       "LEGION_TELEGRAM_API": f"http://127.0.0.1:{server.server_port}"}
+        return messages, environment
+
+    def test_a_blocked_issue_and_the_runs_end_are_notified(self):
+        messages, environment = self.telegram()
+        self.assertEqual(self.run_loop(TEST_SCENARIO="blocked", **environment), 0)
+        self.assertEqual([path for path, _ in messages], ["/botsecret/sendMessage"] * 2)
+        self.assertEqual({body["chat_id"] for _, body in messages}, {"42"})
+        blocked, end = (body["text"] for _, body in messages)
+        self.assertIn("01-feature.md is blocked", blocked)
+        self.assertIn("pick the boss's enrage time", blocked)
+        self.assertIn("the run ended (exit 0)", end)
+        self.assertIn("• 01-feature.md: pick the boss's enrage time", end)
+        self.assertIn("1 blocked", end)
+
+    def test_the_failure_limit_is_notified_with_its_reason(self):
+        messages, environment = self.telegram()
+        self.assertEqual(self.run_loop(TEST_SCENARIO="failure", **environment), 1)
+        self.assertEqual(len(messages), 1)
+        self.assertIn("01-feature.md failed twice (claude, codex)", messages[0][1]["text"])
+
+    def test_an_unreachable_telegram_does_not_stop_the_run(self):
+        self.issue.write_text("**Status:** done\n")
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            port = probe.getsockname()[1]
+        self.assertEqual(self.run_loop(LEGION_TELEGRAM_TOKEN="secret", LEGION_TELEGRAM_CHAT_ID="42",
+                                       LEGION_TELEGRAM_API=f"http://127.0.0.1:{port}"), 0)
+
+    def test_without_telegram_settings_nothing_is_sent(self):
+        messages, environment = self.telegram()
+        environment.pop("LEGION_TELEGRAM_TOKEN")
+        environment.pop("LEGION_TELEGRAM_CHAT_ID")
+        self.assertEqual(self.run_loop(TEST_SCENARIO="blocked", **environment), 0)
+        self.assertEqual(messages, [])
 
     # Containers
 
