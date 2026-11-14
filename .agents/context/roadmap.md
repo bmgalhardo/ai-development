@@ -91,20 +91,36 @@ homelab repo's existing uncommitted changes while assessing runner placement.
 ## Open alternative: Overmind as the home base, in the homelab
 
 Discussed with the user on 2026-11-13. Not decided; keep every option open.
-It would replace GitHub Issues and PRs in the direction above; git hosting stays.
+It would replace GitHub Issues and PRs in the direction above.
+
+The user's leaning (2026-11-14): asset-heavy games, so self-host git.
+- **Forgejo for personal projects.** Every personal project, its records and its private images live on a Forgejo in elysium.
+  Forgejo over GitLab: GitLab needs 8 to 16 GB (2.5 GB only stripped down); Forgejo needs a few hundred MB.
+  Forgejo over Gitea: same footprint and features; non-profit governance (Codeberg e.V.) since Gitea's 2022 move to a company.
+  It brings LFS with no bandwidth quota, a container registry and Actions-compatible runners, all on the LAN.
+  Pinned to Apollo with a local-path volume; an HTTPRoute and a Vault certificate.
+  Backups are the critical part: a nightly `forgejo dump` (repos, LFS, database), copied to Hades's NAS and off-site.
+- **Overmind stays public and agnostic, on GitHub.** It names no personal project and holds no personal records.
+  Before publishing: move `.scratch/` to a private Forgejo repo (`overmind-records`), and the homelab-specific notes out of this roadmap.
+  Check what `publish-server.md` and other context name before the switch.
+- **Assets.** Git LFS from the next commit on, by file type (`*.glb`, `*.blend`, textures, audio, fonts); history isn't rewritten, so recorded commit hashes stay valid.
+  Only asset tickets and the build download LFS files (`GIT_LFS_SKIP_SMUDGE=1` elsewhere).
+  The Blender worker commits its exports, `.import` files and preview renders to its ticket branch; dependents and the build get them through the epic branch.
+- **Project context from the host.** Forgejo's API lists the repos with descriptions and topics (L0) and serves raw files such as `AGENTS.md` without cloning (L1).
+  The dotfiles notes then point at the host instead of listing repos. Use the REST API with a read-only token first; an MCP server (Gitea's official one, or a community Forgejo one) is optional.
 
 - **Session context.** Done (2026-11-14): the static L0 map is the user's notes in their dotfiles repo,
   linked as `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`: repos, what each is, remotes, the infrastructure layer.
   This repo names no project; each repo's `AGENTS.md` is its L1.
   Later: a `SessionStart` hook (kept in dotfiles) adds live status from Overmind: active epics, blocked tickets, pending decisions, latest build.
   If Overmind is down, the hook says so and sessions work from files.
-- **Reading a repo without cloning it.** Fetch one file through the GitHub API (`gh api repos/<owner>/<repo>/contents/<path>` with the raw media type), or a shallow sparse clone of only `AGENTS.md` and `.agents/`.
+- **Reading a repo without cloning it.** Fetch one file through the host's API, or a shallow sparse clone of only `AGENTS.md` and `.agents/`.
   Needs each repo on a remote: today 02-prototype, 03-prototype, godot-telemetry, algo-trading and job-hunt have none, so they also have no off-machine backup.
   A context server (an MCP docs server, or OpenViking) only once hand-written indexes stop being enough.
 - **Decisions queue.** Collect `Needs the user:` lines, manual tickets and coordinator escalations, each with question, options, evidence and the tickets it holds.
 - **Hosting.** Overmind as a Deployment on elysium (Apollo), managed by Flux from the homelab repo, with an HTTPRoute, a Vault certificate and secrets through VSO.
   Reached from daedalus and through the VPN. Reads unauthenticated; writes take a token.
-- **Records.** Specs, tickets, reviews, debt and decisions in a private git repo (`overmind-records`, on GitHub for off-site backup).
+- **Records.** Specs, tickets, reviews, debt and decisions in a private git repo (`overmind-records`, on Forgejo).
   Overmind clones it at start, is its only writer, and commits in batches. Session logs go to stdout and Argus.
   Runtime state (leases, attempts, cooldowns) is rebuilt on restart, so no volume is needed.
 - **No PRs.** Parallel work needs branches and isolated checkouts, not PRs.
@@ -113,14 +129,17 @@ It would replace GitHub Issues and PRs in the direction above; git hosting stays
 - **Workers as Jobs.** One Kubernetes Job per attempt in `overmind-workers`: clone, check out the ticket branch, run the CLI, push.
   Overmind's ServiceAccount may only create, watch and delete Jobs there. Concurrency is an Overmind setting plus resource requests.
   Claude authenticates with `claude setup-token`; Codex rewrites `auth.json` on renewal, so it needs a writable login per worker (open problem).
-- **Images.** GitHub Actions builds the base image (on change and nightly) and each project image (on Dockerfile or lockfile change) into GHCR.
-  Tag project images by a hash of their recipe files; Overmind picks the tag from the ticket branch and triggers a missing build.
-  An in-cluster registry and builder is the alternative if GHCR limits bite.
+- **Images.** Toolchain images, from this repo, layered: `overmind-worker` (both CLIs; the provider is chosen at runtime), `overmind-godot`, `overmind-blender` (on top of Godot, to write `.import` files).
+  Generic images are public on GHCR, built by GitHub Actions on change and nightly (CLI pin bumps); GHCR's private quota (500 MB) can't hold them.
+  Project images (project-specific extras only) are private, built by Forgejo Actions into Forgejo's registry.
+  Tag images by a hash of their recipe and parent; Overmind picks the tag from the ticket branch and triggers a missing build.
+- **Asset workers.** A container on Hades (`homelab/node=hades`), not SSH from a container to the `hephaestus` LXC: one lifecycle, no keys, a pinned Blender.
+  CPU only. Overmind wakes Hades for queued asset work; asset Jobs must be safe to retry, since Hades has had memory freezes.
 - **Telegram.** Done: send-only notifications from the runner (blocked issue, run end; `workers.md`).
   Later: buttons that answer a decision; a text reply that starts a headless coordinator Job; a direction that starts the delegated path, released with one tap.
   Use long polling (`getUpdates`), so nothing is exposed; accept only the user's ID.
 
-Possible order: L0/L1 API with the hook and decisions queue; images on Actions; workers as Jobs; scheduler across released epics; Telegram answers.
+Possible order: Forgejo with backups, and the personal repos pushed with LFS; split the records out of this repo; host-based project context; the decisions queue and live-status hook; images; workers as Jobs; scheduler across released epics; Telegram answers.
 
 ## Direction
 
