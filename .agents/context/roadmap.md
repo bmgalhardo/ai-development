@@ -93,9 +93,14 @@ homelab repo's existing uncommitted changes while assessing runner placement.
 Discussed with the user on 2026-11-13. Not decided; keep every option open.
 It would replace GitHub Issues and PRs in the direction above; git hosting stays.
 
-- **Session context.** A `SessionStart` hook fetches an L0 map from Overmind: projects, active epics, ticket counts, pending decisions, latest build.
-  An L1 report per project (decisions, blocked tickets, the build to play) is fetched on demand; L2 is the files.
+- **Session context.** Done (2026-11-14): the static L0 map is the user's notes in their dotfiles repo,
+  linked as `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`: repos, what each is, remotes, the infrastructure layer.
+  This repo names no project; each repo's `AGENTS.md` is its L1.
+  Later: a `SessionStart` hook (kept in dotfiles) adds live status from Overmind: active epics, blocked tickets, pending decisions, latest build.
   If Overmind is down, the hook says so and sessions work from files.
+- **Reading a repo without cloning it.** Fetch one file through the GitHub API (`gh api repos/<owner>/<repo>/contents/<path>` with the raw media type), or a shallow sparse clone of only `AGENTS.md` and `.agents/`.
+  Needs each repo on a remote: today 02-prototype, 03-prototype, godot-telemetry, algo-trading and job-hunt have none, so they also have no off-machine backup.
+  A context server (an MCP docs server, or OpenViking) only once hand-written indexes stop being enough.
 - **Decisions queue.** Collect `Needs the user:` lines, manual tickets and coordinator escalations, each with question, options, evidence and the tickets it holds.
 - **Hosting.** Overmind as a Deployment on elysium (Apollo), managed by Flux from the homelab repo, with an HTTPRoute, a Vault certificate and secrets through VSO.
   Reached from daedalus and through the VPN. Reads unauthenticated; writes take a token.

@@ -11,7 +11,8 @@ worker loop); each project is its own independent repo beside it
 ## The session's project
 
 At the start of a session, establish which project it is about: the user
-names it, or ask them. Skip this only when the work is on the workflow
+names it, or ask them. The user's repos are listed in their user-level
+notes (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`), when present. Skip this only when the work is on the workflow
 itself (this repo). Then read `../<project>/CLAUDE.md` and follow its
 pointers to that project's own context; from then on the session works on
 that project. Paths in a project's files are relative to that project's root.
