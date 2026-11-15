@@ -119,6 +119,14 @@ Feedback carries the review either way.
 
 ## 2. Refinement session
 
+For delegated refinement, `/pm <project> <cycle>` makes the current session
+the PM. It explores the design tree, chooses its recommended answers,
+publishes the spec and tickets, and records PM choices separately from
+explicit user requirements. It replaces the confirmation gates below for
+that run. When asked to run the cycle too, it supervises Overmind through
+build and publication and resolves blockers within the delegated scope.
+The [pm skill](../skills/pm/SKILL.md) defines the handoffs and limits.
+
 Keep the live conversation from grilling through `/to-spec` and
 `/to-tickets`; do not intentionally clear it between these steps. There
 is no persisted file carrying the interview into `/to-spec`.

@@ -4,6 +4,9 @@ description: Interview the user about review feedback, a plan, decision, or idea
 disable-model-invocation: true
 ---
 
+When the user delegates the cycle to `/pm`, use [pm](../pm/SKILL.md) instead of interviewing them.
+Its delegated decisions replace this skill's answer and confirmation gates for that run.
+
 Use domain-modeling's conversational techniques throughout the interview: challenge terminology, prefer the user's words, and stress-test decisions with concrete scenarios. Its file-writing steps do not apply here.
 
 The issue tracker should have been provided to you. The main input is the session's project's latest `feedback.md` (in `.scratch/<project>/<cycle>/`); read it, the project's `docs/review.md` and the domain docs. The feedback is the plan to grill. The session may start fresh or continue the review conversation: do not require earlier chat to understand the review, and retain relevant live context when it is available.

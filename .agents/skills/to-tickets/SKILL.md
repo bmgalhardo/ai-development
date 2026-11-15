@@ -6,6 +6,9 @@ disable-model-invocation: true
 
 # To Tickets
 
+In a user-delegated [pm](../pm/SKILL.md) run, the PM resolves refinement gaps and approves the breakdown.
+Use those recorded PM decisions in place of interview answers and user confirmation.
+
 Break a plan, spec, or conversation into a set of **tickets**: tracer-bullet vertical slices, each declaring the tickets that **block** it.
 
 The issue tracker should have been provided to you.

@@ -4,6 +4,9 @@ description: "Turn the live conversation into an implementation-ready spec and p
 disable-model-invocation: true
 ---
 
+In a user-delegated [pm](../pm/SKILL.md) run, the PM settles the decision frontier and approves seams and first guesses.
+Use those recorded PM decisions in place of interview answers and user confirmation.
+
 This skill synthesizes the live conversation and codebase understanding into a spec and publishes it directly to the configured issue tracker. Review records feedback in the cycle's `feedback.md`; `grill-me` is pure conversation and writes nothing. There is no persisted interview handoff or required draft. Do NOT run another design interview.
 
 Use the live chat as the source of the interview's decisions and wording. Consult `feedback.md` for supporting context and references, not as a substitute for missing interview answers. Preserve agreed choices, remove superseded ones, and do not turn unresolved ideas into requirements. If the necessary conversation is unavailable or a decision remains unresolved, identify the missing context or refinement instead of claiming the spec is complete. A missing draft is normal.
