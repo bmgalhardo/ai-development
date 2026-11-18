@@ -63,7 +63,8 @@ profile picks the store (`overmind memory use`); with none, memory is off.
   next ready issue and every issue's status (Overmind, `tools/overmind/`). They
   take the project as an argument (`../<project>`).
 - `tools/README.md`: tool folders, entry points and focused test commands.
-- `.agents/context/roadmap.md`: worker improvements, completed steps and next increments.
+- `overmind memory get ai-development/roadmap.md` (private, when memory is on): worker
+  improvements, completed steps and next increments. Plans live in the store, not here.
 
 ## Standing rules
 

@@ -29,7 +29,7 @@ class Dashboard:
                 say(f"Dashboard port {port} already in use; not starting another")
                 return
         if importlib.util.find_spec("fastapi") is None:
-            say("Dashboard not started: run through tools/overmind.sh, which installs its dependencies")
+            say("Dashboard not started: install overmind[dashboard], or run through tools/overmind.sh")
             return
         with self.log.open("w") as log:
             self.child = subprocess.Popen(self.command(), stdin=subprocess.DEVNULL, stdout=log,

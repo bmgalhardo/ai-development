@@ -1,4 +1,4 @@
-"""`overmind memory`: the context store's commands, as the `memory` group. See the README's Memory section.
+"""The agents' memory: the `memory` group, over `overmind.memory` (the store). See the README's Memory section.
 
 The active profile loads inside each command, so the group needs no settings and works from any folder.
 A ProfileError or StoreError ends the command with `overmind memory: <message>` and exit code 1.
@@ -15,9 +15,9 @@ import tempfile
 
 import click
 
-from . import l0 as l0_map
-from .profiles import OFF, Profile, ProfileError
-from .store import GITHUB_PREFIX, ForgejoRepo, GitHubPublicRepo, NotFound, Repo, StoreError
+from ..memory import l0 as l0_map
+from ..memory.profiles import OFF, Profile, ProfileError
+from ..memory.store import GITHUB_PREFIX, ForgejoRepo, GitHubPublicRepo, NotFound, Repo, StoreError
 
 REPO_HELP = "Another repo, read only: owner/name on the store's host, or github:owner/name (public)."
 MESSAGE_HELP = "The commit message (default: '<action> PATH')."
@@ -204,9 +204,3 @@ def profiles():
     for name in Profile.names():
         click.echo(name)
 
-
-def main(argv=None):
-    """`overmind memory ARGV`; its exit code."""
-    from ..cli import main as overmind_main
-
-    return overmind_main(["memory", *(sys.argv[1:] if argv is None else argv)])

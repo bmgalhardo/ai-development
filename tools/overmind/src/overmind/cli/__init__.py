@@ -5,9 +5,10 @@
 |---|---|
 | `work.py` | The worker loop and its containers: `run`, `next`, `status`, `shell`, `build` |
 | `dashboard.py` | The read-only issue board: `dashboard` |
-| `..memory.cli` | The agents' memory, the context store: the `memory` group |
+| `memory.py` | The agents' memory, the context store: the `memory` group |
 
 Settings load inside each command that needs them, so `memory` and `--help` work outside the workflow root.
+This package is the only interface layer: it imports the domain packages, and none of them imports it.
 """
 
 import subprocess
@@ -15,12 +16,12 @@ import sys
 
 import click
 
-from ..memory.cli import memory
 from ..runner.loop import RunnerError
 from ..runner.repo import UnsafeRepoError
 from ..settings import SettingsError
 from ..tracker import TrackerError
 from .dashboard import dashboard
+from .memory import memory
 from .work import build, next_issue, run, shell, status
 
 # What a command may fail with: main exits with the message, never a traceback.

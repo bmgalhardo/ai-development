@@ -24,7 +24,7 @@ The skills are adapted from [Matt Pocock's](https://github.com/mattpocock/skills
 | Path | What |
 |---|---|
 | `AGENTS.md` | The agents' entry point (`CLAUDE.md` links to it) |
-| `.agents/context/` | The workflow, issue tracker, project contract, engineering defaults, publishing, roadmap |
+| `.agents/context/` | The workflow, issue tracker, project contract, engineering defaults, publishing |
 | `.agents/skills/` | The skills (`.claude/` links to `.agents/`) |
 | `tools/` | The worker loop, publisher, contract check and dashboard ([`tools/README.md`](tools/README.md)) |
 | `.scratch/<project>/` | Each project's cycles: feedback, mocks, specs, issues (not in git) |

@@ -226,7 +226,7 @@ tools/overmind.sh memory repos              # the repos in L0.md's table, as -r 
 tools/overmind.sh memory use off            # no store on this machine (the default)
 ```
 
-`uv tool install ./tools/overmind` puts `overmind` on the PATH, so `overmind memory …` works anywhere; the wrapper needs only uv.
+`uv tool install "./tools/overmind[dashboard]"` puts `overmind` on the PATH, so `overmind …` works anywhere (drop `[dashboard]` to skip the board); the wrapper needs only uv.
 
 Memory is **off** on a new machine. A profile is `~/.config/overmind/memory/<profile>/{env,token}` (mode 600, never in git); `OVERMIND_MEMORY_PROFILE` picks one for a shell or a command.
 The workflow repo's `SessionStart` hooks run `memory l0 --json`, which adds the store's `L0.md` to sessions started there.
@@ -238,7 +238,7 @@ It caches the last copy in `~/.cache/overmind/memory/<profile>/` for when the st
 | `memory/profiles.py` | Which store the machine uses (`Profile`); memory's only reader of the environment |
 | `memory/store.py` | The repos: `ForgejoRepo` (read and write), `GitHubPublicRepo` (read); every request goes through `Http` |
 | `memory/l0.py` | The L0 for a session start, its cache, the hook's JSON, the repo table |
-| `memory/cli.py` | The `memory` command group (click), attached to `overmind` in `cli/` |
+| `cli/memory.py` | The `memory` command group; `memory/` itself has no commands and imports nothing else from Overmind |
 
 Its tests (`tests/test_memory_*.py`) run against an in-memory Forgejo (`tests/fake_forgejo.py`), never the network.
 
@@ -247,5 +247,5 @@ Its tests (`tests/test_memory_*.py`) run against an in-memory Forgejo (`tests/fa
 Run the tests from the workflow root, with the dashboard's dependencies:
 
 ```bash
-uv run --project tools/overmind --group dashboard python -m unittest discover -s tools/overmind/tests
+uv run --project tools/overmind --extra dashboard python -m unittest discover -s tools/overmind/tests
 ```

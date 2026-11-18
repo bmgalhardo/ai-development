@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from overmind.memory import cli
+from overmind import cli
 from overmind.memory.store import Http
 
 from fake_forgejo import API, TOKEN, FakeForgejo
@@ -47,7 +47,7 @@ class StoreTestCase(unittest.TestCase):
         fake_stdin = io.TextIOWrapper(io.BytesIO(stdin))
         stdout = io.TextIOWrapper(io.BytesIO(), write_through=True)
         with redirect_stdout(stdout), redirect_stderr(err), patch.object(sys, "stdin", fake_stdin):
-            code = cli.main(list(args))
+            code = cli.main(["memory", *args])
             stdout.flush()
         out.write(stdout.buffer.getvalue().decode())
         return code, out.getvalue(), err.getvalue()

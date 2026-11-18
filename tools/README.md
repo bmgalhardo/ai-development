@@ -22,7 +22,7 @@ tools/overmind.sh next ../<project>
 Run the tests for the folder being changed:
 
 ```bash
-uv run --project tools/overmind --group dashboard python -m unittest discover -s tools/overmind/tests
+uv run --project tools/overmind --extra dashboard python -m unittest discover -s tools/overmind/tests
 python3 -m unittest discover -s tools/publish -t .
 python3 -m unittest discover -s tools/project -t .
 ```
@@ -30,9 +30,9 @@ python3 -m unittest discover -s tools/project -t .
 Run all tool tests after changes spanning folders:
 
 ```bash
-uv run --project tools/overmind --group dashboard python -m unittest discover -s tools/overmind/tests
+uv run --project tools/overmind --extra dashboard python -m unittest discover -s tools/overmind/tests
 python3 -m unittest discover -s tools -t .
 ```
 
 The worker settings are in `.agents/context/workers.md`.
-The implementation roadmap is in `.agents/context/roadmap.md`.
+The implementation roadmap is private: `overmind memory get ai-development/roadmap.md`.

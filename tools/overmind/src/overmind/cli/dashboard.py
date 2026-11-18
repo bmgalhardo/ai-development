@@ -17,6 +17,7 @@ def dashboard(host, port):
         from ..dashboard.app import create_app
     except ImportError:
         raise click.ClickException(
-            "The dashboard needs Overmind's dashboard group: run it through tools/overmind.sh dashboard") from None
+            "The dashboard needs Overmind's dashboard extra: install overmind[dashboard], "
+            "or run it through tools/overmind.sh dashboard") from None
     uvicorn.run(create_app(settings.root), host=host or settings.dashboard_host,
                 port=port or settings.dashboard_port)
