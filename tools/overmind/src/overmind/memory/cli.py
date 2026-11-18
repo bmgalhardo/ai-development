@@ -1,9 +1,11 @@
-"""`overmind memory`: the context store's commands. See the README's Memory section."""
+"""`overmind memory`: the context store's commands, as the `memory` group. See the README's Memory section.
+
+The active profile loads inside each command, so the group needs no settings and works from any folder.
+A ProfileError or StoreError ends the command with `overmind memory: <message>` and exit code 1.
+"""
 
 from __future__ import annotations
 
-import argparse
-import getpass
 import os
 from pathlib import Path
 import shlex
@@ -11,176 +13,200 @@ import subprocess
 import sys
 import tempfile
 
-from . import l0
+import click
+
+from . import l0 as l0_map
 from .profiles import OFF, Profile, ProfileError
 from .store import GITHUB_PREFIX, ForgejoRepo, GitHubPublicRepo, NotFound, Repo, StoreError
 
-REPO_HELP = "another repo, read only: owner/name on the store's host, or github:owner/name (public)"
-MESSAGE_HELP = "the commit message (default: '<action> PATH')"
+REPO_HELP = "Another repo, read only: owner/name on the store's host, or github:owner/name (public)."
+MESSAGE_HELP = "The commit message (default: '<action> PATH')."
 
 
-class Commands:
-    """Each method is a command, taking the parsed arguments; it returns the exit code, or None for 0."""
+class Failed(click.ClickException):
+    """A memory command that could not finish, shown as `overmind memory: <message>`."""
 
-    def __init__(self, profile: Profile):
-        self.profile = profile
+    def show(self, file=None):
+        click.echo(f"overmind memory: {self.message}", err=True)
 
-    def _store(self) -> ForgejoRepo:
-        profile = self.profile.require()
-        return ForgejoRepo(profile.api, profile.token, profile.ca)
 
-    def _repo(self, ref: str | None) -> Repo:
-        if ref and ref.startswith(GITHUB_PREFIX):
-            return GitHubPublicRepo(ref[len(GITHUB_PREFIX):])
-        store = self._store()
-        return store.other(ref) if ref else store
+class MemoryGroup(click.Group):
+    """Turns the store's and the profile's errors into `Failed`, for every command in the group; its help
+    lists the commands in the order they are defined (read, write, profiles)."""
 
-    def get(self, args):
-        """Print a file; it saves nothing."""
-        sys.stdout.buffer.write(self._repo(args.repo).read(args.path))
-        sys.stdout.flush()
+    def list_commands(self, ctx):
+        return list(self.commands)
 
-    def ls(self, args):
-        """List a folder; a folder ends in /."""
-        for entry in self._repo(args.repo).list(args.folder):
-            print(entry)
-
-    def repos(self, args):
-        """List the repos in L0.md's table, as references for -r."""
-        text, _ = l0.fetch(self.profile.require())
-        for repo in l0.table(text):
-            print(f"{repo.ref:32s} {repo.description}")
-
-    def put(self, args):
-        """Write stdin to a file, creating or replacing it in one commit."""
-        self._write(args.path, sys.stdin.buffer.read(), args.message)
-
-    def edit(self, args):
-        """Open a file in $VISUAL or $EDITOR and upload it if it changed; a new path creates the file."""
-        store = self._store()
+    def invoke(self, ctx):
         try:
-            before = store.read(args.path)
-        except NotFound:
-            before = b""
-        with tempfile.TemporaryDirectory() as folder:
-            file = Path(folder) / Path(args.path).name
-            file.write_bytes(before)
-            editor = shlex.split(os.environ.get("VISUAL") or os.environ.get("EDITOR") or "vi")
-            if subprocess.run([*editor, str(file)], check=False).returncode:
-                print(f"overmind memory: the editor failed; {args.path} unchanged", file=sys.stderr)
-                return 1
-            after = file.read_bytes()
-        if after == before:
-            print(f"no changes to {args.path}")
-            return
-        self._write(args.path, after, args.message, store)
-
-    def rm(self, args):
-        """Delete a file in one commit."""
-        commit = self._store().delete(args.path, args.message)
-        print(f"removed {args.path} {commit}")
-
-    def l0(self, args):
-        """Print L0.md for a session start: the cache when the store is away, nothing when memory is off."""
-        text = l0.for_session(self.profile)
-        output = l0.hook_output(text) if args.json else text
-        if output:
-            print(output)
-
-    def setup(self, args):
-        """Ask for the active profile's API URL, token and CA file, test them, and save them only if they work."""
-        profile = self.profile
-        if profile.off:
-            raise ProfileError("memory is off on this machine: `overmind memory use <profile>` (e.g. personal, work) first")
-        print(f"Profile: {profile.name}")
-        url = args.url or _ask("Context repo API URL (https://<forgejo>/api/v1/repos/<owner>/<repo>)", profile.api)
-        if not url:
-            raise ProfileError("no URL given")
-        known = profile.token_file.is_file()
-        token = getpass.getpass("Token (blank keeps the current one): " if known
-                                else "Forgejo token (repo read/write): ").strip()
-        if not token and not known:
-            raise ProfileError("no token given")
-        ca = _ask("CA certificate file, if the system does not trust the server (blank for none)", profile.ca)
-        if ca and not os.access(ca, os.R_OK):
-            raise ProfileError(f"cannot read {ca}")
-        profile.api, profile.ca, profile.token = url.rstrip("/"), ca, token or profile.token
-        try:
-            repo = ForgejoRepo(profile.api, profile.token, profile.ca).describe()
-        except StoreError as error:
-            raise ProfileError(f"could not read {profile.api} with that token; nothing saved ({error})") from error
-        profile.save(token or None)
-        visibility = "private" if repo.get("private") else "PUBLIC: anyone can read it"
-        print(f"ok: profile '{profile.name}' -> {repo.get('full_name')} ({visibility})")
-
-    def use(self, args):
-        """Show the active profile, or switch to another; off (the default) turns memory off."""
-        if not args.profile:
-            print(self.profile.name)
-            return
-        Profile.use(args.profile)
-        if args.profile == OFF:
-            print("memory is off on this machine; session hooks print nothing")
-        elif args.profile in Profile.names():
-            print(f"active profile: {args.profile}")
-        else:
-            print(f"active profile: {args.profile} (not set up yet: run `overmind memory setup`)")
-
-    def profiles(self, args):
-        """List the profiles set up on this machine."""
-        for name in Profile.names():
-            print(name)
-
-    def _write(self, path: str, content: bytes, message: str | None, store: ForgejoRepo | None = None):
-        store = store or self._store()
-        action, commit = store.write(path, content, message)
-        print(f"{action} {path} {commit}")
+            return super().invoke(ctx)
+        except (ProfileError, StoreError, OSError) as error:
+            raise Failed(str(error)) from error
 
 
-def _ask(question: str, current: str) -> str:
-    answer = input(f"{question}{f' [{current}]' if current else ''}: ").strip()
-    return answer or current
+@click.group(cls=MemoryGroup, epilog="Set OVERMIND_MEMORY_PROFILE to pick a profile for one shell or one command.")
+def memory():
+    """The agents' memory: a private context store, read and written over its host's API, never cloned."""
 
 
-def build_parser():
-    parser = argparse.ArgumentParser(prog="overmind memory", description=__doc__,
-                                     epilog="Set OVERMIND_MEMORY_PROFILE to pick a profile for one shell or one command.")
-    commands = parser.add_subparsers(dest="command", metavar="command")
-    commands.required = True
+repo_option = click.option("-r", "--repo", "ref", metavar="REPO", help=REPO_HELP)
+message_option = click.option("-m", "--message", help=MESSAGE_HELP)
 
-    def command(name):
-        return commands.add_parser(name, help=getattr(Commands, name).__doc__)
 
-    get = command("get")
-    get.add_argument("-r", "--repo", help=REPO_HELP)
-    get.add_argument("path")
-    ls = command("ls")
-    ls.add_argument("-r", "--repo", help=REPO_HELP)
-    ls.add_argument("folder", nargs="?", default="")
-    command("repos")
-    for name in ("put", "edit", "rm"):
-        sub = command(name)
-        sub.add_argument("path")
-        sub.add_argument("-m", "--message", help=MESSAGE_HELP)
-    command("l0").add_argument("--json", action="store_true", help="wrap it as SessionStart additionalContext")
-    command("setup").add_argument("url", nargs="?", help="the context repo's API URL")
-    command("use").add_argument("profile", nargs="?", help="a profile name, or off")
-    command("profiles")
-    return parser
+def _store() -> ForgejoRepo:
+    profile = Profile.active().require()
+    return ForgejoRepo(profile.api, profile.token, profile.ca)
+
+
+def _repo(ref: str | None) -> Repo:
+    if ref and ref.startswith(GITHUB_PREFIX):
+        return GitHubPublicRepo(ref[len(GITHUB_PREFIX):])
+    store = _store()
+    return store.other(ref) if ref else store
+
+
+def _write(path: str, content: bytes, message: str | None, store: ForgejoRepo | None = None) -> None:
+    action, commit = (store or _store()).write(path, content, message)
+    click.echo(f"{action} {path} {commit}")
+
+
+# Read
+
+
+@memory.command()
+@repo_option
+@click.argument("path")
+def get(ref, path):
+    """Print a file; it saves nothing."""
+    sys.stdout.buffer.write(_repo(ref).read(path))
+    sys.stdout.flush()
+
+
+@memory.command()
+@repo_option
+@click.argument("folder", default="")
+def ls(ref, folder):
+    """List a folder; a folder ends in /."""
+    for entry in _repo(ref).list(folder):
+        click.echo(str(entry))
+
+
+@memory.command()
+def repos():
+    """List the repos in L0.md's table, as references for -r."""
+    text, _ = l0_map.fetch(Profile.active().require())
+    for repo in l0_map.table(text):
+        click.echo(f"{repo.ref:32s} {repo.description}")
+
+
+@memory.command()
+@click.option("--json", "as_json", is_flag=True, help="Wrap it as SessionStart additionalContext.")
+def l0(as_json):
+    """Print L0.md for a session start: the cache when the store is away, nothing when memory is off."""
+    text = l0_map.for_session(Profile.active())
+    output = l0_map.hook_output(text) if as_json else text
+    if output:
+        click.echo(output)
+
+
+# Write
+
+
+@memory.command()
+@click.argument("path")
+@message_option
+def put(path, message):
+    """Write stdin to a file, creating or replacing it in one commit."""
+    _write(path, sys.stdin.buffer.read(), message)
+
+
+@memory.command()
+@click.argument("path")
+@message_option
+def edit(path, message):
+    """Open a file in $VISUAL or $EDITOR and upload it if it changed; a new path creates the file."""
+    store = _store()
+    try:
+        before = store.read(path)
+    except NotFound:
+        before = b""
+    with tempfile.TemporaryDirectory() as folder:
+        file = Path(folder) / Path(path).name
+        file.write_bytes(before)
+        editor = shlex.split(os.environ.get("VISUAL") or os.environ.get("EDITOR") or "vi")
+        if subprocess.run([*editor, str(file)], check=False).returncode:
+            raise Failed(f"the editor failed; {path} unchanged")
+        after = file.read_bytes()
+    if after == before:
+        click.echo(f"no changes to {path}")
+        return
+    _write(path, after, message, store)
+
+
+@memory.command()
+@click.argument("path")
+@message_option
+def rm(path, message):
+    """Delete a file in one commit."""
+    commit = _store().delete(path, message)
+    click.echo(f"removed {path} {commit}")
+
+
+# Profiles
+
+
+@memory.command()
+@click.argument("url", required=False)
+def setup(url):
+    """Ask for the active profile's API URL, token and CA file; save them only if they work."""
+    profile = Profile.active()
+    if profile.off:
+        raise ProfileError("memory is off on this machine: `overmind memory use <profile>` (e.g. personal, work) first")
+    click.echo(f"Profile: {profile.name}")
+    url = url or click.prompt("Context repo API URL (https://<forgejo>/api/v1/repos/<owner>/<repo>)",
+                              default=profile.api or None)
+    known = profile.token_file.is_file()
+    token = click.prompt("Token (blank keeps the current one)" if known else "Forgejo token (repo read/write)",
+                         hide_input=True, default="" if known else None, show_default=False).strip()
+    ca = click.prompt("CA certificate file, if the system does not trust the server (blank for none)",
+                      default=profile.ca, show_default=bool(profile.ca)).strip()
+    if ca and not os.access(ca, os.R_OK):
+        raise ProfileError(f"cannot read {ca}")
+    profile.api, profile.ca, profile.token = url.rstrip("/"), ca, token or profile.token
+    try:
+        repo = ForgejoRepo(profile.api, profile.token, profile.ca).describe()
+    except StoreError as error:
+        raise ProfileError(f"could not read {profile.api} with that token; nothing saved ({error})") from error
+    profile.save(token or None)
+    visibility = "private" if repo.get("private") else "PUBLIC: anyone can read it"
+    click.echo(f"ok: profile '{profile.name}' -> {repo.get('full_name')} ({visibility})")
+
+
+@memory.command()
+@click.argument("name", metavar="[PROFILE]", required=False)
+def use(name):
+    """Show the active profile, or switch to another; off (the default) turns memory off."""
+    if not name:
+        click.echo(Profile.active().name)
+        return
+    Profile.use(name)
+    if name == OFF:
+        click.echo("memory is off on this machine; session hooks print nothing")
+    elif name in Profile.names():
+        click.echo(f"active profile: {name}")
+    else:
+        click.echo(f"active profile: {name} (not set up yet: run `overmind memory setup`)")
+
+
+@memory.command()
+def profiles():
+    """List the profiles set up on this machine."""
+    for name in Profile.names():
+        click.echo(name)
 
 
 def main(argv=None):
-    """Run a command; its exit code."""
-    args = build_parser().parse_args(argv)
-    try:
-        code = getattr(Commands(Profile.active()), args.command)(args)
-    except (ProfileError, StoreError, OSError) as error:
-        print(f"overmind memory: {error}", file=sys.stderr)
-        return 1
-    except KeyboardInterrupt:
-        return 130
-    return code or 0
+    """`overmind memory ARGV`; its exit code."""
+    from ..cli import main as overmind_main
 
-
-if __name__ == "__main__":
-    sys.exit(main())
+    return overmind_main(["memory", *(sys.argv[1:] if argv is None else argv)])

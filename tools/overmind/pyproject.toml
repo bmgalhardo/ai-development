@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Runs and observes the implementation of tickets by coding agents."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["pydantic>=2,<3", "pydantic-settings>=2,<3"]
+dependencies = [
+    "click>=8.1,<9",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2,<3",
+]
 
 [project.scripts]
 overmind = "overmind.cli:main"

@@ -214,7 +214,7 @@ Native logs and recovery archives are not served. No database or frontend build 
 ## Memory
 
 `overmind memory` is the agents' memory: a private context store, a Forgejo repo read and written over its API, never cloned (`memory/`).
-It needs no settings and works from any folder; it uses only the standard library.
+It needs no settings and works from any folder.
 
 ```bash
 tools/overmind.sh memory use personal && tools/overmind.sh memory setup   # API URL, token, optional CA
@@ -238,7 +238,7 @@ It caches the last copy in `~/.cache/overmind/memory/<profile>/` for when the st
 | `memory/profiles.py` | Which store the machine uses (`Profile`); memory's only reader of the environment |
 | `memory/store.py` | The repos: `ForgejoRepo` (read and write), `GitHubPublicRepo` (read); every request goes through `Http` |
 | `memory/l0.py` | The L0 for a session start, its cache, the hook's JSON, the repo table |
-| `memory/cli.py` | The memory commands (`Commands`) and their parser |
+| `memory/cli.py` | The `memory` command group (click), attached to `overmind` in `cli/` |
 
 Its tests (`tests/test_memory_*.py`) run against an in-memory Forgejo (`tests/fake_forgejo.py`), never the network.
 

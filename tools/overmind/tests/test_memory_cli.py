@@ -64,7 +64,8 @@ class SetupTests(StoreTestCase):
         Profile.use("work")
 
     def setup_with(self, token, url=API):
-        with patch("builtins.input", side_effect=[""]), patch("getpass.getpass", return_value=token):
+        with patch("click.termui.visible_prompt_func", return_value=""), \
+                patch("click.termui.hidden_prompt_func", return_value=token):
             return self.run_command("setup", url)
 
     def test_a_working_token_is_saved(self):
