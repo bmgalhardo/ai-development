@@ -11,11 +11,35 @@ worker loop); each project is its own independent repo beside it
 ## The session's project
 
 At the start of a session, establish which project it is about: the user
-names it, or ask them. The user's repos are listed in their user-level
-notes (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`), when present. Skip this only when the work is on the workflow
-itself (this repo). Then read `../<project>/CLAUDE.md` and follow its
+names it, or ask them. The user's repos are listed in the L0 map, when the
+session has one (below). Skip this only when the work is on the workflow
+itself (this repo). Then read `../<project>/CLAUDE.md` (not cloned here: read it
+from its remote with `overmind memory`, below) and follow its
 pointers to that project's own context; from then on the session works on
 that project. Paths in a project's files are relative to that project's root.
+
+## Memory (`overmind memory`)
+
+Overmind's memory is a private context store, read and written over its host's
+API with no clone. Run it as `tools/overmind.sh memory …` (from a project:
+`../ai-development/tools/overmind.sh memory …`), or `overmind memory …` where
+Overmind is installed; docs write it as `overmind memory`. The machine's active
+profile picks the store (`overmind memory use`); with none, memory is off.
+
+- When a profile is on, a `SessionStart` hook adds the store's `L0.md` to the
+  session: the user's repos, where they live, the infrastructure. It is
+  private: never copy it, or anything else from the store, into a repo,
+  a commit message or this file. This repo is public.
+- No L0 in the session means memory is off here. Work without it: don't run
+  it and don't ask to set it up.
+- Read: `overmind memory ls [dir]`, `overmind memory get PATH`. Another repo
+  without cloning it: `get -r OWNER/REPO PATH`, `ls -r OWNER/REPO`, with
+  `-r github:OWNER/REPO` for public GitHub. `overmind memory repos` lists the
+  repos the L0 names, as `-r` refs.
+- Write: `overmind memory put PATH -m MSG < file`, `overmind memory rm PATH -m MSG`.
+  Each write is one commit; say in the message what changed. Write when the
+  user asks or a task closes an item the store tracks.
+- `overmind memory --help` lists every command.
 
 ## The workflow
 

@@ -84,11 +84,18 @@ def build_parser():
     dashboard = commands.add_parser("dashboard", help=Commands.dashboard.__doc__)
     dashboard.add_argument("--host", help="bind address (default: OVERMIND_DASHBOARD_HOST, else this host only)")
     dashboard.add_argument("--port", type=int, help="port (default: OVERMIND_DASHBOARD_PORT, else 8765)")
+    memory = commands.add_parser("memory", help="read and write the private context store (memory --help)",
+                                 add_help=False)
+    memory.add_argument("argv", nargs=argparse.REMAINDER, help="a memory command and its arguments")
     return parser
 
 
 def main(argv=None):
     """Run a command; its exit code (the console script exits with it)."""
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["memory"]:  # its own parser; needs no settings, so it works outside the workflow root
+        from .memory import cli as memory
+        return memory.main(argv[1:])
     args = build_parser().parse_args(argv)
     try:
         code = getattr(Commands(Settings.load()), args.command)(args)

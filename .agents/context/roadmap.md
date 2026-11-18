@@ -107,7 +107,10 @@ Progress (2026-11-17):
 - Done: LFS tracking by file type in 01, 02 and 03-prototype; `docs/**` stays plain git, so agents always see screenshots.
 - Open: the nightly `forgejo dump` lands on Forgejo's own disk; copy it to Hades's NAS and off-site.
 - Done (2026-11-18): the user-level notes (the L0 map) left the public dotfiles repo, history rewritten.
-  They are a local file on daedalus (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md` links to it), in no repo.
+- Done (2026-11-18): a context store, Overmind's memory. A private Forgejo repo read and written over the API with `overmind memory`, never cloned:
+  the L0 map and each repo's plans and todos, reachable from any machine and any agent, with history.
+  It is `overmind.memory`; this repo's `SessionStart` hooks load the L0 (cached for offline), so the L0 exists only in sessions started here.
+  Nothing agent-related is left in dotfiles or the user-level files.
 - **Forgejo for personal projects.** Every personal project, its records and its private images live on a Forgejo in elysium.
   Forgejo over GitLab: GitLab needs 8 to 16 GB (2.5 GB only stripped down); Forgejo needs a few hundred MB.
   Forgejo over Gitea: same footprint and features; non-profit governance (Codeberg e.V.) since Gitea's 2022 move to a company.
@@ -117,16 +120,18 @@ Progress (2026-11-17):
 - **Overmind stays public and agnostic, on GitHub.** It names no personal project and holds no personal records.
   Before publishing: move `.scratch/` to a private Forgejo repo (`overmind-records`), and the homelab-specific notes out of this roadmap.
   Check what `publish-server.md` and other context name before the switch.
+  When it moves out, this repo needs Overmind installed (`uv tool install` from its repo): say so in `README.md` and `AGENTS.md`,
+  and switch the `SessionStart` hooks and the docs from `tools/overmind.sh memory` to `overmind memory`.
 - **Assets.** Git LFS from the next commit on, by file type (`*.glb`, `*.blend`, textures, audio, fonts); history isn't rewritten, so recorded commit hashes stay valid.
   Only asset tickets and the build download LFS files (`GIT_LFS_SKIP_SMUDGE=1` elsewhere).
   The Blender worker commits its exports, `.import` files and preview renders to its ticket branch; dependents and the build get them through the epic branch.
 - **Project context from the host.** Forgejo's API lists the repos with descriptions and topics (L0) and serves raw files such as `AGENTS.md` without cloning (L1).
   The user-level notes then point at the host instead of listing repos. Use the REST API with a read-only token first; an MCP server (Gitea's official one, or a community Forgejo one) is optional.
 
-- **Session context.** Done (2026-11-14): the static L0 map is the user's notes, a local file on daedalus
-  (`~/.claude/CLAUDE.md`; `~/.codex/AGENTS.md` links to it), in no repo since 2026-11-18: repos, what each is, remotes, the infrastructure layer.
+- **Session context.** Done (2026-11-14): the static L0 map is the user's notes: repos, what each is, remotes, the infrastructure layer.
+  Since 2026-11-18 they live in the context store and a `SessionStart` hook loads them.
   This repo names no project; each repo's `AGENTS.md` is its L1.
-  Later: a `SessionStart` hook (local, next to the user-level notes, not in the public dotfiles) adds live status from Overmind: active epics, blocked tickets, pending decisions, latest build.
+  Later: the same hook adds live status from Overmind: active epics, blocked tickets, pending decisions, latest build.
   If Overmind is down, the hook says so and sessions work from files.
 - **Reading a repo without cloning it.** Fetch one file through the host's API, or a shallow sparse clone of only `AGENTS.md` and `.agents/`.
   Needs each repo on a remote: today 02-prototype, 03-prototype, godot-telemetry, algo-trading and job-hunt have none, so they also have no off-machine backup.

@@ -4,7 +4,7 @@ Keep each tool's implementation, tests and supporting assets in its own folder.
 
 | Folder | Responsibility | Command from the repo root |
 |---|---|---|
-| `overmind/` | The worker loop, worker containers, issue tracker and dashboard | `tools/overmind.sh <run\|next\|status\|dashboard> ../<project>` |
+| `overmind/` | The worker loop, worker containers, issue tracker, dashboard and memory (the context store) | `tools/overmind.sh <run\|next\|status\|dashboard> ../<project>`, `tools/overmind.sh memory <command>` |
 | `publish/` | Upload a build's outputs, or a review's mocks, to the publish server | `python3 tools/publish/publish.py ../<project> [mocks]` |
 | `project/` | Check a project repo against the contract (`project-setup.md`) | `python3 tools/project/check_contract.py ../<project>` |
 

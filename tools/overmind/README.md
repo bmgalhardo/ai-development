@@ -1,6 +1,6 @@
 # Overmind
 
-Runs and observes the implementation of tickets by coding agents: the worker loop, its containers, the tracker reader and the dashboard, as one package.
+Runs and observes the implementation of tickets by coding agents: the worker loop, its containers, the tracker reader, the dashboard and the agents' memory, as one package.
 It reads the tracker as `.agents/context/issue-tracker.md` defines it, in the workflow repo's `.scratch/`.
 
 Overmind is a uv project with its own dependencies, and imports nothing from the rest of `tools/`.
@@ -210,6 +210,37 @@ A runner may be processing an older cycle than the latest selected cycle.
 Partial JSON writes are retried on the next refresh with a visible warning.
 An unreadable issue snapshot returns a retryable error and leaves the last board visible.
 Native logs and recovery archives are not served. No database or frontend build is required.
+
+## Memory
+
+`overmind memory` is the agents' memory: a private context store, a Forgejo repo read and written over its API, never cloned (`memory/`).
+It needs no settings and works from any folder; it uses only the standard library.
+
+```bash
+tools/overmind.sh memory use personal && tools/overmind.sh memory setup   # API URL, token, optional CA
+tools/overmind.sh memory get L0.md          # print a file; it saves nothing
+tools/overmind.sh memory edit L0.md -m why  # open it in $EDITOR, upload it if it changed
+tools/overmind.sh memory put PATH -m why < file
+tools/overmind.sh memory ls -r owner/repo   # another repo on the host; -r github:owner/repo for public GitHub
+tools/overmind.sh memory repos              # the repos in L0.md's table, as -r refs
+tools/overmind.sh memory use off            # no store on this machine (the default)
+```
+
+`uv tool install ./tools/overmind` puts `overmind` on the PATH, so `overmind memory …` works anywhere; the wrapper needs only uv.
+
+Memory is **off** on a new machine. A profile is `~/.config/overmind/memory/<profile>/{env,token}` (mode 600, never in git); `OVERMIND_MEMORY_PROFILE` picks one for a shell or a command.
+The workflow repo's `SessionStart` hooks run `memory l0 --json`, which adds the store's `L0.md` to sessions started there.
+It caches the last copy in `~/.cache/overmind/memory/<profile>/` for when the store is unreachable, prints nothing when memory is off, and never fails.
+`ls -r` and `get -r` read other repos without cloning them; `repos` reads the table rows whose last column is `Forgejo` or `GitHub` plus `` `owner/repo` ``.
+
+| Module | Responsibility |
+|---|---|
+| `memory/profiles.py` | Which store the machine uses (`Profile`); memory's only reader of the environment |
+| `memory/store.py` | The repos: `ForgejoRepo` (read and write), `GitHubPublicRepo` (read); every request goes through `Http` |
+| `memory/l0.py` | The L0 for a session start, its cache, the hook's JSON, the repo table |
+| `memory/cli.py` | The memory commands (`Commands`) and their parser |
+
+Its tests (`tests/test_memory_*.py`) run against an in-memory Forgejo (`tests/fake_forgejo.py`), never the network.
 
 ## Tests
 
