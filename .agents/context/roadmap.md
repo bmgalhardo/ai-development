@@ -121,12 +121,12 @@ Progress (2026-11-17):
   Only asset tickets and the build download LFS files (`GIT_LFS_SKIP_SMUDGE=1` elsewhere).
   The Blender worker commits its exports, `.import` files and preview renders to its ticket branch; dependents and the build get them through the epic branch.
 - **Project context from the host.** Forgejo's API lists the repos with descriptions and topics (L0) and serves raw files such as `AGENTS.md` without cloning (L1).
-  The dotfiles notes then point at the host instead of listing repos. Use the REST API with a read-only token first; an MCP server (Gitea's official one, or a community Forgejo one) is optional.
+  The user-level notes then point at the host instead of listing repos. Use the REST API with a read-only token first; an MCP server (Gitea's official one, or a community Forgejo one) is optional.
 
 - **Session context.** Done (2026-11-14): the static L0 map is the user's notes, a local file on daedalus
   (`~/.claude/CLAUDE.md`; `~/.codex/AGENTS.md` links to it), in no repo since 2026-11-18: repos, what each is, remotes, the infrastructure layer.
   This repo names no project; each repo's `AGENTS.md` is its L1.
-  Later: a `SessionStart` hook (kept in dotfiles) adds live status from Overmind: active epics, blocked tickets, pending decisions, latest build.
+  Later: a `SessionStart` hook (local, next to the user-level notes, not in the public dotfiles) adds live status from Overmind: active epics, blocked tickets, pending decisions, latest build.
   If Overmind is down, the hook says so and sessions work from files.
 - **Reading a repo without cloning it.** Fetch one file through the host's API, or a shallow sparse clone of only `AGENTS.md` and `.agents/`.
   Needs each repo on a remote: today 02-prototype, 03-prototype, godot-telemetry, algo-trading and job-hunt have none, so they also have no off-machine backup.
