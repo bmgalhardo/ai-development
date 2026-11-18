@@ -1,14 +1,20 @@
 # Agentic queues roadmap
 
-Updated: 2026-11-12.
+Updated: 2026-11-18.
 This roadmap concerns the shared workflow, not a project feature cycle.
 The previous project cycle is complete.
 Future increments below are proposed work, not instructions to implement them automatically.
 
-## Agreed direction: GitHub-backed epics and worker queue
+## Superseded platform: GitHub-backed epics and worker queue
 
-Agreed with the user on 2026-11-10. This is the next direction for the
-shared workflow. GitHub is the default platform for repos, epics/tickets,
+Agreed with the user on 2026-11-10; its platform was superseded on 2026-11-18.
+Forgejo hosts the personal projects, and Overmind's records replace GitHub Issues and PRs.
+See "Agreed direction: Overmind as the home base, on Forgejo" below.
+Still in force from this section: the epic and ticket model, the two ways to prepare work, epic branches, parallel work, the worker guard and the research increment.
+Where it names GitHub Issues, PRs, Actions or GHCR, the Forgejo direction decides.
+The original platform text follows for reference.
+
+GitHub is the default platform for repos, epics/tickets,
 pull requests, checks, builds and deployments. Use GitHub-hosted runners
 where they fit; add homelab self-hosted runners only for hardware or private
 network needs (for example Blender on `hephaestus`). Do not self-host a Git
@@ -88,12 +94,20 @@ measure one epic before moving the queue authority; migrate existing cycles
 only after the GitHub contract and recovery behavior are proven. Preserve the
 homelab repo's existing uncommitted changes while assessing runner placement.
 
-## Open alternative: Overmind as the home base, in the homelab
+## Agreed direction: Overmind as the home base, on Forgejo
 
-Discussed with the user on 2026-11-13. Not decided; keep every option open.
-It would replace GitHub Issues and PRs in the direction above.
+Discussed with the user on 2026-11-13; leaning on 2026-11-14 (asset-heavy games, so self-host git).
+Decided with the user on 2026-11-18: Forgejo.
+It replaces GitHub Issues and PRs in the superseded section above.
 
-The user's leaning (2026-11-14): asset-heavy games, so self-host git.
+Progress (2026-11-17):
+- Done: Forgejo 17 live in elysium at `git.bgalhardo.internal`, managed from the homelab repo.
+  Sign-in through Authentik (OIDC); git over SSH at `git-ssh.bgalhardo.internal`; LFS on.
+- Done: 01-prototype, 02-prototype, 03-prototype, algo-trading, godot-telemetry and job-hunt pushed as private repos, `origin` on Forgejo.
+- Done: LFS tracking by file type in 01, 02 and 03-prototype; `docs/**` stays plain git, so agents always see screenshots.
+- Open: the nightly `forgejo dump` lands on Forgejo's own disk; copy it to Hades's NAS and off-site.
+- Open: the user-level notes (the L0 map) live in the public dotfiles repo and name private projects and the homelab.
+  Move them before more private detail goes there.
 - **Forgejo for personal projects.** Every personal project, its records and its private images live on a Forgejo in elysium.
   Forgejo over GitLab: GitLab needs 8 to 16 GB (2.5 GB only stripped down); Forgejo needs a few hundred MB.
   Forgejo over Gitea: same footprint and features; non-profit governance (Codeberg e.V.) since Gitea's 2022 move to a company.
@@ -139,7 +153,7 @@ The user's leaning (2026-11-14): asset-heavy games, so self-host git.
   Later: buttons that answer a decision; a text reply that starts a headless coordinator Job; a direction that starts the delegated path, released with one tap.
   Use long polling (`getUpdates`), so nothing is exposed; accept only the user's ID.
 
-Possible order: Forgejo with backups, and the personal repos pushed with LFS; split the records out of this repo; host-based project context; the decisions queue and live-status hook; images; workers as Jobs; scheduler across released epics; Telegram answers.
+Possible order: Forgejo with backups, and the personal repos pushed with LFS (done except off-site backups); split the records out of this repo; host-based project context; the decisions queue and live-status hook; images; workers as Jobs; scheduler across released epics; Telegram answers.
 
 ## Direction
 
