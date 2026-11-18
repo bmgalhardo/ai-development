@@ -106,8 +106,8 @@ Progress (2026-11-17):
 - Done: 01-prototype, 02-prototype, 03-prototype, algo-trading, godot-telemetry and job-hunt pushed as private repos, `origin` on Forgejo.
 - Done: LFS tracking by file type in 01, 02 and 03-prototype; `docs/**` stays plain git, so agents always see screenshots.
 - Open: the nightly `forgejo dump` lands on Forgejo's own disk; copy it to Hades's NAS and off-site.
-- Open: the user-level notes (the L0 map) live in the public dotfiles repo and name private projects and the homelab.
-  Move them before more private detail goes there.
+- Done (2026-11-18): the user-level notes (the L0 map) left the public dotfiles repo, history rewritten.
+  They are a local file on daedalus (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md` links to it), in no repo.
 - **Forgejo for personal projects.** Every personal project, its records and its private images live on a Forgejo in elysium.
   Forgejo over GitLab: GitLab needs 8 to 16 GB (2.5 GB only stripped down); Forgejo needs a few hundred MB.
   Forgejo over Gitea: same footprint and features; non-profit governance (Codeberg e.V.) since Gitea's 2022 move to a company.
@@ -123,8 +123,8 @@ Progress (2026-11-17):
 - **Project context from the host.** Forgejo's API lists the repos with descriptions and topics (L0) and serves raw files such as `AGENTS.md` without cloning (L1).
   The dotfiles notes then point at the host instead of listing repos. Use the REST API with a read-only token first; an MCP server (Gitea's official one, or a community Forgejo one) is optional.
 
-- **Session context.** Done (2026-11-14): the static L0 map is the user's notes in their dotfiles repo,
-  linked as `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`: repos, what each is, remotes, the infrastructure layer.
+- **Session context.** Done (2026-11-14): the static L0 map is the user's notes, a local file on daedalus
+  (`~/.claude/CLAUDE.md`; `~/.codex/AGENTS.md` links to it), in no repo since 2026-11-18: repos, what each is, remotes, the infrastructure layer.
   This repo names no project; each repo's `AGENTS.md` is its L1.
   Later: a `SessionStart` hook (kept in dotfiles) adds live status from Overmind: active epics, blocked tickets, pending decisions, latest build.
   If Overmind is down, the hook says so and sessions work from files.
