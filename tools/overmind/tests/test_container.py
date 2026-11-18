@@ -7,10 +7,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from overmind import container
-from overmind.container import Container
-from overmind.providers import registry
-from overmind.settings import Settings
+from overmind.runner import container
+from overmind.runner.container import Container
+from overmind.core.providers import registry
+from overmind.core.settings import Settings
 
 HOME = Path("/home/worker")
 

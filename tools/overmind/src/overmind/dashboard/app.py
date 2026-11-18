@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from ..settings import Settings
+from ..core.settings import Settings
 from .quotas import Quotas
 from .store import Store
 

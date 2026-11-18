@@ -2,7 +2,7 @@
 
 import click
 
-from ..settings import Settings
+from ..core.settings import Settings
 
 
 @click.command()

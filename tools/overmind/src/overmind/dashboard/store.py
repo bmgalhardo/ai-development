@@ -7,8 +7,8 @@ from pathlib import Path
 import re
 import time
 
-from ..providers import registry
-from ..tracker import Cycle, TrackerError
+from ..core.providers import registry
+from ..core.tracker import Cycle, TrackerError
 
 AXES = ("standards", "spec")
 STAGES = {"in progress": "implementing", "in review": "reviewing", "done": "done", "blocked": "blocked"}

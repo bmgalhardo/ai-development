@@ -18,8 +18,8 @@ import click
 
 from ..runner.loop import RunnerError
 from ..runner.repo import UnsafeRepoError
-from ..settings import SettingsError
-from ..tracker import TrackerError
+from ..core.settings import SettingsError
+from ..core.tracker import TrackerError
 from .dashboard import dashboard
 from .memory import memory
 from .work import build, next_issue, run, shell, status

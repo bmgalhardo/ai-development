@@ -5,7 +5,7 @@ import socket
 import subprocess
 import sys
 
-from ..utils import say
+from ..core.utils import say
 from .sessions import Sessions
 
 

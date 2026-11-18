@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from overmind.settings import Settings, SettingsError
+from overmind.core.settings import Settings, SettingsError
 
 
 class SettingsTests(unittest.TestCase):
@@ -61,9 +61,9 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(self.load(OVERMIND_PREFERENCE="claude").preference, ["claude"])
 
     def test_an_unset_preference_is_every_installed_provider_claude_first(self):
-        with patch("overmind.providers.shutil.which", side_effect=lambda name: f"/bin/{name}"):
+        with patch("overmind.core.providers.shutil.which", side_effect=lambda name: f"/bin/{name}"):
             self.assertEqual(self.load().preference, ["claude", "codex"])
-        with patch("overmind.providers.shutil.which", side_effect=lambda name: "/bin/codex" if name == "codex" else None):
+        with patch("overmind.core.providers.shutil.which", side_effect=lambda name: "/bin/codex" if name == "codex" else None):
             self.assertEqual(self.load().preference, ["codex"])
 
     def test_invalid_values_fail_with_the_setting_named(self):

@@ -21,7 +21,7 @@ from overmind.runner import loop
 from overmind.runner.loop import Launch, Runner, RunnerError
 from overmind.runner.repo import Repo, UnsafeRepoError
 from overmind.runner.sessions import TIMED_OUT, Session, Sessions
-from overmind.settings import Settings
+from overmind.core.settings import Settings
 
 FAKE_WORKER = Path(__file__).with_name("fake_worker.py")
 FAKE_DOCKER = Path(__file__).with_name("fake_docker.py")

@@ -18,9 +18,22 @@ A cycle is stuck when issues are open but none is ready, under way or `blocked`:
 `next` and `run` then print what each open issue waits for and exit 1.
 Paths print relative to the workflow root.
 
+## Layout
+
+The package is layered; `tests/test_layers.py` fails on an import that crosses a layer the wrong way.
+
+| Package | What it is | May import |
+|---|---|---|
+| `core/` | What every part shares: settings, the tracker, the providers, notifications, utilities | `core` only |
+| `runner/` | The worker loop, with its containers (`runner/container/`) and prompts (`runner/prompts/`) | `core`, itself |
+| `dashboard/` | The read-only issue board | `core`, itself |
+| `memory/` | The agents' memory, the context store | itself only: it stands alone |
+| `cli/` | The commands, the only interface (`overmind.cli:main`) | anything; nothing imports it |
+
 ## Settings
 
-`settings.py` is the only code that reads the environment and the workflow root's `.env`.
+`core/settings.py` is the only code that reads the environment and the workflow root's `.env`;
+memory, which stands alone, reads its own `OVERMIND_MEMORY_` variables in `memory/profiles.py`.
 Every setting is a `OVERMIND_` variable; the environment wins over `.env`.
 Unknown `OVERMIND_` keys in `.env` are ignored. An invalid value stops the command, naming the variable.
 `OVERMIND_ROOT` is the workflow repo (default: the current folder, which the wrapper sets).
@@ -34,7 +47,7 @@ Effort must be one of the provider's own values.
 
 ## Providers
 
-Each provider is one file in `src/overmind/providers/`: a subclass of `Provider`.
+Each provider is one file in `src/overmind/core/providers/`: a subclass of `Provider`.
 The registry is the subclasses present: deleting a provider's file removes it.
 No other code names a provider.
 A provider defines:
@@ -52,7 +65,7 @@ A provider may add its own.
 ## Containers
 
 By default (`OVERMIND_CONTAINER=1`), the runner runs each session in a worker container: Claude Code and Codex CLIs, git, Python, uv and Node, as a non-root user.
-The image recipes, the build script and the container's machine notes are in `src/overmind/container/`, beside the `Container` class.
+The image recipes, the build script and the container's machine notes are in `src/overmind/runner/container/`, beside the `Container` class.
 The `Container` class names no provider: each provider gives its own login and session folder.
 The build copies the host's `/usr/local/share/ca-certificates/` into the image, so internal HTTPS verifies inside it.
 
@@ -83,7 +96,7 @@ To open a shell, or run a command, in one by hand:
 tools/overmind.sh shell <provider> <implement|review|fix> ../<project> [command...]
 ```
 
-`src/overmind/container/run.sh` takes the same arguments, with the project's path relative to the current folder.
+`src/overmind/runner/container/run.sh` takes the same arguments, with the project's path relative to the current folder.
 Without a command it opens a shell.
 One container runs one provider in one role, and is removed when the command exits.
 The runner also removes a stopped session's container (a timeout or Ctrl-C), and, at startup, every container left over from a killed run of the project.
@@ -102,7 +115,7 @@ The container sees the same absolute paths as the host:
 
 The links are the workflow root's own symbolic links to `AGENTS.md` and `.agents/`.
 That is all a session reads from this repo: `tools/`, `.git`, `.env` and the other projects' scratch aren't there.
-`src/overmind/container/machine.md` replaces the host's `.agents/context/machine.local.md`, so a session reads the container's own notes.
+`src/overmind/runner/container/machine.md` replaces the host's `.agents/context/machine.local.md`, so a session reads the container's own notes.
 It only can when the host has that file: a read-only mount can't cover a missing one.
 The session folders keep each CLI's full log on the host, for the retro's `digest.py`.
 An implementer can also reach them through its scratch, so a session could edit an earlier log.

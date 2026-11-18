@@ -14,9 +14,9 @@ from fastapi.testclient import TestClient
 
 from overmind.dashboard.app import create_app
 from overmind.dashboard.quotas import Quotas
-from overmind.providers import registry
-from overmind.providers.base import QuotaUnavailable
-from overmind.settings import Settings
+from overmind.core.providers import registry
+from overmind.core.providers.base import QuotaUnavailable
+from overmind.core.settings import Settings
 
 CLAUDE_USAGE = {"five_hour": {"utilization": 24.0, "resets_at": "2026-10-29T14:59:59+00:00"},
                 "seven_day": {"utilization": 11.0, "resets_at": "2026-11-03T23:59:59+00:00"},

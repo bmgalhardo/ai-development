@@ -11,7 +11,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from overmind import cli, container
+from overmind import cli
+from overmind.runner import container
 
 
 class CommandTests(unittest.TestCase):

@@ -13,8 +13,8 @@ import unittest
 from unittest.mock import patch
 
 import overmind
-from overmind.providers import registry
-from overmind.settings import Settings
+from overmind.core.providers import registry
+from overmind.core.settings import Settings
 
 PROMPT = "Implement the issue."
 
@@ -69,12 +69,12 @@ class ClaudeOnlyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             package = Path(temp) / "overmind"
             shutil.copytree(Path(overmind.__file__).parent, package, ignore=shutil.ignore_patterns("__pycache__"))
-            (package / "providers/codex.py").unlink()
+            (package / "core/providers/codex.py").unlink()
             script = (
                 "import os\n"
                 "from pathlib import Path\n"
-                "from overmind.providers import registry\n"
-                "from overmind.settings import Settings, SettingsError\n"
+                "from overmind.core.providers import registry\n"
+                "from overmind.core.settings import Settings, SettingsError\n"
                 "print(registry.names())\n"
                 "os.environ['OVERMIND_PREFERENCE'] = 'claude'\n"
                 "settings = Settings.load()\n"

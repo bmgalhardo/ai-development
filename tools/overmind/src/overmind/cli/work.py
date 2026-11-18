@@ -7,11 +7,11 @@ import sys
 
 import click
 
-from .. import container
-from ..providers import registry
+from ..runner import container
+from ..core.providers import registry
 from ..runner.loop import Launch
-from ..settings import Settings
-from ..tracker import Tracker
+from ..core.settings import Settings
+from ..core.tracker import Tracker
 
 PROJECT_HELP = "the project's repo, relative to the workflow root (../<project>)"
 

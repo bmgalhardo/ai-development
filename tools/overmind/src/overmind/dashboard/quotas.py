@@ -10,9 +10,9 @@ import time
 
 from pydantic import BaseModel
 
-from ..providers import registry
-from ..providers.base import QuotaUnavailable, QuotaWindow
-from ..utils import fetch_json
+from ..core.providers import registry
+from ..core.providers.base import QuotaUnavailable, QuotaWindow
+from ..core.utils import fetch_json
 
 REFRESH = 60  # seconds between readings
 STALE = 180  # seconds after which a reading is marked stale

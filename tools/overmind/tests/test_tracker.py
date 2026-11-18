@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import unittest
 
-from overmind.tracker import Tracker, TrackerError
+from overmind.core.tracker import Tracker, TrackerError
 
 
 class TrackerTests(unittest.TestCase):
